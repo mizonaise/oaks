@@ -216,8 +216,15 @@ export default function Home () {
       <main className='flex flex-1 w-full gap-6 p-6 bg-white dark:bg-black lg:flex-row flex-col'>
         <div className='flex flex-col gap-4 lg:flex-2 min-w-0'>
           <ShapeViewer shape={shape} scopes={resolvedScopes} />
-          <Panel title='variables (seed + form overrides)' data={mergedView} />
-          <Panel title='variables (seed + form overrides)' data={resolvedScopes} />
+          <Panel
+            title='flated variables (seed + form overrides) used in form'
+            data={flatForForm}
+          />
+          {/* ;<Panel title='variables (seed + form overrides) ' data={mergedView} /> */}
+          <Panel
+            title='variables (seed + form overrides) used in shape resolution'
+            data={resolvedScopes}
+          />
         </div>
         <aside className='lg:flex-1 lg:max-w-md min-w-0 overflow-auto'>
           <FormRenderer
