@@ -85,9 +85,9 @@ export const form: FormNode = {
               render: "FIELD",
               name: "HEIGHT",
               label: "Height",
-              defaultValue: "3000",
+              defaultValue: "2700",
               min: "1800",
-              max: "3800",
+              max: "2800",
               variables: [{ name: "ZONE_H", path: "." }],
             },
             {
@@ -95,9 +95,9 @@ export const form: FormNode = {
               render: "FIELD",
               name: "WIDTH",
               label: "Width",
-              defaultValue: "3000",
+              defaultValue: "4000",
               min: "800",
-              max: "2800",
+              max: "6000",
               variables: [{ name: "ZF_W", path: "." }],
             },
             {
