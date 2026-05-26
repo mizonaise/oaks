@@ -1,0 +1,71 @@
+'use client'
+
+import { memo, useEffect, useState } from 'react'
+import { type Box as ShapeBox } from './shapeTree'
+import { ArticleData, ArticleGroupDesigner } from '@processandtools/rp-article-designer'
+
+const MM = 1
+const SCALE = 0.001
+
+export const ArticleInBox = memo(function ArticleInBox ({
+  box,
+  articleName,
+  isSelected
+}: {
+  box: ShapeBox
+  articleName: string
+  isSelected: boolean
+}) {
+  const [res, setRes] = useState<ArticleData | null>(null)
+
+  useEffect(() => {
+    setRes(null)
+    const resolveArticleName = async () => {
+      const response = await fetch(
+        `https://backend.tecnibo.com/api/rp-engine/article-data/${articleName}?forcerefresh=true`,
+        {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json'
+          }
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('fetched article data', data)
+        setRes(data)
+      } else {
+        console.error('Failed to fetch article data:', response.statusText)
+      }
+    }
+
+    resolveArticleName()
+  }, [articleName])
+
+  console.log('articleName', articleName, res)
+
+  return (
+    <group
+      scale={[MM / SCALE, MM / SCALE, MM / SCALE]}
+      position={[0, (-box.h / 2) * MM, 0]}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
+      {res && (
+        <ArticleGroupDesigner
+          data={res}
+          articleList={[
+            {
+              name: articleName,
+              visibility: true,
+              isDoorOpen: isSelected,
+              dimensions: { width: box.w, height: box.h, depth: box.d },
+              variables: box.vars as Record<string, string>
+            }
+          ]}
+        />
+      )}
+    </group>
+  )
+})

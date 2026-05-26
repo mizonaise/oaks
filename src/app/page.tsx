@@ -157,9 +157,6 @@ export default function Home () {
     setNestedUpdates(prev => {
       const current = readNested(prev, name)
       if (Object.is(current, value)) return prev
-      if (typeof window !== 'undefined') {
-        // console.log('change', name, current, '→', value)
-      }
       return setNested(prev, name, value)
     })
   }, [])
@@ -170,6 +167,15 @@ export default function Home () {
     () =>
       resolveVariables({ ...globalVariables, ...flattenNested(nestedUpdates) }),
     [nestedUpdates]
+  )
+
+  // Lets FormRenderer settle cascading $VAR refs in a single render: it calls
+  // this with the form's currently-emitted variables and gets back the full
+  // resolved scope (seed + form overrides + cascade).
+  const resolveScope = useCallback(
+    (formVars: FlatVars) =>
+      resolveVariables({ ...globalVariables, ...formVars }),
+    []
   )
 
   // Merged display view: `global` namespace combines seed + form overrides,
@@ -231,6 +237,7 @@ export default function Home () {
             schema={form}
             variables={flatForForm}
             onVariableChange={handleChangeVariables}
+            resolveScope={resolveScope}
           />
         </aside>
       </main>

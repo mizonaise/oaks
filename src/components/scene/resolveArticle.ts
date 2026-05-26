@@ -88,8 +88,8 @@ export function resolveArticleName (
     if (v === undefined) return null
     value = String(v)
   }
-  // if (value.startsWith('#')) {
-  //   return resolveDescriptorWithGrtx(value.slice(1), node.grtx ?? {}, vars)
-  // }
+  if (value.startsWith('#')) {
+    return resolveDescriptorWithGrtx(value.slice(1), node.grtx ?? {}, vars)
+  }
   return value
 }

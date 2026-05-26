@@ -402,10 +402,6 @@ export function walkZone(
       cursor += direction * size;
     });
 
-    // Children beyond the slice count — overlay on the full parent box.
-    for (let i = slices.length; i < children.length; i++) {
-      recurse(children[i], box, depth + 1, vars);
-    }
   };
 
   recurse(root, bounds, 0, globalVars);
