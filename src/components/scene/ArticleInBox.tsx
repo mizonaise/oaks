@@ -2,10 +2,23 @@
 
 import { memo, useEffect, useState } from 'react'
 import { type Box as ShapeBox } from './shapeTree'
-import { ArticleData, ArticleGroupDesigner } from '@processandtools/rp-article-designer'
+import {
+  ArticleData,
+  ArticleGroupDesigner
+} from '@processandtools/rp-article-designer'
 
 const MM = 1
 const SCALE = 0.001
+
+// Yaw (rotation around the vertical Y axis) so the article faces the
+// direction declared by its nearest `clickable` ancestor. FRONT is the
+// default orientation (no extra yaw).
+const FACING_YAW: Record<string, number> = {
+  FRONT: 0,
+  RIGHT: Math.PI / 2,
+  BACK: Math.PI,
+  LEFT: -Math.PI / 2
+}
 
 export const ArticleInBox = memo(function ArticleInBox ({
   box,
@@ -34,7 +47,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
 
       if (response.ok) {
         const data = await response.json()
-        console.log('fetched article data', data)
+        // console.log('fetched article data', data)
         setRes(data)
       } else {
         console.error('Failed to fetch article data:', response.statusText)
@@ -44,28 +57,38 @@ export const ArticleInBox = memo(function ArticleInBox ({
     resolveArticleName()
   }, [articleName])
 
-  console.log('articleName', articleName, res)
+  // console.log('render ArticleInBox', { articleName, vars: box.vars })
+
+  const yaw = box.clickable ? FACING_YAW[box.clickable] ?? 0 : 0
+
+  // A 90° yaw (LEFT/RIGHT) swaps the article's local width and depth axes
+  // relative to the box, so feed the designer the swapped dimensions.
+  const sideways = box.clickable === 'LEFT' || box.clickable === 'RIGHT'
+  const width = sideways ? box.d : box.w
+  const depth = sideways ? box.w : box.d
 
   return (
-    <group
-      scale={[MM / SCALE, MM / SCALE, MM / SCALE]}
-      position={[0, (-box.h / 2) * MM, 0]}
-      rotation={[-Math.PI / 2, 0, 0]}
-    >
-      {res && (
-        <ArticleGroupDesigner
-          data={res}
-          articleList={[
-            {
-              name: articleName,
-              visibility: true,
-              isDoorOpen: isSelected,
-              dimensions: { width: box.w, height: box.h, depth: box.d },
-              variables: box.vars as Record<string, string>
-            }
-          ]}
-        />
-      )}
+    <group rotation={[0, yaw, 0]}>
+      <group
+        scale={[MM / SCALE, MM / SCALE, MM / SCALE]}
+        position={[0, (-box.h / 2) * MM, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        {res && (
+          <ArticleGroupDesigner
+            data={res}
+            articleList={[
+              {
+                name: articleName,
+                visibility: true,
+                isDoorOpen: isSelected,
+                dimensions: { width, height: box.h, depth },
+                variables: box.vars as Record<string, string>
+              }
+            ]}
+          />
+        )}
+      </group>
     </group>
   )
 })

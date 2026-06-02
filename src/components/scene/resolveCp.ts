@@ -1,9 +1,6 @@
-import { shape as shapeData } from "@/data/shapeF";
 import { materials, surfaces } from "@/data/materials";
 import type { FlatVars } from "@/lib/form/expr";
-import type { CompositePanel, ShapeData } from "@/lib/shape/schema";
-
-const CPS: Record<string, CompositePanel> = (shapeData as ShapeData).cps ?? {};
+import { getCps } from "@/lib/shape/registry";
 
 const MATERIALS = materials as Record<
   string,
@@ -35,7 +32,7 @@ function deref(raw: string | undefined, vars: FlatVars): string | null {
 }
 
 export function resolveCp(cpName: string, vars: FlatVars): ResolvedCp | null {
-  const cp = CPS[cpName];
+  const cp = getCps()[cpName];
   if (!cp) return null;
   const matKey = deref(cp.mat, vars);
   const surfKey = deref(cp.surf, vars);

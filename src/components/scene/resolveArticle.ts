@@ -1,9 +1,7 @@
-import { shape as shapeData } from '@/data/shapeF'
-import type { FlatVars } from '@/lib/form/expr'
-import type { DescriptorBranch, ShapeData, ZoneNode } from '@/lib/shape/schema'
-
-const descriptors: Record<string, DescriptorBranch[]> =
-  (shapeData as ShapeData).descriptors ?? {}
+import type { FlatVars } from "@/lib/form/expr";
+import type { ZoneNode } from "@/lib/shape/schema";
+import { getDescriptors } from "@/lib/shape/registry";
+import type { DescriptorBranch } from "@/lib/shape/schema";
 
 /**
  * Resolves an article descriptor by matching its branches against the article
@@ -12,62 +10,69 @@ const descriptors: Record<string, DescriptorBranch[]> =
  * `leftValue` is a `grtx` key; `rightValue` is a literal or `$VAR` looked up
  * against `vars`. First matching branch wins.
  */
-function resolveDescriptorWithGrtx (
+function resolveDescriptorWithGrtx(
   name: string,
   grtx: Record<string, string>,
-  vars: FlatVars
+  vars: FlatVars,
 ): string | null {
-  const branches = descriptors[name]
-  if (!branches) return null
+  const branches: DescriptorBranch[] | undefined = getDescriptors()[name];
+  if (!branches) return null;
 
   const lookupGrtx = (key: string): string => {
-    const raw = grtx[key]
-    if (raw === undefined) return ''
-    if (typeof raw === 'string' && raw.startsWith('$')) {
-      const v = vars[raw.slice(1)]
-      return v === undefined ? '' : String(v)
+    const raw = grtx[key];
+    if (raw === undefined) return "";
+    if (typeof raw === "string" && raw.startsWith("$")) {
+      const v = vars[raw.slice(1)];
+      return v === undefined ? "" : String(v);
     }
-    return String(raw)
-  }
+    return String(raw);
+  };
 
   const lookupRight = (raw: string | undefined): string => {
-    if (raw === undefined) return ''
-    if (raw.startsWith('$')) {
-      const v = vars[raw.slice(1)]
-      return v === undefined ? '' : String(v)
+    if (raw === undefined) return "";
+    if (raw.startsWith("$")) {
+      const v = vars[raw.slice(1)];
+      return v === undefined ? "" : String(v);
     }
-    return raw
-  }
+    return raw;
+  };
 
   for (const branch of branches) {
-    const groups = branch.roles ?? []
+    const groups = branch.roles ?? [];
     const ok =
       groups.length === 0 ||
-      groups.every(group => {
-        const rules = group.roles ?? []
-        if (rules.length === 0) return true
-        const results = rules.map(rule => {
-          const op = rule.comparison ?? rule.comparaison ?? '='
-          const l = lookupGrtx(rule.leftValue ?? '')
-          const r = lookupRight(rule.rightValue)
+      groups.every((group) => {
+        const rules = group.roles ?? [];
+        if (rules.length === 0) return true;
+        const results = rules.map((rule) => {
+          const op = rule.comparison ?? rule.comparaison ?? "=";
+          const l = lookupGrtx(rule.leftValue ?? "");
+          const r = lookupRight(rule.rightValue);
           switch (op) {
-            case '=':
-            case 'E': return l === r
-            case '!=': return l !== r
-            case '>': return Number(l) > Number(r)
-            case '<': return Number(l) < Number(r)
-            case '>=': return Number(l) >= Number(r)
-            case '<=': return Number(l) <= Number(r)
-            default: return l === r
+            case "=":
+            case "E":
+              return l === r;
+            case "!=":
+              return l !== r;
+            case ">":
+              return Number(l) > Number(r);
+            case "<":
+              return Number(l) < Number(r);
+            case ">=":
+              return Number(l) >= Number(r);
+            case "<=":
+              return Number(l) <= Number(r);
+            default:
+              return l === r;
           }
-        })
-        return group.operator === 'OR'
+        });
+        return group.operator === "OR"
           ? results.some(Boolean)
-          : results.every(Boolean)
-      })
-    if (ok) return branch.action ?? ''
+          : results.every(Boolean);
+      });
+    if (ok) return branch.action ?? "";
   }
-  return null
+  return null;
 }
 
 /**
@@ -76,20 +81,20 @@ function resolveDescriptorWithGrtx (
  *   may itself be "#DS_WACA_U_ART_01" → descriptor lookup using node.grtx
  *   any other → returned as-is.
  */
-export function resolveArticleName (
+export function resolveArticleName(
   node: ZoneNode,
-  vars: FlatVars
+  vars: FlatVars,
 ): string | null {
-  const divider = node.divider
-  if (!divider) return null
-  let value: string = divider
-  if (divider.startsWith('$')) {
-    const v = vars[divider.slice(1)]
-    if (v === undefined) return null
-    value = String(v)
+  const divider = node.divider;
+  if (!divider) return null;
+  let value: string = divider;
+  if (divider.startsWith("$")) {
+    const v = vars[divider.slice(1)];
+    if (v === undefined) return null;
+    value = String(v);
   }
-  if (value.startsWith('#')) {
-    return resolveDescriptorWithGrtx(value.slice(1), node.grtx ?? {}, vars)
+  if (value.startsWith("#")) {
+    return resolveDescriptorWithGrtx(value.slice(1), node.grtx ?? {}, vars);
   }
-  return value
+  return value;
 }

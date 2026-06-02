@@ -11,23 +11,44 @@ import type { SelectedMap, Values } from './types'
 // Arithmetic operators outside CONCAT signal that leftValue is a numeric expression.
 const HAS_ARITH = /[+\-*/]/
 
-// "@FIELD", "@FIELD.data.x", "CONCAT(@A,@B.data.x)", "@X - $Y + 1"
-function resolveLeft (
+// Resolves either side of a rule against the candidate option and form state.
+// Handles: "&(...)" explicit expression, ".data.x" candidate-option read,
+//   "@FIELD"/"@FIELD.data.x", "$VAR", "CONCAT(@A,@B.data.x)", "@X - $Y + 1",
+//   and bare literals.
+function resolveOperand (
   expr: string,
+  opt: Option,
   values: Values,
   selected: SelectedMap,
   vars: FlatVars
 ): string {
+  // Explicit expression marker "&(...)" — always evaluate the inner expression.
+  const exprMatch = expr.match(/^&\((.+)\)$/)
+  if (exprMatch) {
+    return String(evalExpr(exprMatch[1], values, selected, vars))
+  }
   const concatMatch = expr.match(/^CONCAT\((.+)\)$/)
   if (concatMatch) {
     return concatMatch[1]
       .split(',')
-      .map(s => resolveLeft(s.trim(), values, selected, vars))
+      .map(s => resolveOperand(s.trim(), opt, values, selected, vars))
       .join('')
   }
   // Arithmetic expression — evaluate as number.
   if (HAS_ARITH.test(expr) && (expr.includes('@') || expr.includes('$'))) {
     return String(evalExpr(expr, values, selected, vars))
+  }
+  // ".data.x" — read against the candidate option, then evaluate the read
+  // value if it is itself an expression (e.g. "$ZF_CNT_01 + $ZF_CNT_02").
+  if (expr.startsWith('.')) {
+    const raw = walkPath(opt, expr.slice(1).split('.'))
+    if (
+      (HAS_ARITH.test(raw) && (raw.includes('@') || raw.includes('$'))) ||
+      raw.startsWith('$') || raw.startsWith('@') || raw.startsWith('&(')
+    ) {
+      return resolveOperand(raw, opt, values, selected, vars)
+    }
+    return raw
   }
   if (expr.startsWith('$')) {
     const v = vars[expr.slice(1)]
@@ -39,18 +60,12 @@ function resolveLeft (
     const v = values[fieldName]
     return v === undefined ? '' : String(v)
   }
-  const opt = selected[fieldName]
-  if (!opt) return ''
-  return walkPath(opt, path)
+  const refOpt = selected[fieldName]
+  if (!refOpt) return ''
+  return walkPath(refOpt, path)
 }
 
-// ".data.filter" → read against a candidate option; literal otherwise
-function resolveRight (expr: string, opt: Option): string {
-  if (!expr.startsWith('.')) return expr
-  return walkPath(opt, expr.slice(1).split('.'))
-}
-
-function walkPath (root: unknown, path: string[]): string {
+function walkPath(root: unknown, path: string[]): string {
   let cur: unknown = root
   for (const p of path) {
     if (cur && typeof cur === 'object' && p in (cur as object)) {
@@ -63,12 +78,40 @@ function walkPath (root: unknown, path: string[]): string {
 function compare (op: string, left: string, right: string): boolean {
   switch (op) {
     case 'I':
+    case 'C':
+    case 'CONTAINS':
       return right !== '' && right.includes(left)
+    // Negated contains. Was previously unhandled and fell through to the
+    // `default` (contains) branch, evaluating as the *opposite* of intent —
+    // which made self-referential filters (e.g. `@FIELD.value !C "X"`) flip an
+    // option in/out across reconcile passes and never settle.
+    case '!C':
+    case 'DNCONTAINS':
+      return !(right !== '' && right.includes(left))
     case '=':
     case 'E':
+    case 'EQ':
+    case 'EQUAL':
       return left === right
     case '!=':
+    case 'NEQ':
+    case 'NOT_EQUAL':
       return left !== right
+    case 'B':
+    case 'BW':
+      return left !== '' && right.startsWith(left)
+    case '!B':
+    case 'DNBW':
+      return !(left !== '' && right.startsWith(left))
+    case 'EW':
+      return left !== '' && right.endsWith(left)
+    case '!E':
+    case 'DNEW':
+      return !(left !== '' && right.endsWith(left))
+    case 'isEmpty':
+      return left === ''
+    case 'isNotEmpty':
+      return left !== ''
     case '>':
     case '<':
     case '>=':
@@ -96,8 +139,8 @@ function evalRule (
   const op = rule.comparison ?? rule.comparaison ?? 'I'
   return compare(
     op,
-    resolveLeft(rule.leftValue, values, selected, vars),
-    resolveRight(rule.rightValue, opt)
+    resolveOperand(rule.leftValue, opt, values, selected, vars),
+    resolveOperand(rule.rightValue, opt, values, selected, vars)
   )
 }
 

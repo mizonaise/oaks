@@ -12,6 +12,8 @@ export type ZoneNode = {
   linDiv?: string
   divider?: string | null
   grtx?: Record<string, string>
+  // Set on a container node; articles below it face this direction.
+  clickable?: 'FRONT' | 'BACK' | 'LEFT' | 'RIGHT' | string
   children?: ZoneNode[]
   top?: string | null
   bottom?: string | null

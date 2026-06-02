@@ -17,9 +17,9 @@
  *   "#NAME"      → descriptor reference; resolved via shape.descriptors[NAME]
  */
 
-import { shape as shapeData } from "@/data/shapeF";
 import { evalExpr, type FlatVars } from "@/lib/form/expr";
-import type { DescriptorBranch, ShapeData, ZoneNode } from "@/lib/shape/schema";
+import type { DescriptorBranch, ZoneNode } from "@/lib/shape/schema";
+import { getDescriptors } from "@/lib/shape/registry";
 
 export type Axis = "x" | "y" | "z";
 
@@ -50,13 +50,17 @@ export type Box = {
   // CP refs for the six faces, if any. sides[0..3] in shapeF maps to
   // front/right/back/left.
   sides?: BoxSides;
+  // Facing direction inherited from the nearest `clickable` ancestor, if any.
+  // Articles below such a node are rotated to face this direction.
+  clickable?: string;
 };
 
 type Node = ZoneNode;
 type Slice = { size: number | null; weight: number; minSize?: number };
 
-const descriptors: Record<string, DescriptorBranch[]> =
-  (shapeData as ShapeData).descriptors ?? {};
+function descriptorBranches(name: string): DescriptorBranch[] | undefined {
+  return getDescriptors()[name];
+}
 
 // Resolves a descriptor side expression. `X` is substituted with the
 // parent-axis size (in mm). Everything else is fed to evalExpr.
@@ -105,7 +109,8 @@ function evalDescriptorBranch(
       const op = rule.comparison ?? rule.comparaison ?? "=";
       const l = evalSide(rule.leftValue, X, vars);
       const r = evalSide(rule.rightValue, X, vars);
-      return compareNumeric(op, l, r);
+      const res = compareNumeric(op, l, r);
+      return res;
     });
     return group.operator === "OR"
       ? results.some(Boolean)
@@ -116,10 +121,13 @@ function evalDescriptorBranch(
 // Resolves a `#NAME` descriptor to its concrete linDiv string for the current
 // parent axis size `X`. First matching branch wins; empty action ⇒ "".
 function resolveDescriptor(name: string, X: number, vars: FlatVars): string {
-  const branches = descriptors[name];
-  if (!branches) return "";
+  const branches = descriptorBranches(name);
+  if (!branches) {
+    return "";
+  }
   for (const b of branches) {
-    if (evalDescriptorBranch(b, X, vars)) return b.action ?? "";
+    const ok = evalDescriptorBranch(b, X, vars);
+    if (ok) return b.action ?? "";
   }
   return "";
 }
@@ -134,11 +142,11 @@ function parseLinDiv(
   if (spec.startsWith("#")) {
     spec = resolveDescriptor(spec.slice(1), parentAxisSize, vars).trim();
   }
+
   if (spec === "") return null;
 
   return spec.split(":").map((rawToken) => {
     const token = rawToken.trim();
-    if (/^\d+$/.test(token)) return { size: null, weight: Number(token) };
     // Filler with minimum size: `<weight>+<expr>mm` (e.g. `1+400mm`).
     const min = /^(\d+)\s*\+\s*(.+?)(?:\s*mm)+\s*$/i.exec(token);
     if (min) {
@@ -153,13 +161,14 @@ function parseLinDiv(
         minSize: Number.isFinite(minSize) ? minSize : 0,
       };
     }
+    // `mm` suffix → fixed size. Everything else (bare integer, $VAR, expr) → weight.
+    const hasMm = /(\s*mm)+\s*$/i.test(token);
     const expr = token.replace(/(\s*mm)+\s*$/i, "").trim();
     if (expr === "") return { size: 0, weight: 0 };
-    if (/^-?\d+(?:\.\d+)?$/.test(expr)) {
-      return { size: Number(expr), weight: 0 };
-    }
-    const n = evalExpr(expr, {}, {}, vars);
-    return { size: Number.isFinite(n) ? n : 0, weight: 0 };
+    const numericLiteral = /^-?\d+(?:\.\d+)?$/.test(expr);
+    const n = numericLiteral ? Number(expr) : evalExpr(expr, {}, {}, vars);
+    const value = Number.isFinite(n) ? n : 0;
+    return hasMm ? { size: value, weight: 0 } : { size: null, weight: value };
   });
 }
 
@@ -225,7 +234,7 @@ function resolveSideCp(
   if (!cpRef) return null;
   const t = cpRef.trim();
   if (!t.startsWith("#")) return t;
-  const branches = descriptors[t.slice(1)];
+  const branches = descriptorBranches(t.slice(1));
   if (!branches) return null;
   const grtx = node.grtx ?? {};
   for (const b of branches) {
@@ -308,12 +317,21 @@ export function walkZone(
     box: { x: number; y: number; z: number; w: number; h: number; d: number },
     depth: number,
     scope: FlatVars,
+    clickable?: string,
   ) => {
+    // A collapsed box (zero/negative on any axis) has no renderable volume.
+    // Don't emit it or recurse — otherwise descendants (including articles)
+    // get pushed with a zero dimension and run away into deep degenerate
+    // index chains like 0.0…0.0.
+    if (box.w <= 0 || box.h <= 0 || box.d <= 0) return;
+
     // If this node's name matches a namespace, layer those vars on top of
     // the inherited scope for this node and its descendants.
     const ns = node.name ? namespaces[node.name] : undefined;
     const vars: FlatVars = ns ? { ...scope, ...ns } : scope;
     const isArticle = node.divDir === "A";
+    // A `clickable` node sets the facing direction for all articles below it.
+    const facing = node.clickable ?? clickable;
 
     out.push({
       ...box,
@@ -324,12 +342,14 @@ export function walkZone(
       node: isArticle ? node : undefined,
       vars: isArticle ? vars : undefined,
       sides: extractSides(node, vars),
+      clickable: isArticle ? facing : undefined,
     });
 
     if (isArticle) return;
 
     if (node.divDir === "I") {
-      for (const c of node.children ?? []) recurse(c, box, depth + 1, vars);
+      for (const c of node.children ?? [])
+        recurse(c, box, depth + 1, vars, facing);
       return;
     }
 
@@ -337,6 +357,7 @@ export function walkZone(
     //   V                              → Y (up)
     //   H + W                          → X (left → right)
     //   H + D                          → Z (front → back)
+    //   H + W                          → X (left → right)
     //   H + P + divElem 0              → X (left → right)
     //   H + P + divElem 1              → Z (front → back)
     //   H + P + divElem 2              → X (right → left)
@@ -346,8 +367,11 @@ export function walkZone(
     if (node.divDir === "V") {
       axis = "y";
     } else if (node.divDir === "H") {
-      if (node.horDefType === "D") axis = "z";
-      else if (node.horDefType === "P") {
+      if (node.horDefType === "D") {
+        axis = "z";
+        // Split front → back: start at the front edge and walk toward the back.
+        direction = -1;
+      } else if (node.horDefType === "P") {
         const e = node.divElem ?? 0;
         axis = e === 1 || e === 3 ? "z" : "x";
         direction = e === 2 || e === 3 ? -1 : 1;
@@ -360,7 +384,7 @@ export function walkZone(
     const children = node.children ?? [];
 
     if (!slices || slices.length === 0 || !axis) {
-      for (const c of children) recurse(c, box, depth + 1, vars);
+      for (const c of children) recurse(c, box, depth + 1, vars, facing);
       return;
     }
 
@@ -379,6 +403,13 @@ export function walkZone(
 
     slices.forEach((_, i) => {
       const size = sizes[i];
+      // A zero (or negative) slot can't hold anything renderable. Skip it
+      // entirely so we don't recurse into degenerate boxes and emit articles
+      // with a zero dimension (e.g. 500×2350×0).
+      if (size <= 0) {
+        cursor += direction * size;
+        return;
+      }
       // For reverse direction, position is the cursor minus this slice's size.
       const start = direction === 1 ? cursor : cursor - size;
       const childBox = {
@@ -390,7 +421,7 @@ export function walkZone(
         d: axis === "z" ? size : box.d,
       };
       const child = children[i];
-      if (child) recurse(child, childBox, depth + 1, vars);
+      if (child) recurse(child, childBox, depth + 1, vars, facing);
       else if (size > 0) {
         out.push({
           ...childBox,
@@ -401,7 +432,6 @@ export function walkZone(
       }
       cursor += direction * size;
     });
-
   };
 
   recurse(root, bounds, 0, globalVars);
