@@ -24,3 +24,235 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Mohamed */
+
+/* ── Tokens ──────────────────────────────────────────────────── */
+:root {
+  --p-primary: #000000;
+  --p-primary-dk: #000000;
+  --p-divider: rgba(47, 43, 61, 0.12);
+  --p-bg: #ffffff;
+  --p-bg-page: #f8f7fa;
+  --p-text: rgba(47, 43, 61, 0.9);
+  --p-text-sec: rgba(47, 43, 61, 0.7);
+  --p-hover: rgba(47, 43, 61, 0.06);
+  --p-selected: rgba(47, 43, 61, 0.08);
+  --p-radius: 6px;
+  --p-font: "Public Sans", sans-serif;
+}
+
+/* ── Root ────────────────────────────────────────────────────── */
+[data-previewer] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--p-font);
+  font-size: 0.9375rem;
+  color: var(--p-text);
+}
+
+/* ── Section card ────────────────────────────────────────────── */
+[data-type="SECTION"] {
+  border: 1px solid var(--p-divider);
+  border-radius: var(--p-radius);
+  overflow: hidden;
+  background: var(--p-bg);
+}
+
+/* ── Accordion header ────────────────────────────────────────── */
+[data-section-header] {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--p-hover);
+  border: none;
+  font-family: var(--p-font);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--p-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms;
+}
+[data-section-header]:hover {
+  background: var(--p-selected);
+}
+
+/* ── Section body ────────────────────────────────────────────── */
+[data-section-body] {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────── */
+[data-tab-bar] {
+  display: flex;
+  gap: 0;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--p-divider);
+  background: var(--p-bg);
+}
+
+[data-tab] {
+  padding: 10px 16px;
+  font-family: var(--p-font);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--p-text-sec);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition:
+    color 150ms,
+    border-color 150ms,
+    background 150ms;
+}
+[data-tab]:hover {
+  color: var(--p-text);
+  background: var(--p-hover);
+}
+[data-tab][data-active="true"] {
+  color: var(--p-primary);
+  border-bottom-color: var(--p-primary);
+}
+
+/* ── Tab panel ───────────────────────────────────────────────── */
+[data-tab-panel] {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Field ───────────────────────────────────────────────────── */
+[data-type="FIELD"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-field-label] {
+  font-family: var(--p-font);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--p-text-sec);
+  line-height: 1.4;
+}
+
+[data-field-control] {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Text / range input ──────────────────────────────────────── */
+[data-field-control] input[type="text"],
+[data-field-control] input[type="number"] {
+  width: 100%;
+  padding: 8px 12px;
+  font-family: var(--p-font);
+  font-size: 0.875rem;
+  color: var(--p-text);
+  background: var(--p-bg);
+  border: 1px solid var(--p-divider);
+  border-radius: var(--p-radius);
+  outline: none;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+}
+[data-field-control] input[type="text"]:hover,
+[data-field-control] input[type="number"]:hover {
+  border-color: rgba(47, 43, 61, 0.4);
+}
+[data-field-control] input[type="text"]:focus,
+[data-field-control] input[type="number"]:focus {
+  border-color: var(--p-primary);
+  box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.16);
+}
+
+[data-field-control] input[type="range"] {
+  width: 100%;
+  accent-color: var(--p-primary);
+  cursor: pointer;
+}
+
+/* ── Select ──────────────────────────────────────────────────── */
+[data-field-control] select {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  font-family: var(--p-font);
+  font-size: 0.875rem;
+  color: var(--p-text);
+  background: var(--p-bg);
+  border: 1px solid var(--p-divider);
+  border-radius: var(--p-radius);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 150ms;
+}
+[data-field-control] select:hover {
+  border-color: rgba(47, 43, 61, 0.4);
+}
+[data-field-control] select:focus {
+  border-color: var(--p-primary);
+  box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.16);
+}
+
+/* ── Checkbox ────────────────────────────────────────────────── */
+[data-field-control] input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--p-primary);
+  cursor: pointer;
+}
+
+/* ── Combobox option buttons ─────────────────────────────────── */
+[data-option] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-family: var(--p-font);
+  font-size: 0.8125rem;
+  color: var(--p-text);
+  background: var(--p-bg);
+  border: 1px solid var(--p-divider);
+  border-radius: 20px;
+  cursor: pointer;
+  transition:
+    background 150ms,
+    border-color 150ms,
+    color 150ms;
+}
+[data-option]:hover {
+  background: var(--p-hover);
+  border-color: rgba(47, 43, 61, 0.3);
+}
+[data-option][data-selected="true"] {
+  color: #fff;
+  background: var(--p-primary);
+  border-color: var(--p-primary);
+}
+[data-option][data-selected="true"]:hover {
+  background: var(--p-primary-dk);
+  border-color: var(--p-primary-dk);
+}
+
+/* ── Combo images ────────────────────────────────────────────── */
+[data-combo-image] {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 2px;
+}

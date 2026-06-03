@@ -2,7 +2,8 @@ import type { FormNode } from '@/lib/form/schema'
 
 import * as u from './u'
 import * as f from './f'
-import * as cmb from './cmb'
+import * as l from './l'
+import * as cmb from "./cmb";
 
 /**
  * A configurator dataset: the form schema, the shape definition, and the
@@ -29,8 +30,9 @@ export interface Dataset {
 export const datasets = {
   U: { form: u.form, shape: u.shape, formExpo: u.formExpo },
   F: { form: f.form, shape: f.shape, formExpo: f.formExpo },
-  CMB: { form: cmb.form, shape: cmb.shape, formExpo: cmb.formExpo }
-} satisfies Record<string, Dataset>
+  L: { form: l.form, shape: l.shape, formExpo: l.formExpo },
+  CMB: { form: cmb.form, shape: cmb.shape, formExpo: cmb.formExpo },
+} satisfies Record<string, Dataset>;
 
 export type DatasetId = keyof typeof datasets
 

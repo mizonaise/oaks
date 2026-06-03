@@ -57,7 +57,7 @@ export function ShapeViewer ({ shape, scopes }: Props) {
         bounds={bounds}
         globalVars={scopes.globalVars}
         selectedIndex={selectedIndex}
-        onSelect={setSelectedIndex}
+        onSelect={() => {}}
       />
     </div>
   )
