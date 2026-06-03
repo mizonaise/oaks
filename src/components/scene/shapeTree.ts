@@ -297,8 +297,21 @@ function distribute(slices: Slice[], total: number): number[] {
     remainder = total;
   }
 
+  // Fixed slices are laid out left-to-right and clamped to whatever space is
+  // still available: once the cumulative fixed size reaches `total`, later
+  // fixed slices collapse to 0 rather than spilling past the parent edge.
+  // (Without this, a chain group whose parent has collapsed to ~0 width would
+  // still emit its fixed-size article outside the parent — see the article
+  // designer zone cascade, where zones past the active count must vanish.)
+  let fixedCursor = 0;
   return slices.map((sl) => {
-    if (sl.size !== null) return dropFixed ? 0 : sl.size;
+    if (sl.size !== null) {
+      if (dropFixed) return 0;
+      const avail = Math.max(0, total - fixedCursor);
+      const placed = Math.min(sl.size, avail);
+      fixedCursor += placed;
+      return placed;
+    }
     return fillerShare(sl);
   });
 }
