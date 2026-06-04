@@ -23,11 +23,11 @@ const FACING_YAW: Record<string, number> = {
 export const ArticleInBox = memo(function ArticleInBox ({
   box,
   articleName,
-  isSelected
+  doorOpen
 }: {
   box: ShapeBox
   articleName: string
-  isSelected: boolean
+  doorOpen: boolean
 }) {
   const [res, setRes] = useState<ArticleData | null>(null)
 
@@ -81,7 +81,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
               {
                 name: articleName,
                 visibility: true,
-                isDoorOpen: isSelected,
+                isDoorOpen: doorOpen,
                 dimensions: { width, height: box.h, depth },
                 variables: box.vars as Record<string, string>
               }

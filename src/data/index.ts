@@ -1,9 +1,41 @@
-import type { FormNode } from '@/lib/form/schema'
+import type { FormNode } from "@/lib/form/schema";
 
-import * as u from './u'
-import * as f from './f'
-import * as l from './l'
+import * as u from "./u";
+import * as f from "./f";
+import * as l from "./l";
 import * as cmb from "./cmb";
+import { version } from "os";
+
+const shapes = {
+  f: {
+    name: "OAKSOME_SHAPE_FR",
+    form: {
+      name: "Shape_F_V07",
+      version: "1.0.0",
+    },
+  },
+  l: {
+    name: "OAKSOME_SHAPE_L",
+    form: {
+      name: "Shape_L_V02",
+      version: "1.0.0",
+    },
+  },
+  u: {
+    name: "OAKSOME_SHAPE_U_TEST_V1",
+    form: {
+      name: "Shape_U_V05",
+      version: "1.0.0",
+    },
+  },
+  cmb: {
+    name: "OAKSOME_SHAPE_CMB_1111",
+    form: {
+      name: "Shape_CMB_V03",
+      version: "1.0.0",
+    },
+  },
+};
 
 /**
  * A configurator dataset: the form schema, the shape definition, and the
@@ -15,16 +47,16 @@ import * as cmb from "./cmb";
  * left loose here.
  */
 export interface Dataset {
-  form: FormNode
+  form: FormNode;
   shape: {
-    width?: unknown
-    depth?: unknown
-    height?: unknown
-    zone?: unknown
-    variables?: Record<string, unknown>
-    [key: string]: unknown
-  }
-  formExpo: unknown
+    width?: unknown;
+    depth?: unknown;
+    height?: unknown;
+    zone?: unknown;
+    variables?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+  formExpo: unknown;
 }
 
 export const datasets = {
@@ -34,22 +66,22 @@ export const datasets = {
   CMB: { form: cmb.form, shape: cmb.shape, formExpo: cmb.formExpo },
 } satisfies Record<string, Dataset>;
 
-export type DatasetId = keyof typeof datasets
+export type DatasetId = keyof typeof datasets;
 
-export const datasetIds = Object.keys(datasets) as DatasetId[]
+export const datasetIds = Object.keys(datasets) as DatasetId[];
 
-export function getDataset (id: string): Dataset | undefined {
-  return (datasets as Record<string, Dataset>)[id]
+export function getDataset(id: string): Dataset | undefined {
+  return (datasets as Record<string, Dataset>)[id];
 }
 
 /** The shape's declared name, if any, for display in lists. */
-export function getDatasetName (id: DatasetId): string | undefined {
-  const name = datasets[id].shape.name
-  return typeof name === 'string' ? name : undefined
+export function getDatasetName(id: DatasetId): string | undefined {
+  const name = datasets[id].shape.name;
+  return typeof name === "string" ? name : undefined;
 }
 
 /** Summary rows for listing every available shape (e.g. the landing page). */
-export const datasetList = datasetIds.map(id => ({
+export const datasetList = datasetIds.map((id) => ({
   id,
-  name: getDatasetName(id) ?? id
-}))
+  name: getDatasetName(id) ?? id,
+}));

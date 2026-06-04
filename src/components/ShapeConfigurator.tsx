@@ -81,7 +81,13 @@ function setNested (
   return out
 }
 
-export function ShapeConfigurator ({ dataset }: { dataset: Dataset }) {
+export function ShapeConfigurator ({
+  dev = false,
+  dataset
+}: {
+  dev?: boolean
+  dataset: Dataset
+}) {
   const { shape, formExpo } = dataset
 
   // Register this dataset's descriptors/cps BEFORE any child runs walkZone /
@@ -161,23 +167,21 @@ export function ShapeConfigurator ({ dataset }: { dataset: Dataset }) {
     <div className='flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black min-h-screen'>
       <main className='flex flex-1 w-full gap-6 p-6 bg-white dark:bg-black lg:flex-row flex-col'>
         <div className='flex flex-col gap-4 lg:flex-2 min-w-0'>
-          <ShapeViewer shape={shape} scopes={resolvedScopes} />
-          <Panel
-            title='flated variables (seed + form overrides) used in form'
-            data={flatForForm}
-          />
-          <Panel
-            title='variables (seed + form overrides) used in shape resolution'
-            data={resolvedScopes}
-          />
+          <ShapeViewer shape={shape} scopes={resolvedScopes} dev={dev} />
+          {dev && (
+            <>
+              <Panel
+                title='flated variables (seed + form overrides) used in form'
+                data={flatForForm}
+              />
+              <Panel
+                title='variables (seed + form overrides) used in shape resolution'
+                data={resolvedScopes}
+              />
+            </>
+          )}
         </div>
         <aside className='lg:flex-1 lg:max-w-md min-w-0 overflow-auto'>
-          {/* <FormRenderer
-            schema={form}
-            variables={flatForForm}
-            onVariableChange={handleChangeVariables}
-            resolveScope={resolveScope}
-          /> */}
           <ConfiguratorPreviewDialog
             onVariableSetChange={vars => {
               // console.log('onVariableSetChange', vars)
@@ -185,6 +189,8 @@ export function ShapeConfigurator ({ dataset }: { dataset: Dataset }) {
                 handleChangeVariables(name, value)
               }
             }}
+            imageSuffix='/public'
+            imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
             configuratorJson={formExpo as unknown as ExportedConfigurator}
           />
         </aside>

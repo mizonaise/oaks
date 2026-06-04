@@ -23,12 +23,14 @@ export const BoxItem = memo(function BoxItem ({
   box,
   isSelected,
   onSelect,
-  globalVars
+  globalVars,
+  doorOpen
 }: {
   box: ShapeBox
   isSelected: boolean
   onSelect: (index: string) => void
   globalVars: FlatVars
+  doorOpen: boolean
 }) {
   const inset = box.isArticle ? 2 : 0
   const sx = Math.max((box.w - inset) * MM, 0.0001)
@@ -76,7 +78,7 @@ export const BoxItem = memo(function BoxItem ({
         <ArticleInBox
           box={box}
           articleName={articleName}
-          isSelected={isSelected}
+          doorOpen={doorOpen || isSelected}
         />
       )}
     </group>

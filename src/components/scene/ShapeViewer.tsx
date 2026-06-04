@@ -18,6 +18,8 @@ type Props = {
     globalVars: FlatVars
     namespaces: Record<string, FlatVars>
   }
+  /** Dev mode also shows the box Hierarchy alongside the canvas. */
+  dev?: boolean
 }
 
 function readDim (raw: unknown, vars: FlatVars, fallback: number): number {
@@ -28,7 +30,7 @@ function readDim (raw: unknown, vars: FlatVars, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
-export function ShapeViewer ({ shape, scopes }: Props) {
+export function ShapeViewer ({ shape, scopes, dev = false }: Props) {
   const { boxes, bounds } = useMemo(() => {
     const { globalVars, namespaces } = scopes
     const w = readDim(shape.width, globalVars, 6000)
@@ -46,12 +48,18 @@ export function ShapeViewer ({ shape, scopes }: Props) {
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null)
 
   return (
-    <div className='grid gap-3 sm:grid-cols-[18rem_1fr]'>
-      <Hierarchy
-        boxes={boxes}
-        selectedIndex={selectedIndex}
-        onSelect={setSelectedIndex}
-      />
+    <div
+      className={
+        dev ? 'grid gap-3 sm:grid-cols-[18rem_1fr]' : 'grid gap-3'
+      }
+    >
+      {dev && (
+        <Hierarchy
+          boxes={boxes}
+          selectedIndex={selectedIndex}
+          onSelect={setSelectedIndex}
+        />
+      )}
       <Shape3D
         boxes={boxes}
         bounds={bounds}

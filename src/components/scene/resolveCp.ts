@@ -11,7 +11,8 @@ const SURFACES = surfaces as Record<
   { name: string; render: string; thickness: number }
 >;
 
-const TEXTURE_BASE = "https://fs.tecnibo.com/files/shared/finish_2";
+const TEXTURE_BASE =
+  "https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/copy_2%2F";
 
 export type ResolvedCp = {
   matName: string | null;
@@ -41,8 +42,10 @@ export function resolveCp(cpName: string, vars: FlatVars): ResolvedCp | null {
     surfKey && surfKey !== "NO_SURF" ? (SURFACES[surfKey] ?? null) : null;
   const thickness = (mat?.thickness ?? 0) + (surf?.thickness ?? 0);
   // Prefer surface render when present, else material render.
-  const textureName = surf?.name ?? mat?.name ?? null;
-  const textureUrl = textureName ? `${TEXTURE_BASE}/${textureName}.jpg` : null;
+  const textureName = surf?.render ?? mat?.render ?? null;
+  const textureUrl = textureName
+    ? `${TEXTURE_BASE}${textureName}.jpg/public`
+    : null;
   return {
     matName: mat?.name ?? null,
     surfName: surf?.name ?? null,

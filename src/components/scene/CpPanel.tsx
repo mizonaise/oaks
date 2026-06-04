@@ -36,10 +36,13 @@ export const CpPanel = memo(function CpPanel ({
   return (
     <mesh position={pos} castShadow receiveShadow>
       <boxGeometry args={args} />
+      {/* Distinct keys force a fresh material when the texture finishes loading.
+          Without them R3F reuses the no-map material instance and just assigns
+          `map`, but the shader was compiled without USE_MAP so it renders black. */}
       {tex ? (
-        <meshStandardMaterial map={tex} />
+        <meshStandardMaterial key='mapped' map={tex} />
       ) : (
-        <meshStandardMaterial color='#888' />
+        <meshStandardMaterial key='plain' color='#888' />
       )}
     </mesh>
   )
