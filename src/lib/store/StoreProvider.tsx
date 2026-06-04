@@ -1,15 +1,12 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Provider } from "react-redux";
-import { makeStore, type AppStore } from "./index";
+import { makeStore } from "./index";
 
 export default function StoreProvider({ children }: { children: ReactNode }) {
-  // Create the store once per request/client instance
-  const storeRef = useRef<AppStore | null>(null);
-  if (!storeRef.current) {
-    storeRef.current = makeStore();
-  }
+  // Create the store once per client instance (lazy initializer runs once).
+  const [store] = useState(makeStore);
 
-  return <Provider store={storeRef.current}>{children}</Provider>;
+  return <Provider store={store}>{children}</Provider>;
 }

@@ -15,5 +15,5 @@ export default async function ShapePage ({
   const dataset = getDataset(id)
   if (!dataset) notFound()
 
-  return <ShapeConfigurator dataset={dataset} />
+  return <ShapeConfigurator id={id} dataset={dataset} />
 }

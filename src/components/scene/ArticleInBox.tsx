@@ -1,11 +1,9 @@
 'use client'
 
-import { memo, useEffect, useState } from 'react'
+import { memo } from 'react'
 import { type Box as ShapeBox } from './shapeTree'
-import {
-  ArticleData,
-  ArticleGroupDesigner
-} from '@processandtools/rp-article-designer'
+import { ArticleGroupDesigner } from '@processandtools/rp-article-designer'
+import { useGetArticleQuery } from '@/lib/store/api/tecniboApi'
 
 const MM = 1
 const SCALE = 0.001
@@ -29,33 +27,11 @@ export const ArticleInBox = memo(function ArticleInBox ({
   articleName: string
   doorOpen: boolean
 }) {
-  const [res, setRes] = useState<ArticleData | null>(null)
+  const { data: res, isError, error } = useGetArticleQuery(articleName)
 
-  useEffect(() => {
-    setRes(null)
-    const resolveArticleName = async () => {
-      const response = await fetch(
-        `https://backend.tecnibo.com/api/rp-engine/article-data/${articleName}?forcerefresh=true`,
-        {
-          method: 'GET',
-          cache: 'no-store',
-          headers: {
-            Accept: 'application/json'
-          }
-        }
-      )
-
-      if (response.ok) {
-        const data = await response.json()
-        // console.log('fetched article data', data)
-        setRes(data)
-      } else {
-        console.error('Failed to fetch article data:', response.statusText)
-      }
-    }
-
-    resolveArticleName()
-  }, [articleName])
+  if (isError) {
+    console.error('Failed to fetch article data:', error)
+  }
 
   // console.log('render ArticleInBox', { articleName, vars: box.vars })
 

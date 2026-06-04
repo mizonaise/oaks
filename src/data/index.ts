@@ -4,12 +4,17 @@ import * as u from "./u";
 import * as f from "./f";
 import * as l from "./l";
 import * as cmb from "./cmb";
-import { version } from "os";
 
-const shapes = {
+/**
+ * Maps each dataset key to its remote identifiers:
+ *  - `name`    → shape name for `GET https://api.tecnibo.com/shape/<name>`
+ *  - `form.id` → form id for the configurator `/tree` endpoint
+ */
+export const shapes = {
   f: {
     name: "OAKSOME_SHAPE_FR",
     form: {
+      id: "107",
       name: "Shape_F_V07",
       version: "1.0.0",
     },
@@ -17,6 +22,7 @@ const shapes = {
   l: {
     name: "OAKSOME_SHAPE_L",
     form: {
+      id: "116",
       name: "Shape_L_V02",
       version: "1.0.0",
     },
@@ -24,6 +30,7 @@ const shapes = {
   u: {
     name: "OAKSOME_SHAPE_U_TEST_V1",
     form: {
+      id: "114",
       name: "Shape_U_V05",
       version: "1.0.0",
     },
@@ -31,11 +38,33 @@ const shapes = {
   cmb: {
     name: "OAKSOME_SHAPE_CMB_1111",
     form: {
+      id: "115",
       name: "Shape_CMB_V03",
       version: "1.0.0",
     },
   },
 };
+
+export type ShapeKey = keyof typeof shapes;
+
+/** Remote identifiers for a shape: its shape name and form id. */
+export interface ShapeRefs {
+  /** Shape name for `GET https://api.tecnibo.com/shape/<name>`. */
+  shapeName: string;
+  /** Form id for the configurator `/tree` endpoint. */
+  formId: string;
+}
+
+/**
+ * Resolve a dataset id (e.g. "F", "L") or shape key (e.g. "f", "l") to its
+ * remote shape name and form id. Returns undefined for unknown ids.
+ */
+export function getShapeRefs(id: string): ShapeRefs | undefined {
+  const key = id.toLowerCase() as ShapeKey;
+  const entry = shapes[key];
+  if (!entry) return undefined;
+  return { shapeName: entry.name, formId: entry.form.id };
+}
 
 /**
  * A configurator dataset: the form schema, the shape definition, and the

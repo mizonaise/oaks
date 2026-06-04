@@ -1,12 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
-import appReducer from "./slices/appSlice";
+import { tecniboApi } from "./api/tecniboApi";
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
-      app: appReducer,
+      [tecniboApi.reducerPath]: tecniboApi.reducer,
       // Add more reducers here
     },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(tecniboApi.middleware),
   });
 };
 

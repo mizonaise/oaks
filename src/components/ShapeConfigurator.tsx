@@ -6,6 +6,11 @@ import { resolveVariables } from '@/lib/form/variables'
 import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
 import type { Dataset } from '@/data'
+import { getShapeRefs } from '@/data'
+import {
+  useGetShapeQuery,
+  useGetFormExpoQuery
+} from '@/lib/store/api/tecniboApi'
 
 import {
   ConfiguratorPreviewDialog,
@@ -83,12 +88,30 @@ function setNested (
 
 export function ShapeConfigurator ({
   dev = false,
+  id,
   dataset
 }: {
   dev?: boolean
+  id: string
   dataset: Dataset
 }) {
-  const { shape, formExpo } = dataset
+  const refs = getShapeRefs(id)
+
+  // Fetch the shape from the remote shape endpoint by its declared name
+  // (e.g. OAKSOME_SHAPE_L). While loading or on error, fall back to the local
+  // dataset's shape so the configurator always has something to render.
+  const { data: remoteShape } = useGetShapeQuery(refs?.shapeName ?? '', {
+    skip: !refs?.shapeName
+  })
+  const shape = (remoteShape ?? dataset.shape) as Dataset['shape']
+
+  // Fetch the exported configurator from the form `/tree` endpoint by its id
+  // (e.g. 107). Falls back to the local dataset's `formExpo` while loading or
+  // on error (e.g. the endpoint is auth-gated).
+  const { data: remoteFormExpo } = useGetFormExpoQuery(refs?.formId ?? '', {
+    skip: !refs?.formId
+  })
+  const formExpo = remoteFormExpo?.data ?? dataset.formExpo
 
   // Register this dataset's descriptors/cps BEFORE any child runs walkZone /
   // cp resolution. Calling synchronously in the render body (not inside a
