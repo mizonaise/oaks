@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { ShapeConfigurator } from '@/components/ShapeConfigurator'
-import { datasetIds, getDataset } from '@/data'
+import { datasetIds, getShapeRefs } from '@/data'
 
 export function generateStaticParams () {
   return datasetIds.map(id => ({ id }))
@@ -12,8 +12,7 @@ export default async function ShapePage ({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const dataset = getDataset(id)
-  if (!dataset) notFound()
+  if (!getShapeRefs(id)) notFound()
 
-  return <ShapeConfigurator dev={true} id={id} dataset={dataset} />
+  return <ShapeConfigurator dev={true} id={id} />
 }

@@ -5,17 +5,14 @@ import { ShapeViewer } from '@/components/scene/ShapeViewer'
 import { resolveVariables } from '@/lib/form/variables'
 import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
-import type { Dataset } from '@/data'
+import type { ShapeData } from '@/lib/shape/schema'
 import { getShapeRefs } from '@/data'
 import {
   useGetShapeQuery,
   useGetFormExpoQuery
 } from '@/lib/store/api/tecniboApi'
 
-import {
-  ConfiguratorPreviewDialog,
-  type ExportedConfigurator
-} from '@oak-some/configurator-previewer'
+import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
 
 /**
  * Inverse of `setNested`: `{ global: { X: 1 }, A: { B: 2 } }` → `{ X: 1, "A.B": 2 }`.
@@ -88,35 +85,51 @@ function setNested (
 
 export function ShapeConfigurator ({
   dev = false,
-  id,
-  dataset
+  id
 }: {
   dev?: boolean
   id: string
-  dataset: Dataset
 }) {
   const refs = getShapeRefs(id)
 
   // Fetch the shape from the remote shape endpoint by its declared name
-  // (e.g. OAKSOME_SHAPE_L). While loading or on error, fall back to the local
-  // dataset's shape so the configurator always has something to render.
-  const { data: remoteShape } = useGetShapeQuery(refs?.shapeName ?? '', {
+  // (e.g. OAKSOME_SHAPE_L).
+  const {
+    data: remoteShape,
+    isLoading: shapeLoading,
+    isError: shapeError,
+    error: shapeErrorObj
+  } = useGetShapeQuery(refs?.shapeName ?? '', {
     skip: !refs?.shapeName
   })
-  const shape = (remoteShape ?? dataset.shape) as Dataset['shape']
 
   // Fetch the exported configurator from the form `/tree` endpoint by its id
-  // (e.g. 107). Falls back to the local dataset's `formExpo` while loading or
-  // on error (e.g. the endpoint is auth-gated).
-  const { data: remoteFormExpo } = useGetFormExpoQuery(refs?.formId ?? '', {
+  // (e.g. 107).
+  const {
+    data: remoteFormExpo,
+    isLoading: formLoading,
+    isError: formError,
+    error: formErrorObj
+  } = useGetFormExpoQuery(refs?.formId ?? '', {
     skip: !refs?.formId
   })
-  const formExpo = remoteFormExpo?.data ?? dataset.formExpo
 
-  // Register this dataset's descriptors/cps BEFORE any child runs walkZone /
-  // cp resolution. Calling synchronously in the render body (not inside a
+  // Stable reference: the `?? {}` fallback would otherwise mint a fresh object
+  // each render (while the shape is still loading), retriggering every useMemo
+  // below it.
+  const shape = useMemo(
+    () =>
+      (remoteShape ?? {}) as ShapeData & {
+        variables?: Record<string, unknown>
+      },
+    [remoteShape]
+  )
+  const formExpo = remoteFormExpo?.data
+
+  // Register the remote shape's descriptors/cps BEFORE any child runs walkZone
+  // / cp resolution. Calling synchronously in the render body (not inside a
   // useMemo) avoids any chance of useMemo cache + Strict-Mode replay leaving
-  // the registry pointed at the previous dataset.
+  // the registry pointed at the previous shape.
   setShapeData(shape)
 
   // Nested-by-dots updates emitted by the form (bare names → under "global",
@@ -186,6 +199,39 @@ export function ShapeConfigurator ({
     return { globalVars, namespaces }
   }, [mergedView])
 
+  // Unknown id: there's no shape name or form id to fetch.
+  if (!refs) {
+    return <StatusScreen title='Unknown shape' message={`No shape is registered for "${id}".`} />
+  }
+
+  const isLoading = shapeLoading || formLoading
+  if (isLoading) {
+    return <StatusScreen title='Just a moment…' message='Getting your configurator ready.' />
+  }
+
+  if (shapeError || formError) {
+    const detail = errorMessage(shapeError ? shapeErrorObj : formErrorObj)
+    return (
+      <StatusScreen
+        title='Failed to load'
+        message={shapeError ? 'Could not load the shape.' : 'Could not load the configurator.'}
+        detail={detail}
+        tone='error'
+      />
+    )
+  }
+
+  // Queries resolved without error but returned nothing usable.
+  if (!remoteShape || !formExpo) {
+    return (
+      <StatusScreen
+        title='Nothing to show'
+        message='The shape or configurator response was empty.'
+        tone='error'
+      />
+    )
+  }
+
   return (
     <div className='flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black min-h-screen'>
       <main className='flex flex-1 w-full gap-6 p-6 bg-white dark:bg-black lg:flex-row flex-col'>
@@ -214,10 +260,56 @@ export function ShapeConfigurator ({
             }}
             imageSuffix='/public'
             imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
-            configuratorJson={formExpo as unknown as ExportedConfigurator}
+            configuratorJson={formExpo}
           />
         </aside>
       </main>
+    </div>
+  )
+}
+
+/** Best-effort human-readable message from an RTK Query error. */
+function errorMessage (err: unknown): string | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  const e = err as { status?: unknown; error?: unknown; data?: unknown }
+  if (typeof e.error === 'string') return e.error
+  if (e.status !== undefined) {
+    const body =
+      typeof e.data === 'string' ? e.data : e.data ? JSON.stringify(e.data) : ''
+    return `HTTP ${String(e.status)}${body ? ` — ${body}` : ''}`
+  }
+  return undefined
+}
+
+/** Full-screen loading / error / empty state for the configurator. */
+function StatusScreen ({
+  title,
+  message,
+  detail,
+  tone = 'info'
+}: {
+  title: string
+  message: string
+  detail?: string
+  tone?: 'info' | 'error'
+}) {
+  return (
+    <div className='flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black min-h-screen p-6 text-center'>
+      <h2
+        className={`text-lg font-semibold ${
+          tone === 'error'
+            ? 'text-red-600 dark:text-red-400'
+            : 'text-zinc-900 dark:text-zinc-100'
+        }`}
+      >
+        {title}
+      </h2>
+      <p className='mt-1 text-sm text-zinc-500 dark:text-zinc-400'>{message}</p>
+      {detail && (
+        <pre className='mt-3 max-w-md overflow-auto rounded bg-zinc-100 dark:bg-zinc-900 p-3 text-xs text-zinc-600 dark:text-zinc-400'>
+          {detail}
+        </pre>
+      )}
     </div>
   )
 }

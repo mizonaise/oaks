@@ -51,7 +51,13 @@ export const tecniboApi = createApi({
       { message: string; data: ExportedConfigurator },
       string
     >({
-      query: (formId) => `/api/form-expo/${formId}/export`,
+      query: (formId) => ({
+        url: `/api/form-expo/${formId}/export`,
+        // headers: {
+        //   "X-Service-Token":
+        //     "215440b1bc77e95bcd39ca011d50fdec994edd3a5284abab065dd642ad2ae1cd",
+        // },
+      }),
     }),
   }),
 });
