@@ -274,41 +274,63 @@ function extractSides(node: Node, vars: FlatVars): BoxSides | undefined {
 }
 
 function distribute(slices: Slice[], total: number): number[] {
-  // First attempt: honor fixed slices and split remainder by filler weights.
-  // If any filler with a `minSize` would receive less than that minimum,
-  // drop the fixed slices entirely and let fillers take the whole space.
-  let fixedSum = slices.reduce((s, sl) => s + (sl.size ?? 0), 0);
-  const weightSum = slices.reduce(
-    (s, sl) => s + (sl.size === null ? sl.weight : 0),
-    0,
-  );
-  let remainder = Math.max(0, total - fixedSum);
-  const fillerShare = (sl: Slice) =>
-    weightSum > 0 ? (remainder * sl.weight) / weightSum : 0;
+  // Fixed slices are MINIMUMS that grow: they take at least their declared
+  // size, and any space a filler can't claim is added back to them. A filler
+  // with a `minSize` only "activates" if its weighted share of the leftover
+  // meets that minimum; otherwise it collapses to 0 and its share is absorbed
+  // by the fixed slices (split in proportion to their declared size).
+  //
+  // `2300mm:1+400mm` in total 2551 → leftover 251 < 400, so the filler is
+  // inactive and the 251 goes to the fixed slice → [2551, 0].
+  // The same spec in total 3000 → leftover 700 ≥ 400, filler keeps it →
+  // [2300, 700].
+  const fixedSum = slices.reduce((s, sl) => s + (sl.size ?? 0), 0);
 
-  const minViolated = slices.some(
-    (sl) =>
-      sl.size === null && sl.minSize != null && fillerShare(sl) < sl.minSize,
-  );
-  let dropFixed = false;
-  if (minViolated) {
-    dropFixed = true;
-    fixedSum = 0;
-    remainder = total;
+  // Decide which fillers are active. A filler with no minSize is always
+  // active; one with a minSize is active only when its share of the leftover
+  // (computed among the currently-active fillers) meets the minimum. Dropping
+  // a filler frees space for the rest, which can in turn push another below
+  // its minimum — so iterate until the active set is stable.
+  const fillers = slices.filter((sl) => sl.size === null);
+  const active = new Set(fillers);
+  for (;;) {
+    const leftover = Math.max(0, total - fixedSum);
+    const weightSum = [...active].reduce((s, sl) => s + sl.weight, 0);
+    const below = [...active].find(
+      (sl) =>
+        sl.minSize != null &&
+        weightSum > 0 &&
+        (leftover * sl.weight) / weightSum < sl.minSize,
+    );
+    if (!below) break;
+    active.delete(below);
+    if (active.size === 0) break;
   }
 
+  const leftover = Math.max(0, total - fixedSum);
+  const activeWeight = [...active].reduce((s, sl) => s + sl.weight, 0);
+  const fillerShare = (sl: Slice) =>
+    active.has(sl) && activeWeight > 0
+      ? (leftover * sl.weight) / activeWeight
+      : 0;
+
+  // Space the inactive fillers couldn't claim is absorbed by the fixed slices,
+  // distributed in proportion to their declared size.
+  const claimed = [...active].reduce((s, sl) => s + fillerShare(sl), 0);
+  const absorbed = Math.max(0, leftover - claimed);
+
   // Fixed slices are laid out left-to-right and clamped to whatever space is
-  // still available: once the cumulative fixed size reaches `total`, later
-  // fixed slices collapse to 0 rather than spilling past the parent edge.
-  // (Without this, a chain group whose parent has collapsed to ~0 width would
-  // still emit its fixed-size article outside the parent — see the article
-  // designer zone cascade, where zones past the active count must vanish.)
+  // still available: once the cumulative size reaches `total`, later fixed
+  // slices collapse to 0 rather than spilling past the parent edge. (Without
+  // this, a chain group whose parent has collapsed to ~0 width would still
+  // emit its fixed-size article outside the parent — see the article designer
+  // zone cascade, where zones past the active count must vanish.)
   let fixedCursor = 0;
   return slices.map((sl) => {
     if (sl.size !== null) {
-      if (dropFixed) return 0;
+      const grown = fixedSum > 0 ? sl.size + (absorbed * sl.size) / fixedSum : 0;
       const avail = Math.max(0, total - fixedCursor);
-      const placed = Math.min(sl.size, avail);
+      const placed = Math.min(grown, avail);
       fixedCursor += placed;
       return placed;
     }
