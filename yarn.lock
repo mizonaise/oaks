@@ -746,12 +746,12 @@
   resolved "https://registry.yarnpkg.com/@nolyfill/is-core-module/-/is-core-module-1.0.39.tgz#3dc35ba0f1e66b403c00b39344f870298ebb1c8e"
   integrity sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==
 
-"@oak-some/configurator-previewer@^1.3.6":
-  version "1.3.6"
-  resolved "https://npm.pkg.github.com/download/@oak-some/configurator-previewer/1.3.6/5bb257d575e423ac9f2208eeb31c3726aafef409#5bb257d575e423ac9f2208eeb31c3726aafef409"
-  integrity sha512-57uCZgKqVPOv9MRhyouEQw1pstDiqKF2PR2TkWGIvn6eA0N1q5SReuXjDRyivgHXiHgf8tlv214QTK4LlWHogQ==
+"@oak-some/configurator-previewer@^1.3.9":
+  version "1.3.9"
+  resolved "https://npm.pkg.github.com/download/@oak-some/configurator-previewer/1.3.9/9a90a949bd4b4a7e2337ec20b38e4e57924897ac#9a90a949bd4b4a7e2337ec20b38e4e57924897ac"
+  integrity sha512-yYLm4KwjZOKzQru1SvfgpglVga8E+qx9DKoDqe2V2WGcYNhkfd8/AuIowVAcKkeT/z1Eki8tUPpUwzQC6C6Bxw==
 
-"@oak-some/special-kms@^1.0.1":
+"@oak-some/special-kms@^1.0.3":
   version "1.0.3"
   resolved "https://npm.pkg.github.com/download/@oak-some/special-kms/1.0.3/600c34e8c02fe50821e5893f2c8dcab917df470c#600c34e8c02fe50821e5893f2c8dcab917df470c"
   integrity sha512-1pALOEKeRzYZzmSiE1/7FTmpPlhY5ietaXtvPPbVG5TkEECVZuAhnFQdDlcVnaLKJGZjsCVKwN+sXbMbj5aOZg==
@@ -765,15 +765,15 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.8.tgz#6b79032e760a0899cd4204710beede972a3a185f"
   integrity sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==
 
-"@processandtools/rp-article-designer@^1.0.70":
-  version "1.0.70"
-  resolved "https://registry.yarnpkg.com/@processandtools/rp-article-designer/-/rp-article-designer-1.0.70.tgz#bc01a470d9f8251ab48e6697385c9dda64aba266"
-  integrity sha512-snkZZBn6FJr0gw32RxMNfBcjiXIpf7YPXDx4seIkyPoyJ918/eoDsCb6UyimbG9zPgOdxfMF7WEumNfdJurYfw==
+"@processandtools/rp-article-designer@^1.0.71":
+  version "1.0.71"
+  resolved "https://registry.yarnpkg.com/@processandtools/rp-article-designer/-/rp-article-designer-1.0.71.tgz#383dd7a3c2906ed22e9e64f8e5f1f66a16061349"
+  integrity sha512-pDECsiE2qzL26O4+amiak2EaudA8YyWae6jSuzTVRdydGEJKIASwIEhUT1uG4PL5Ky5RmOs3JjGDNL+v7cxiag==
   dependencies:
     "@emotion/react" "^11.14.0"
     "@emotion/styled" "^11.14.1"
     "@mui/material" "^7.3.8"
-    "@oak-some/special-kms" "^1.0.1"
+    "@oak-some/special-kms" "^1.0.3"
     imos-linear-division "^0.1.3"
     mui "^0.0.1"
     react-is "^18.3.1"

@@ -43,6 +43,11 @@ export const ArticleInBox = memo(function ArticleInBox ({
   const width = sideways ? box.d : box.w
   const depth = sideways ? box.w : box.d
 
+  console.log('ArticleInBox', {
+    articleName,
+    vars: JSON.stringify(box.vars)
+  })
+
   return (
     <group rotation={[0, yaw, 0]}>
       <group
