@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FlatVars } from '@/lib/form/expr'
 import { evalExpr } from '@/lib/form/expr'
 import { Hierarchy } from './Hierarchy'
@@ -20,9 +20,11 @@ type Props = {
   }
   /** Dev mode also shows the box Hierarchy alongside the canvas. */
   dev?: boolean
+  /** When set, selects the box whose zone `name` matches (e.g. from goToZone). */
+  selectedName?: string | null
 }
 
-function readDim (raw: unknown, vars: FlatVars, fallback: number): number {
+export function readDim (raw: unknown, vars: FlatVars, fallback: number): number {
   if (typeof raw !== 'string') return fallback
   const expr = raw.replace(/(\s*mm)+\s*$/i, '').trim()
   if (/^-?\d+(?:\.\d+)?$/.test(expr)) return Number(expr)
@@ -30,7 +32,7 @@ function readDim (raw: unknown, vars: FlatVars, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
-export function ShapeViewer ({ shape, scopes, dev = false }: Props) {
+export function ShapeViewer ({ shape, scopes, dev = false, selectedName }: Props) {
   const { boxes, bounds } = useMemo(() => {
     const { globalVars, namespaces } = scopes
     const w = readDim(shape.width, globalVars, 6000)
@@ -47,10 +49,18 @@ export function ShapeViewer ({ shape, scopes, dev = false }: Props) {
 
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null)
 
+  // When a zone name is requested (e.g. via goToZone), select the first box
+  // whose name matches it. `null`/no match leaves the current selection alone.
+  useEffect(() => {
+    if (!selectedName) return
+    const match = boxes.find(b => b.name === selectedName)
+    if (match) setSelectedIndex(match.index)
+  }, [selectedName, boxes])
+
   return (
     <div
       className={
-        dev ? 'grid gap-3 sm:grid-cols-[18rem_1fr]' : 'grid gap-3'
+        dev ? 'grid gap-3 sm:grid-cols-[30rem_1fr]' : 'grid gap-3'
       }
     >
       {dev && (

@@ -5,6 +5,7 @@ import { ShapeViewer } from '@/components/scene/ShapeViewer'
 import { resolveVariables } from '@/lib/form/variables'
 import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
+import { buildShapeXml, downloadXml } from '@/lib/shape/xmlExport'
 import type { ShapeData } from '@/lib/shape/schema'
 import { getShapeRefs } from '@/data'
 import {
@@ -138,6 +139,10 @@ export function ShapeConfigurator ({
     {}
   )
 
+  // Zone name requested from the form (via a `goToZone` attribute). Drives the
+  // viewer to select the matching box by name.
+  const [selectedZone, setSelectedZone] = useState<string | null>(null)
+
   const handleChangeVariables = useCallback((name: string, value: unknown) => {
     setNestedUpdates(prev => {
       const current = readNested(prev, name)
@@ -199,14 +204,32 @@ export function ShapeConfigurator ({
     return { globalVars, namespaces }
   }, [mergedView])
 
+  // Export the live changes (nestedUpdates) as an OAKSOME ListBuilder XML,
+  // with one Set per article zone resolved from the shape tree.
+  const handleDownloadXml = useCallback(() => {
+    const name = refs?.shapeName ?? 'SHAPE'
+    const xml = buildShapeXml(nestedUpdates, name, shape, resolvedScopes)
+    downloadXml(`${name}_${Date.now()}.xml`, xml)
+  }, [nestedUpdates, refs, shape, resolvedScopes])
+
   // Unknown id: there's no shape name or form id to fetch.
   if (!refs) {
-    return <StatusScreen title='Unknown shape' message={`No shape is registered for "${id}".`} />
+    return (
+      <StatusScreen
+        title='Unknown shape'
+        message={`No shape is registered for "${id}".`}
+      />
+    )
   }
 
   const isLoading = shapeLoading || formLoading
   if (isLoading) {
-    return <StatusScreen title='Just a moment…' message='Getting your configurator ready.' />
+    return (
+      <StatusScreen
+        title='Just a moment…'
+        message='Getting your configurator ready.'
+      />
+    )
   }
 
   if (shapeError || formError) {
@@ -214,7 +237,11 @@ export function ShapeConfigurator ({
     return (
       <StatusScreen
         title='Failed to load'
-        message={shapeError ? 'Could not load the shape.' : 'Could not load the configurator.'}
+        message={
+          shapeError
+            ? 'Could not load the shape.'
+            : 'Could not load the configurator.'
+        }
         detail={detail}
         tone='error'
       />
@@ -236,7 +263,23 @@ export function ShapeConfigurator ({
     <div className='flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black min-h-screen'>
       <main className='flex flex-1 w-full gap-6 p-6 bg-white dark:bg-black lg:flex-row flex-col'>
         <div className='flex flex-col gap-4 lg:flex-2 min-w-0'>
-          <ShapeViewer shape={shape} scopes={resolvedScopes} dev={dev} />
+          {dev && (
+            <div className='flex items-center gap-3'>
+              <button
+                type='button'
+                onClick={handleDownloadXml}
+                className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
+              >
+                Download XML
+              </button>
+            </div>
+          )}
+          <ShapeViewer
+            shape={shape}
+            scopes={resolvedScopes}
+            dev={dev}
+            selectedName={selectedZone}
+          />
           {dev && (
             <>
               <Panel
@@ -257,6 +300,11 @@ export function ShapeConfigurator ({
               for (const [name, value] of Object.entries(vars)) {
                 handleChangeVariables(name, value)
               }
+            }}
+            onGoToZone={(zoneId: string) => {
+              // Select the box whose zone name matches in the viewer.
+              console.log('onGoToZone', zoneId)
+              setSelectedZone(zoneId)
             }}
             imageSuffix='/public'
             imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'

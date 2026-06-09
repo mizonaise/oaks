@@ -58,7 +58,11 @@ export function Shape3D ({
                 <BoxItem
                   key={`${b.index}-${i}`}
                   box={b}
-                  isSelected={selectedIndex === b.index}
+                  isSelected={
+                    selectedIndex != null &&
+                    (b.index === selectedIndex ||
+                      b.index.startsWith(`${selectedIndex}.`))
+                  }
                   onSelect={onSelect}
                   globalVars={globalVars}
                   doorOpen={doorsOpen}
