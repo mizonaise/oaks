@@ -28,7 +28,7 @@ export const shapes = {
     },
   },
   u: {
-    name: "OAKSOME_SHAPE_U_TEST_V1",
+    name: "OAKSOME_SHAPE_U",
     form: {
       id: "114",
       name: "Shape_U_V05",
