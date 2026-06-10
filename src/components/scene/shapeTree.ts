@@ -23,6 +23,12 @@ import { getDescriptors } from "@/lib/shape/registry";
 
 export type Axis = "x" | "y" | "z";
 
+/** Which of the box's three dimensions to include in a CP's label. */
+export type DimFlags = { w?: boolean; h?: boolean; d?: boolean };
+
+/** Map of CP name → which dimensions to show on panels using that CP. */
+export type DimCpConfig = Record<string, DimFlags>;
+
 export type BoxSides = {
   top?: string | null;
   bottom?: string | null;

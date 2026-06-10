@@ -2,7 +2,7 @@
 
 import { memo, useCallback } from 'react'
 import type { FlatVars } from '@/lib/form/expr'
-import { type Box as ShapeBox } from './shapeTree'
+import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import { resolveArticleName } from './resolveArticle'
 import { BoxEdges } from './BoxEdges'
 import { BoxPickMesh } from './BoxPickMesh'
@@ -24,13 +24,16 @@ export const BoxItem = memo(function BoxItem ({
   isSelected,
   onSelect,
   globalVars,
-  doorOpen
+  doorOpen,
+  dimCpConfig
 }: {
   box: ShapeBox
   isSelected: boolean
   onSelect: (index: string) => void
   globalVars: FlatVars
   doorOpen: boolean
+  /** Per-CP dimension config; `null` hides all labels. */
+  dimCpConfig?: DimCpConfig | null
 }) {
   const inset = box.isArticle ? 2 : 0
   const sx = Math.max((box.w - inset) * MM, 0.0001)
@@ -72,6 +75,7 @@ export const BoxItem = memo(function BoxItem ({
           sz={sz}
           sides={box.sides}
           vars={box.vars ?? globalVars}
+          dimCpConfig={dimCpConfig}
         />
       )}
       {box.isArticle && articleName && box.vars && (

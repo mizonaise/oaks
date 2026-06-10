@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 
-import { type Box as ShapeBox } from './shapeTree'
+import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import type { FlatVars } from '@/lib/form/expr'
 import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
@@ -16,17 +16,30 @@ type Props = {
   globalVars: FlatVars
   selectedIndex: string | null
   onSelect: (index: string) => void
+  /** Per-CP dimension config: panels whose `cpName` is a key here get an
+   *  in-scene label, with the `w`/`h`/`d` flags selecting which of the box's
+   *  dimensions to include. */
+  dimCpConfig?: DimCpConfig
 }
 
 const MM = 1
 const SCALE = 0.001
+
+const DEFAULT_DIM_CP_CONFIG: DimCpConfig = {
+  CP_1_FI_1000: { w: false, h: true, d: false },
+  CP_1_FI_1111: { w: false, h: true, d: false },
+  CP_1_BA_1000: { w: false, h: true, d: false },
+  CP_1_CM_0000: { w: false, h: true, d: false },
+  CP_1_TSI_1000_C1: { w: false, h: true, d: false }
+}
 
 export function Shape3D ({
   boxes,
   bounds,
   globalVars,
   selectedIndex,
-  onSelect
+  onSelect,
+  dimCpConfig = DEFAULT_DIM_CP_CONFIG
 }: Props) {
   const w = bounds.w * MM * SCALE
   const d = bounds.d * MM * SCALE
@@ -34,6 +47,7 @@ export function Shape3D ({
   const ox = -w / 2
   const oz = -d / 2
 
+  const [showDims, setShowDims] = useState(false)
   const [doorsOpen, setDoorsOpen] = useState(false)
 
   return (
@@ -46,6 +60,15 @@ export function Shape3D ({
         className='absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
       >
         <DoorIcon open={doorsOpen} />
+      </button>
+      <button
+        type='button'
+        onClick={() => setShowDims(open => !open)}
+        title={showDims ? 'Hide dimensions' : 'Show dimensions'}
+        aria-pressed={showDims}
+        className='absolute right-3 top-15 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+      >
+        <RulerIcon />
       </button>
       <Canvas shadows>
         <SceneLights />
@@ -66,6 +89,7 @@ export function Shape3D ({
                   onSelect={onSelect}
                   globalVars={globalVars}
                   doorOpen={doorsOpen}
+                  dimCpConfig={showDims ? dimCpConfig : null}
                 />
               )
             })}
@@ -80,6 +104,25 @@ export function Shape3D ({
         />
       </Canvas>
     </div>
+  )
+}
+
+// Ruler glyph for the dimensions toggle.
+function RulerIcon () {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <path d='M3 8.5 8.5 3 21 15.5 15.5 21z' />
+      <path d='M8 8l1.5 1.5M11 5l2 2M14 8l1.5 1.5M5 11l2 2' />
+    </svg>
   )
 }
 

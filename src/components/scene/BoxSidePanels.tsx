@@ -2,9 +2,9 @@
 
 import { memo, useMemo } from 'react'
 import type { FlatVars } from '@/lib/form/expr'
-import { type BoxSides as ShapeBoxSides } from './shapeTree'
+import { type BoxSides as ShapeBoxSides, type DimCpConfig } from './shapeTree'
 import { resolveCp } from './resolveCp'
-import { CpPanel, type FaceAxis } from './CpPanel'
+import { CpPanel, type FaceAxis, type DimMeasure } from './CpPanel'
 
 type FaceSpec = {
   cpRef: string | null | undefined
@@ -17,13 +17,16 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
   sy,
   sz,
   sides,
-  vars
+  vars,
+  dimCpConfig
 }: {
   sx: number
   sy: number
   sz: number
   sides: ShapeBoxSides
   vars: FlatVars
+  /** Per-CP dimension config; `null`/`undefined` hides all labels. */
+  dimCpConfig?: DimCpConfig | null
 }) {
   const faces = useMemo<FaceSpec[]>(
     () => [
@@ -42,6 +45,22 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
         if (!f.cpRef) return null
         const cp = resolveCp(f.cpRef, vars)
         if (!cp) return null
+        // Each enabled dimension becomes an arrowed measurement along its axis.
+        // w/h/d map to x/y/z; whichever axis is the panel's thickness uses the
+        // cp thickness (with CpPanel's 2mm floor), the others use the box span.
+        const cfg = f.cpRef ? dimCpConfig?.[f.cpRef] : undefined
+        const t = Math.max(cp.thickness, 2)
+        const dims: DimMeasure[] = cfg
+          ? (
+              [
+                ['w', 'x', f.axis === 'x' ? t : sx],
+                ['h', 'y', f.axis === 'y' ? t : sy],
+                ['d', 'z', f.axis === 'z' ? t : sz]
+              ] as Array<['w' | 'h' | 'd', FaceAxis, number]>
+            )
+              .filter(([dim]) => cfg[dim])
+              .map(([, axis, value]) => ({ axis, value: Math.round(value) }))
+          : []
         return (
           <CpPanel
             key={i}
@@ -51,6 +70,7 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
             sx={sx}
             sy={sy}
             sz={sz}
+            dims={dims}
           />
         )
       })}
