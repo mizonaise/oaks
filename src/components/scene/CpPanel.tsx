@@ -157,7 +157,7 @@ function DimArrow ({
           // -top, the others stay horizontal.
           style={{ transform: dimAxis === 'y' ? 'rotate(-90deg)' : undefined }}
         >
-          {value} mm
+          {value}
         </div>
       </Html>
     </group>
