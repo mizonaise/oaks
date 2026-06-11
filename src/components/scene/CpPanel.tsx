@@ -52,7 +52,7 @@ export const CpPanel = memo(function CpPanel ({
   }
   return (
     <>
-      <mesh position={pos}>
+      <mesh position={pos} castShadow receiveShadow>
         <boxGeometry args={args} />
         {/* Distinct keys force a fresh material when the texture finishes loading.
             Without them R3F reuses the no-map material instance and just assigns

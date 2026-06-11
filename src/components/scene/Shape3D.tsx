@@ -1,14 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { OrbitControls, OrthographicCamera } from '@react-three/drei'
+import {
+  OrbitControls,
+  OrthographicCamera,
+  PerspectiveCamera
+} from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 
 import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import type { FlatVars } from '@/lib/form/expr'
 import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
-// import { RoomWalls } from './RoomWalls'
+import { RoomWalls } from './RoomWalls'
 import { BoxItem } from './BoxItem'
 
 type Props = {
@@ -85,7 +89,8 @@ export function Shape3D ({
       </button>
       <Canvas shadows>
         <SceneLights />
-        <OrthographicCamera makeDefault position={[0, 0, 100]} zoom={100} />
+        <PerspectiveCamera makeDefault position={[0, h / 2, 100]} zoom={20} />
+        {/* <OrthographicCamera makeDefault position={[0, 0, 100]} zoom={100} /> */}
         <group position={[ox, 0, oz]}>
           <group scale={[SCALE, SCALE, SCALE]}>
             {boxes.map((b, i) => {
@@ -111,12 +116,16 @@ export function Shape3D ({
             })}
           </group>
 
-          {/* <RoomWalls w={w} h={h} d={d} globalVars={globalVars} /> */}
+          <RoomWalls w={w} h={h} d={d} globalVars={globalVars} />
           <GroundShadow w={w} d={d} />
         </group>
         <OrbitControls
           target={[0, h / 2, 0]}
           enableDamping
+          minDistance={10}
+          maxDistance={124}
+          minPolarAngle={Math.PI / 2}
+          maxPolarAngle={Math.PI / 2}
           dampingFactor={0.1}
         />
       </Canvas>
