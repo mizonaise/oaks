@@ -746,10 +746,10 @@
   resolved "https://registry.yarnpkg.com/@nolyfill/is-core-module/-/is-core-module-1.0.39.tgz#3dc35ba0f1e66b403c00b39344f870298ebb1c8e"
   integrity sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==
 
-"@oak-some/configurator-previewer@^1.4.2":
-  version "1.4.2"
-  resolved "https://npm.pkg.github.com/download/@oak-some/configurator-previewer/1.4.2/c21f18821bfb27f4878d91e8b0878aefd87e2239#c21f18821bfb27f4878d91e8b0878aefd87e2239"
-  integrity sha512-2rC18ZGpruvzxBpZjZUwzO51XVYtjFVBmbM/UPGaTosBOfimIQvihEPhEefzfulatwCFPGjix3leBtsqZVABOA==
+"@oak-some/configurator-previewer@^1.4.3":
+  version "1.4.3"
+  resolved "https://npm.pkg.github.com/download/@oak-some/configurator-previewer/1.4.3/b50d66ca63a5db5b782ce30fbfd862b47a741e6a#b50d66ca63a5db5b782ce30fbfd862b47a741e6a"
+  integrity sha512-jmXO3EhqhEfLxtcYmVfVnojWYTg8Yxum1KYPAEl+thnp7KdYYj4h1Fr0OmU7WX5NOFrU7sqJKBS57m7BGj5hYw==
 
 "@oak-some/special-kms@^1.0.3":
   version "1.0.3"
@@ -765,10 +765,10 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.8.tgz#6b79032e760a0899cd4204710beede972a3a185f"
   integrity sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==
 
-"@processandtools/rp-article-designer@^1.0.73":
-  version "1.0.73"
-  resolved "https://registry.yarnpkg.com/@processandtools/rp-article-designer/-/rp-article-designer-1.0.73.tgz#630b1d1d956de39423a5d04ac1d45a8e94c537f7"
-  integrity sha512-pGoVPcyp8OdKCxs258CRBgrLcumwkeDhM1Q1DSXqc6YhV24eptABVXfrTOCV/YceZbLGBw2NazbN/bnFS1m9wg==
+"@processandtools/rp-article-designer@^1.0.78":
+  version "1.0.78"
+  resolved "https://registry.yarnpkg.com/@processandtools/rp-article-designer/-/rp-article-designer-1.0.78.tgz#c00091a42e6375c4507885de7849868b6555c87d"
+  integrity sha512-56bh0Oq2MXylpLjiNKJGhjzOh0ERggKU1uE/PoZyKdBQQutuwnOP8bAlhMhkNg5OoqAIk/lvdM1x0m5j15xfuQ==
   dependencies:
     "@emotion/react" "^11.14.0"
     "@emotion/styled" "^11.14.1"

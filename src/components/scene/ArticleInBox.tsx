@@ -21,11 +21,17 @@ const FACING_YAW: Record<string, number> = {
 export const ArticleInBox = memo(function ArticleInBox ({
   box,
   articleName,
-  doorOpen
+  doorOpen,
+  showDims = false,
+  contrasted = false
 }: {
   box: ShapeBox
   articleName: string
   doorOpen: boolean
+  /** Toggles the article designer's dimension labels. */
+  showDims?: boolean
+  /** Toggles the article designer's contrast rendering. */
+  contrasted?: boolean
 }) {
   const { data: res, isError, error } = useGetArticleQuery(articleName)
 
@@ -48,6 +54,8 @@ export const ArticleInBox = memo(function ArticleInBox ({
     vars: JSON.stringify(box.vars)
   })
 
+  console.log('contrasted data', { contrasted })
+
   return (
     <group rotation={[0, yaw, 0]}>
       <group
@@ -62,6 +70,8 @@ export const ArticleInBox = memo(function ArticleInBox ({
               {
                 name: articleName,
                 visibility: true,
+                isContrasted: contrasted,
+                isDimensioned: showDims,
                 isDoorOpen: doorOpen,
                 dimensions: { width, height: box.h, depth },
                 variables: box.vars as Record<string, string>

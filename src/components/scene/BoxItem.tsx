@@ -21,19 +21,27 @@ function colorForBox (b: ShapeBox): string {
 
 export const BoxItem = memo(function BoxItem ({
   box,
+  dev = false,
   isSelected,
   onSelect,
   globalVars,
   doorOpen,
-  dimCpConfig
+  dimCpConfig,
+  showDims = false,
+  contrasted = false
 }: {
   box: ShapeBox
+  dev?: boolean
   isSelected: boolean
   onSelect: (index: string) => void
   globalVars: FlatVars
   doorOpen: boolean
   /** Per-CP dimension config; `null` hides all labels. */
   dimCpConfig?: DimCpConfig | null
+  /** Whether dimensioning is on (drives the article designer's labels). */
+  showDims?: boolean
+  /** Whether contrast rendering is on (drives the article designer's contrast). */
+  contrasted?: boolean
 }) {
   const inset = box.isArticle ? 2 : 0
   const sx = Math.max((box.w - inset) * MM, 0.0001)
@@ -54,20 +62,24 @@ export const BoxItem = memo(function BoxItem ({
 
   return (
     <group position={[cx, cy, cz]}>
-      <BoxEdges
-        sx={sx}
-        sy={sy}
-        sz={sz}
-        color={isSelected ? '#facc15' : colorForBox(box)}
-        selected={isSelected}
-      />
-      <BoxPickMesh
-        sx={sx}
-        sy={sy}
-        sz={sz}
-        selected={isSelected}
-        onSelect={handlePick}
-      />
+      {dev && (
+        <BoxEdges
+          sx={sx}
+          sy={sy}
+          sz={sz}
+          color={isSelected ? '#facc15' : colorForBox(box)}
+          selected={isSelected}
+        />
+      )}
+      {dev && (
+        <BoxPickMesh
+          sx={sx}
+          sy={sy}
+          sz={sz}
+          selected={isSelected}
+          onSelect={handlePick}
+        />
+      )}
       {box.sides && (
         <BoxSidePanels
           sx={sx}
@@ -83,6 +95,8 @@ export const BoxItem = memo(function BoxItem ({
           box={box}
           articleName={articleName}
           doorOpen={doorOpen || isSelected}
+          showDims={showDims}
+          contrasted={contrasted}
         />
       )}
     </group>

@@ -24,7 +24,11 @@ type Props = {
   selectedName?: string | null
 }
 
-export function readDim (raw: unknown, vars: FlatVars, fallback: number): number {
+export function readDim (
+  raw: unknown,
+  vars: FlatVars,
+  fallback: number
+): number {
   if (typeof raw !== 'string') return fallback
   const expr = raw.replace(/(\s*mm)+\s*$/i, '').trim()
   if (/^-?\d+(?:\.\d+)?$/.test(expr)) return Number(expr)
@@ -32,7 +36,12 @@ export function readDim (raw: unknown, vars: FlatVars, fallback: number): number
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
-export function ShapeViewer ({ shape, scopes, dev = false, selectedName }: Props) {
+export function ShapeViewer ({
+  shape,
+  scopes,
+  dev = false,
+  selectedName
+}: Props) {
   const { boxes, bounds } = useMemo(() => {
     const { globalVars, namespaces } = scopes
     const w = readDim(shape.width, globalVars, 6000)
@@ -58,11 +67,7 @@ export function ShapeViewer ({ shape, scopes, dev = false, selectedName }: Props
   }, [selectedName, boxes])
 
   return (
-    <div
-      className={
-        dev ? 'grid gap-3 sm:grid-cols-[30rem_1fr]' : 'grid gap-3'
-      }
-    >
+    <div className={dev ? 'grid gap-3 sm:grid-cols-[30rem_1fr]' : 'grid gap-3'}>
       {dev && (
         <Hierarchy
           boxes={boxes}
@@ -71,6 +76,7 @@ export function ShapeViewer ({ shape, scopes, dev = false, selectedName }: Props
         />
       )}
       <Shape3D
+        dev={dev}
         boxes={boxes}
         bounds={bounds}
         globalVars={scopes.globalVars}
