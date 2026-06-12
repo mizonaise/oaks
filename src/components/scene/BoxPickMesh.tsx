@@ -22,7 +22,7 @@ export const BoxPickMesh = memo(function BoxPickMesh ({
         onSelect()
       }}
     >
-      <boxGeometry args={[sx + 0.1, sy + 0.1, sz + 0.1]} />
+      <boxGeometry args={[sx + 10, sy + 10, sz + 10]} />
       <meshStandardMaterial
         color='#facc15'
         transparent

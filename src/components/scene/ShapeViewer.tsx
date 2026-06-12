@@ -61,9 +61,12 @@ export function ShapeViewer ({
   // When a zone name is requested (e.g. via goToZone), select the first box
   // whose name matches it. `null`/no match leaves the current selection alone.
   useEffect(() => {
-    if (!selectedName) return
-    const match = boxes.find(b => b.name === selectedName)
-    if (match) setSelectedIndex(match.index)
+    if (!selectedName) {
+      setSelectedIndex(null)
+    } else {
+      const match = boxes.find(b => b.name === selectedName)
+      if (match) setSelectedIndex(match.index)
+    }
   }, [selectedName, boxes])
 
   return (

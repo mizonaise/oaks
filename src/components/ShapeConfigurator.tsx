@@ -275,9 +275,9 @@ export function ShapeConfigurator ({
             </div>
           )}
           <ShapeViewer
+            dev={dev}
             shape={shape}
             scopes={resolvedScopes}
-            dev={dev}
             selectedName={selectedZone}
           />
           {dev && (
@@ -303,7 +303,6 @@ export function ShapeConfigurator ({
             }}
             onGoToZone={(zoneId: string) => {
               // Select the box whose zone name matches in the viewer.
-              console.log('onGoToZone', zoneId)
               setSelectedZone(zoneId)
             }}
             imageSuffix='/public'
