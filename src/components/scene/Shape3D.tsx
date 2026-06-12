@@ -131,15 +131,16 @@ export function Shape3D ({
           ref={controlsRef}
           target={[0, h / 2, 0]}
           enableDamping
+          rotateSpeed={0.5}
           minDistance={60}
           maxDistance={124}
-          dampingFactor={0.1}
+          dampingFactor={0.05}
         />
         {!dev && (
           <WallClamp
             controlsRef={controlsRef}
-            halfWidth={w / 2}
-            halfHeight={h / 2}
+            halfWidth={w / 2.1}
+            halfHeight={h / 2.4}
             limitLeft={builtInLeft}
             limitRight={builtInRight}
           />
