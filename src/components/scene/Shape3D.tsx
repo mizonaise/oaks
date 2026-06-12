@@ -1,18 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   OrbitControls,
-  OrthographicCamera,
+  // OrthographicCamera,
   PerspectiveCamera
 } from '@react-three/drei'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
 import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import type { FlatVars } from '@/lib/form/expr'
 import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
-import { RoomWalls } from './RoomWalls'
+import { RoomWalls, isBuiltIn } from './RoomWalls'
 import { BoxItem } from './BoxItem'
 
 type Props = {
@@ -57,6 +58,13 @@ export function Shape3D ({
   const [showDims, setShowDims] = useState(false)
   const [doorsOpen, setDoorsOpen] = useState(false)
   const [contrasted, setContrasted] = useState(false)
+
+  // Constrain the horizontal orbit so the camera can't swing past a built-in
+  // wall and see the unit from outside. A built-in side limits the camera to
+  // the corridor between the walls; open sides allow free rotation.
+  const builtInLeft = isBuiltIn(globalVars.IS_BI_L)
+  const builtInRight = isBuiltIn(globalVars.IS_BI_R)
+  const controlsRef = useRef<OrbitControlsImpl>(null)
 
   return (
     <div className='relative h-175 w-full overflow-hidden rounded border border-zinc-200 dark:border-zinc-800'>
@@ -116,21 +124,89 @@ export function Shape3D ({
             })}
           </group>
 
-          <RoomWalls w={w} h={h} d={d} globalVars={globalVars} />
+          {!dev && <RoomWalls w={w} h={h} d={d} globalVars={globalVars} />}
           <GroundShadow w={w} d={d} />
         </group>
         <OrbitControls
+          ref={controlsRef}
           target={[0, h / 2, 0]}
           enableDamping
-          minDistance={10}
+          minDistance={60}
           maxDistance={124}
-          minPolarAngle={Math.PI / 2}
-          maxPolarAngle={Math.PI / 2}
           dampingFactor={0.1}
         />
+        {!dev && (
+          <WallClamp
+            controlsRef={controlsRef}
+            halfWidth={w / 2}
+            halfHeight={h / 2}
+            limitLeft={builtInLeft}
+            limitRight={builtInRight}
+          />
+        )}
       </Canvas>
     </div>
   )
+}
+
+/**
+ * Per-frame orbit clamp that keeps the camera inside the room so it can't swing
+ * past a wall, the floor, or the ceiling and see the unit from outside.
+ *
+ * The camera's offset from the target along an axis is `radius · trig(angle)`.
+ * To stay within a half-extent `e` of the (centered) unit we need the offset
+ * `≤ e`, giving the angle bound `asin(e / radius)`. We recompute each frame
+ * because `radius` changes with zoom.
+ *
+ * - Azimuth: offset is `distXZ · sin(azimuth)`, bound by the side walls
+ *   (left = -x bounds negative azimuth, right = +x bounds positive). Applied
+ *   only on built-in sides; open sides rotate freely.
+ * - Polar: offset from the equator is `radius · cos(polar)`, bound by the
+ *   floor and ceiling. These are always drawn, so the polar clamp always
+ *   applies. `polar = π/2 ± asin(halfHeight / radius)`.
+ */
+function WallClamp ({
+  controlsRef,
+  halfWidth,
+  halfHeight,
+  limitLeft,
+  limitRight
+}: {
+  controlsRef: React.RefObject<OrbitControlsImpl | null>
+  halfWidth: number
+  halfHeight: number
+  limitLeft: boolean
+  limitRight: boolean
+}) {
+  useFrame(() => {
+    const controls = controlsRef.current
+    if (!controls) return
+
+    const cam = controls.object
+    const t = controls.target
+    const dx = cam.position.x - t.x
+    const dy = cam.position.y - t.y
+    const dz = cam.position.z - t.z
+
+    // Azimuth limit from the horizontal distance to the target.
+    const distXZ = Math.hypot(dx, dz)
+    if (distXZ > 0) {
+      const azLimit = Math.asin(Math.min(1, halfWidth / distXZ))
+      controls.minAzimuthAngle = limitLeft ? -azLimit : -Math.PI / 4
+      controls.maxAzimuthAngle = limitRight ? azLimit : Math.PI / 4
+    }
+
+    // Polar limit from the full 3D radius, centered on the horizontal equator
+    // (π/2). Keeps the camera between the floor and ceiling at every zoom.
+    const radius = Math.hypot(distXZ, dy)
+    if (radius > 0) {
+      const polarHalf = Math.asin(Math.min(1, halfHeight / radius))
+      controls.minPolarAngle = Math.PI / 2 - polarHalf
+      controls.maxPolarAngle = Math.PI / 2 + polarHalf
+    }
+  })
+
+  return null
 }
 
 // Ruler glyph for the dimensions toggle.

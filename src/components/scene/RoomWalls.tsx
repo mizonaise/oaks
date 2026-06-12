@@ -5,7 +5,7 @@ import { DoubleSide, FrontSide } from 'three'
 import type { FlatVars } from '@/lib/form/expr'
 
 /** `"1"`/`1`/`true` → built-in on that side; anything else → freestanding. */
-function isBuiltIn (raw: unknown): boolean {
+export function isBuiltIn (raw: unknown): boolean {
   if (raw == null) return false
   const s = String(raw).trim().toLowerCase()
   return s === '1' || s === 'true'
@@ -37,10 +37,16 @@ export const RoomWalls = memo(function RoomWalls ({
 
   // Room extends a bit beyond the shape so it doesn't feel cramped.
   const wallH = h
-  const margin = Math.max(w, d) * 30
-  const roomW = w + margin * 2
+  const margin = Math.max(w, d) * 60
   const roomD = d + margin
-  const cx = w / 2
+
+  // Horizontal extent of the floor / ceiling / back wall. On a built-in side
+  // the panel stops flush at that wall (x = 0 left, x = w right); on an open
+  // side it overhangs by `margin` so the room doesn't feel cramped.
+  const left = builtInLeft ? 0 : -margin
+  const right = builtInRight ? w : w + margin
+  const roomW = right - left
+  const cx = (left + right) / 2
 
   const Plane = ({
     position,
