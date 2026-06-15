@@ -25,6 +25,7 @@ export const BoxItem = memo(function BoxItem ({
   isSelected,
   onSelect,
   globalVars,
+  hidden = false,
   doorOpen,
   dimCpConfig,
   showDims = false,
@@ -35,6 +36,8 @@ export const BoxItem = memo(function BoxItem ({
   isSelected: boolean
   onSelect: (index: string) => void
   globalVars: FlatVars
+  /** When true, the box is between the framed zone and the camera; render nothing. */
+  hidden?: boolean
   doorOpen: boolean
   /** Per-CP dimension config; `null` hides all labels. */
   dimCpConfig?: DimCpConfig | null
@@ -59,6 +62,10 @@ export const BoxItem = memo(function BoxItem ({
     () => onSelect(box.index),
     [onSelect, box.index]
   )
+
+  // Sitting between the framed zone and the camera — render nothing so it
+  // doesn't occlude the zone.
+  if (hidden) return null
 
   return (
     <group position={[cx, cy, cz]}>

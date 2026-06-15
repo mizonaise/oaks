@@ -70,7 +70,7 @@ export function ShapeViewer ({
   }, [selectedName, boxes])
 
   return (
-    <div className={dev ? 'grid gap-3 sm:grid-cols-[30rem_1fr]' : 'grid gap-3'}>
+    <div className={dev ? 'grid gap-3 sm:grid-cols-[12rem_1fr]' : 'grid gap-3'}>
       {dev && (
         <Hierarchy
           boxes={boxes}

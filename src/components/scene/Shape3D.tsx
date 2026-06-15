@@ -1,12 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import * as THREE from 'three'
 import {
   OrbitControls,
   // OrthographicCamera,
   PerspectiveCamera
 } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
 import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
@@ -31,6 +32,100 @@ type Props = {
 
 const MM = 1
 const SCALE = 0.001
+
+// Open interval overlap with a small epsilon, so boxes merely touching at a
+// face (a shared panel) don't count as overlapping.
+const EPS = 1
+function overlaps (
+  aMin: number,
+  aMax: number,
+  bMin: number,
+  bMax: number
+): boolean {
+  return aMin < bMax - EPS && bMin < aMax - EPS
+}
+
+/**
+ * Indexes of boxes that sit between the selected zone and the camera and would
+ * occlude it, given the selected zone's `camera` side. Returns an empty set
+ * when nothing is selected or the selection has no `camera` side.
+ *
+ * Works in mm box space: pick the viewing axis from the `camera` side, keep
+ * boxes that overlap the zone on the two perpendicular axes, then keep those
+ * lying on the camera's side of the zone. The selected zone's own subtree (its
+ * ancestors and descendants share its volume) is never hidden.
+ */
+function occludingIndexes (
+  boxes: ShapeBox[],
+  selectedIndex: string | null
+): Set<string> {
+  const empty = new Set<string>()
+  if (!selectedIndex) return empty
+  const sel = boxes.find(b => b.index === selectedIndex)
+  if (!sel || !sel.camera) return empty
+
+  const side = sel.camera.toUpperCase()
+  // axis = the viewing axis; `front` is true when the camera looks from the
+  // axis-max side toward the min (so occluders are at greater coords).
+  let axis: 'x' | 'y' | 'z'
+  let front: boolean
+  switch (side) {
+    case 'BACK':
+      axis = 'z'
+      front = false
+      break
+    case 'LEFT':
+      axis = 'x'
+      front = false
+      break
+    case 'RIGHT':
+      axis = 'x'
+      front = true
+      break
+    case 'TOP':
+      axis = 'y'
+      front = true
+      break
+    case 'BOTTOM':
+      axis = 'y'
+      front = false
+      break
+    case 'FRONT':
+    default:
+      axis = 'z'
+      front = true
+  }
+
+  const selMax =
+    sel[axis] + (axis === 'x' ? sel.w : axis === 'y' ? sel.h : sel.d)
+  const selFace = front ? selMax : sel[axis]
+
+  // Is `b` part of the selected zone's own subtree (itself, an ancestor, or a
+  // descendant)? Those share the zone's volume and must stay visible.
+  const inSubtree = (b: ShapeBox) =>
+    b.index === sel.index ||
+    b.index.startsWith(`${sel.index}.`) ||
+    sel.index.startsWith(`${b.index}.`)
+
+  const hidden = new Set<string>()
+  for (const b of boxes) {
+    if (inSubtree(b)) continue
+    // Overlap on the two perpendicular axes (otherwise it's off to the side).
+    if (axis !== 'x' && !overlaps(b.x, b.x + b.w, sel.x, sel.x + sel.w))
+      continue
+    if (axis !== 'y' && !overlaps(b.y, b.y + b.h, sel.y, sel.y + sel.h))
+      continue
+    if (axis !== 'z' && !overlaps(b.z, b.z + b.d, sel.z, sel.z + sel.d))
+      continue
+
+    const bMin = b[axis]
+    const bMax = bMin + (axis === 'x' ? b.w : axis === 'y' ? b.h : b.d)
+    // On the camera side of the zone's near face.
+    const onCameraSide = front ? bMax > selFace + EPS : bMin < selFace - EPS
+    if (onCameraSide) hidden.add(b.index)
+  }
+  return hidden
+}
 
 const DEFAULT_DIM_CP_CONFIG: DimCpConfig = {
   CP_1_FI_1000: { w: false, h: true, d: false },
@@ -65,6 +160,14 @@ export function Shape3D ({
   const builtInLeft = isBuiltIn(globalVars.IS_BI_L)
   const builtInRight = isBuiltIn(globalVars.IS_BI_R)
   const controlsRef = useRef<OrbitControlsImpl>(null)
+
+  // When a zone with a `camera` side is selected, hide anything sitting between
+  // it and the camera so the framed zone is never occluded. Computed in mm box
+  // space (shared by every box).
+  const hiddenIndexes = useMemo(
+    () => occludingIndexes(boxes, selectedIndex),
+    [boxes, selectedIndex]
+  )
 
   return (
     <div className='relative h-175 w-full overflow-hidden rounded border border-zinc-200 dark:border-zinc-800'>
@@ -115,6 +218,7 @@ export function Shape3D ({
                   }
                   onSelect={onSelect}
                   globalVars={globalVars}
+                  hidden={hiddenIndexes.has(b.index)}
                   doorOpen={doorsOpen}
                   dimCpConfig={showDims ? dimCpConfig : null}
                   showDims={showDims}
@@ -130,13 +234,25 @@ export function Shape3D ({
         <OrbitControls
           ref={controlsRef}
           target={[0, h / 2, 0]}
-          enableDamping
+          // enableDamping
           rotateSpeed={0.5}
-          minDistance={60}
-          maxDistance={124}
+          // minDistance={dev ? 1 : 60}
+          // maxDistance={dev ? 500 : 124}
           dampingFactor={0.05}
+          enableZoom={dev}
+          enableRotate={dev}
         />
         {!dev && (
+          <CameraHandler
+            controlsRef={controlsRef}
+            boxes={boxes}
+            selectedIndex={selectedIndex}
+            ox={ox}
+            oz={oz}
+            scale={SCALE}
+          />
+        )}
+        {/* {!dev && (
           <WallClamp
             controlsRef={controlsRef}
             halfWidth={w / 2.1}
@@ -144,7 +260,7 @@ export function Shape3D ({
             limitLeft={builtInLeft}
             limitRight={builtInRight}
           />
-        )}
+        )} */}
       </Canvas>
     </div>
   )
@@ -204,6 +320,146 @@ function WallClamp ({
       const polarHalf = Math.asin(Math.min(1, halfHeight / radius))
       controls.minPolarAngle = Math.PI / 2 - polarHalf
       controls.maxPolarAngle = Math.PI / 2 + polarHalf
+    }
+  })
+
+  return null
+}
+
+/**
+ * Frames the camera onto the selected box. When the selection changes, it
+ * looks up the box's `camera` side (inherited from the nearest `camera`
+ * ancestor in the zone tree) and animates the camera to face the box's center
+ * from that side, lerping both the camera position and the orbit target.
+ *
+ * Box coords are in mm and the scene group is offset by `[ox, 0, oz]` then
+ * scaled by `scale`, so a box point `(x, y, z)` lands at world
+ * `(ox + x·scale, y·scale, oz + z·scale)`.
+ */
+function CameraHandler ({
+  controlsRef,
+  boxes,
+  selectedIndex,
+  ox,
+  oz,
+  scale
+}: {
+  controlsRef: React.RefObject<OrbitControlsImpl | null>
+  boxes: ShapeBox[]
+  selectedIndex: string | null
+  ox: number
+  oz: number
+  scale: number
+}) {
+  const { camera } = useThree()
+
+  const isAnimating = useRef(false)
+  const targetLookAt = useRef(new THREE.Vector3())
+  const targetCameraPos = useRef(new THREE.Vector3())
+
+  useEffect(() => {
+    if (!selectedIndex) return
+    const box = boxes.find(b => b.index === selectedIndex)
+    // `camera` is set only on zones that explicitly define it, so this fires
+    // exactly for those zones (not inherited descendants).
+    if (!box || !box.camera) return
+
+    // Box center in world units. The scene group applies the offset
+    // `[ox, 0, oz]` in world units first, then an inner group scales box
+    // coords by `scale` — so only the box coords are scaled, not the offset.
+    const center = new THREE.Vector3(
+      ox + (box.x + box.w / 2) * scale,
+      (box.y + box.h / 2) * scale,
+      oz + (box.z + box.d / 2) * scale
+    )
+    targetLookAt.current.copy(center)
+
+    // Box dimensions in world units.
+    const bw = box.w * scale
+    const bh = box.h * scale
+    const bd = box.d * scale
+
+    // Distance needed so the whole zone fits in view, derived from the camera
+    // FOV. We fit the two dimensions perpendicular to the viewing axis: the
+    // vertical one against the vertical FOV, the horizontal one against the
+    // horizontal FOV (vFOV adjusted by aspect). Take the larger so neither is
+    // clipped, with a small margin so the zone isn't flush to the edges.
+    const side = box.camera.toUpperCase()
+    const persp = camera as THREE.PerspectiveCamera
+    const aspect = persp.aspect || 1
+    // The camera has a `zoom` factor that magnifies the view; fold it into the
+    // effective FOV so the fit distance accounts for it (otherwise the zone
+    // looks `zoom`× too large and stays zoomed in).
+    const zoom = persp.zoom || 1
+    const rawVFov = THREE.MathUtils.degToRad(persp.fov ?? 50)
+    const tanV = Math.tan(rawVFov / 2) / zoom
+    const tanH = tanV * aspect
+
+    // Pick the on-screen width/height of the box for each viewing axis.
+    let fitW = bw
+    let fitH = bh
+    if (side === 'LEFT' || side === 'RIGHT') {
+      fitW = bd
+      fitH = bh
+    } else if (side === 'TOP' || side === 'BOTTOM') {
+      fitW = bw
+      fitH = bd
+    }
+
+    const margin = 1.15
+    const distH = fitH / 2 / tanV
+    const distW = fitW / 2 / tanH
+    const dist = Math.max(distH, distW, 1) * margin
+
+    const offset = new THREE.Vector3()
+    switch (side) {
+      case 'FRONT':
+        offset.set(0, 0, dist)
+        break
+      case 'BACK':
+        offset.set(0, 0, -dist)
+        break
+      case 'LEFT':
+        offset.set(-dist, 0, 0)
+        break
+      case 'RIGHT':
+        offset.set(dist, 0, 0)
+        break
+      case 'TOP':
+        offset.set(0, dist, 0)
+        break
+      case 'BOTTOM':
+        offset.set(0, -dist, 0)
+        break
+      default:
+        offset.set(0, 0, dist)
+    }
+
+    targetCameraPos.current.copy(center).add(offset)
+
+    // Let the orbit controls reach this distance — otherwise `update()` in the
+    // lerp loop would clamp the camera back to `maxDistance` and re-zoom in.
+    const controls = controlsRef.current
+    if (controls && dist > controls.maxDistance) controls.maxDistance = dist
+
+    isAnimating.current = true
+  }, [selectedIndex, boxes, ox, oz, scale, controlsRef])
+
+  useFrame(() => {
+    if (!isAnimating.current) return
+    const controls = controlsRef.current
+
+    const step = 0.08 // lerp factor (higher = faster)
+    camera.position.lerp(targetCameraPos.current, step)
+
+    if (controls) {
+      controls.target.lerp(targetLookAt.current, step)
+      controls.update()
+    }
+
+    // Stop once we're close enough, to free the orbit controls again.
+    if (camera.position.distanceTo(targetCameraPos.current) < 0.01) {
+      isAnimating.current = false
     }
   })
 

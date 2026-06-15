@@ -59,6 +59,9 @@ export type Box = {
   // Facing direction inherited from the nearest `clickable` ancestor, if any.
   // Articles below such a node are rotated to face this direction.
   clickable?: string;
+  // Side to frame the camera from. Set only on nodes that explicitly define
+  // `camera`; selecting such a zone drives the camera to face it from here.
+  camera?: string;
 };
 
 type Node = ZoneNode;
@@ -384,6 +387,7 @@ export function walkZone(
       vars: isArticle ? vars : undefined,
       sides: extractSides(node, vars),
       clickable: isArticle ? facing : undefined,
+      camera: node.camera ?? undefined,
     });
 
     if (isArticle) return;

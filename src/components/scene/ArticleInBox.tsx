@@ -49,12 +49,12 @@ export const ArticleInBox = memo(function ArticleInBox ({
   const width = sideways ? box.d : box.w
   const depth = sideways ? box.w : box.d
 
-  console.log('ArticleInBox', {
-    articleName,
-    vars: JSON.stringify(box.vars)
-  })
+  // console.log('ArticleInBox', {
+  //   articleName,
+  //   vars: JSON.stringify(box.vars)
+  // })
 
-  console.log('contrasted data', { contrasted })
+  // console.log('contrasted data', { contrasted })
 
   return (
     <group rotation={[0, yaw, 0]}>

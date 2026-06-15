@@ -14,6 +14,9 @@ export type ZoneNode = {
   grtx?: Record<string, string>
   // Set on a container node; articles below it face this direction.
   clickable?: 'FRONT' | 'BACK' | 'LEFT' | 'RIGHT' | string
+  // Set on a container node; selecting it (or a descendant) frames the camera
+  // onto the zone from this side.
+  camera?: 'FRONT' | 'BACK' | 'LEFT' | 'RIGHT' | 'TOP' | 'BOTTOM' | string
   children?: ZoneNode[]
   top?: string | null
   bottom?: string | null
