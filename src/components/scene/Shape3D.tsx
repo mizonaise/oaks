@@ -200,7 +200,7 @@ export function Shape3D ({
       </button>
       <Canvas shadows>
         <SceneLights />
-        <PerspectiveCamera makeDefault position={[0, h / 2, 100]} zoom={20} />
+        <PerspectiveCamera makeDefault={!dev} position={[0, h / 2, 100]} zoom={20} />
         {/* <OrthographicCamera makeDefault position={[0, 0, 100]} zoom={100} /> */}
         <group position={[ox, 0, oz]}>
           <group scale={[SCALE, SCALE, SCALE]}>
