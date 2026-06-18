@@ -49,6 +49,7 @@ type SetEntry = {
   pname: string;
   vars: Record<string, unknown>;
   pins: string;
+  port: string;
 };
 
 /** Base for synthesized sequential ids (UID = REF_ID = ___REFID per Set). */
@@ -57,17 +58,39 @@ const ID_BASE = 1;
 /**
  * Box dimensions → `SIZEX|SIZEY|SIZEZ` vars. The XML axes are
  * X=width (`w`), Y=depth (`d`), Z=height (`h`).
+ *
+ * `facing` mirrors the renderer: a sideways article (LEFT/RIGHT) is yawed 90°,
+ * which swaps its width and depth relative to the box — so feed the swapped
+ * dimensions, exactly like `ArticleInBox`.
  */
-function sizeVars(box: {
-  w: number;
-  h: number;
-  d: number;
-}): Record<string, unknown> {
+function sizeVars(
+  box: { w: number; h: number; d: number },
+  facing?: string,
+): Record<string, unknown> {
+  const sideways = facing === "LEFT" || facing === "RIGHT";
+  const w = sideways ? box.d : box.w;
+  const d = sideways ? box.w : box.d;
   return {
-    SIZEX: Math.round(box.w),
-    SIZEY: Math.round(box.d),
+    SIZEX: Math.round(w),
+    SIZEY: Math.round(d),
     SIZEZ: Math.round(box.h),
   };
+}
+
+/**
+ * Facing direction → `<POrntation>` "x,y,z" in degrees, a rotation about the
+ * vertical (Z) axis. Matches the renderer's yaw: FRONT 0, RIGHT 90, BACK 180,
+ * LEFT 270.
+ */
+const FACING_ZROT: Record<string, number> = {
+  FRONT: 0,
+  RIGHT: 90,
+  BACK: 180,
+  LEFT: 270,
+};
+function pOrientation(facing?: string): string {
+  const z = facing ? FACING_ZROT[facing] ?? 0 : 0;
+  return `0,0,${z}`;
 }
 
 /**
@@ -115,8 +138,9 @@ function collectZoneSets(
     const model = resolveArticleName(box.node, box.vars);
     if (!model) continue;
     const zoneName = box.node.name;
+    const facing = box.clickable;
     const vars: Record<string, unknown> = {
-      ...sizeVars(box),
+      ...sizeVars(box, facing),
       ...globalChanges,
       ...(zoneName ? scopeVars(nested, zoneName) : {}),
       ___MODEL_NAME: model,
@@ -125,6 +149,7 @@ function collectZoneSets(
       pname: model,
       vars,
       pins: pInsertion(box, bounds),
+      port: pOrientation(facing),
     });
   }
   return sets;
@@ -146,6 +171,7 @@ function setXml(lineNo: number, entry: SetEntry): string {
         <PVarString>${esc(pvar)}</PVarString>
         <REF_ID>${id}</REF_ID>
         <PInsertion>${esc(entry.pins)}</PInsertion>
+        <POrntation>${esc(entry.port)}</POrntation>
       </Set>`;
 }
 
@@ -188,6 +214,7 @@ export function buildShapeXml(
       pname: shapeName,
       vars: mainVars,
       pins: pInsertion({ x: 0, y: 0, z: 0 }, bounds),
+      port: pOrientation(),
     },
     ...collectZoneSets(shape, scopes, nested, globalChanges, bounds),
   ];

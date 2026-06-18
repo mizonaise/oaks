@@ -305,6 +305,9 @@ export function ShapeConfigurator ({
               // Select the box whose zone name matches in the viewer.
               setSelectedZone(zoneId)
             }}
+            // Auto-switch to the mobile (nested tab-strip) layout below 768px,
+            // desktop above. `layout` is omitted so it doesn't force one mode.
+            responsive
             imageSuffix='/public'
             imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
             configuratorJson={formExpo}
