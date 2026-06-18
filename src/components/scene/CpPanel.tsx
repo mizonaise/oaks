@@ -16,6 +16,7 @@ export const CpPanel = memo(function CpPanel ({
   cp,
   axis,
   sign,
+  inSet = 0,
   sx,
   sy,
   sz,
@@ -24,6 +25,8 @@ export const CpPanel = memo(function CpPanel ({
   cp: ResolvedCp
   axis: FaceAxis
   sign: 1 | -1
+  /** Offset (mm) along the face normal; negative pulls the panel inward. */
+  inSet?: number
   sx: number
   sy: number
   sz: number
@@ -35,10 +38,15 @@ export const CpPanel = memo(function CpPanel ({
   const t = Math.max(cp.thickness, 2) * MM
   const args: [number, number, number] =
     axis === 'x' ? [t, sy, sz] : axis === 'y' ? [sx, t, sz] : [sx, sy, t]
+  // Flush position at the face, then shift along the face normal by `inSet`:
+  // negative pushes the panel outward (past the face), positive pulls it inward
+  // (toward the box center). The face normal points outward by `sign`, so an
+  // inward shift subtracts `sign * inSet`.
+  const offsetMm = inSet * MM
   const pos: [number, number, number] = [
-    axis === 'x' ? sign * (sx / 2 - t / 2) : 0,
-    axis === 'y' ? sign * (sy / 2 - t / 2) : 0,
-    axis === 'z' ? sign * (sz / 2 - t / 2) : 0
+    axis === 'x' ? sign * (sx / 2 - t / 2) - sign * offsetMm : 0,
+    axis === 'y' ? sign * (sy / 2 - t / 2) - sign * offsetMm : 0,
+    axis === 'z' ? sign * (sz / 2 - t / 2) - sign * offsetMm : 0
   ]
   // Arrows float just in front of the box, through its center. Each successive
   // arrow is nudged a little further forward so they don't z-fight or overlap.

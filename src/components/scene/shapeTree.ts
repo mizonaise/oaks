@@ -29,13 +29,16 @@ export type DimFlags = { w?: boolean; h?: boolean; d?: boolean };
 /** Map of CP name → which dimensions to show on panels using that CP. */
 export type DimCpConfig = Record<string, DimFlags>;
 
+/** A resolved face panel: its cp ref plus the inward offset (mm) from `inSet`. */
+export type SideFace = { cp: string; inSet: number };
+
 export type BoxSides = {
-  top?: string | null;
-  bottom?: string | null;
-  front?: string | null;
-  right?: string | null;
-  back?: string | null;
-  left?: string | null;
+  top?: SideFace | null;
+  bottom?: SideFace | null;
+  front?: SideFace | null;
+  right?: SideFace | null;
+  back?: SideFace | null;
+  left?: SideFace | null;
 };
 
 export type Box = {
@@ -261,15 +264,31 @@ function resolveSideCp(
 
 function extractSides(node: Node, vars: FlatVars): BoxSides | undefined {
   const s = node.sides ?? {};
-  const pick = (slot: unknown): string | null => {
+  const pick = (slot: unknown): SideFace | null => {
     if (!slot) return null;
-    if (typeof slot === "string") return resolveSideCp(slot, node, vars);
+    if (typeof slot === "string") {
+      const cp = resolveSideCp(slot, node, vars);
+      return cp ? { cp, inSet: 0 } : null;
+    }
     if (typeof slot === "object" && "cpName" in (slot as object)) {
-      return resolveSideCp(
-        (slot as { cpName?: string | null }).cpName ?? null,
-        node,
-        vars,
-      );
+      const part = slot as {
+        cpName?: string | null;
+        inSet?: number;
+        inSetFor?: string;
+      };
+      const cp = resolveSideCp(part.cpName ?? null, node, vars);
+      if (!cp) return null;
+      // Prefer the `inSetFor` expression; fall back to the precomputed `inSet`.
+      const fromExpr =
+        part.inSetFor && part.inSetFor.trim() !== ""
+          ? evalExpr(part.inSetFor, {}, {}, vars)
+          : NaN;
+      const inSet = Number.isFinite(fromExpr)
+        ? fromExpr
+        : Number.isFinite(part.inSet)
+          ? (part.inSet as number)
+          : 0;
+      return { cp, inSet };
     }
     return null;
   };

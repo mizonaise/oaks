@@ -8,6 +8,8 @@ import { CpPanel, type FaceAxis, type DimMeasure } from './CpPanel'
 
 type FaceSpec = {
   cpRef: string | null | undefined
+  /** Inward offset (mm) from the box face, from the side's `inSet`. */
+  inSet: number
   axis: FaceAxis
   sign: 1 | -1
 }
@@ -30,12 +32,37 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
 }) {
   const faces = useMemo<FaceSpec[]>(
     () => [
-      { cpRef: sides.top, axis: 'y', sign: 1 },
-      { cpRef: sides.bottom, axis: 'y', sign: -1 },
-      { cpRef: sides.front, axis: 'z', sign: 1 },
-      { cpRef: sides.back, axis: 'z', sign: -1 },
-      { cpRef: sides.right, axis: 'x', sign: 1 },
-      { cpRef: sides.left, axis: 'x', sign: -1 }
+      { cpRef: sides.top?.cp, inSet: sides.top?.inSet ?? 0, axis: 'y', sign: 1 },
+      {
+        cpRef: sides.bottom?.cp,
+        inSet: sides.bottom?.inSet ?? 0,
+        axis: 'y',
+        sign: -1
+      },
+      {
+        cpRef: sides.front?.cp,
+        inSet: sides.front?.inSet ?? 0,
+        axis: 'z',
+        sign: 1
+      },
+      {
+        cpRef: sides.back?.cp,
+        inSet: sides.back?.inSet ?? 0,
+        axis: 'z',
+        sign: -1
+      },
+      {
+        cpRef: sides.right?.cp,
+        inSet: sides.right?.inSet ?? 0,
+        axis: 'x',
+        sign: 1
+      },
+      {
+        cpRef: sides.left?.cp,
+        inSet: sides.left?.inSet ?? 0,
+        axis: 'x',
+        sign: -1
+      }
     ],
     [sides]
   )
@@ -67,6 +94,7 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
             cp={cp}
             axis={f.axis}
             sign={f.sign}
+            inSet={f.inSet}
             sx={sx}
             sy={sy}
             sz={sz}
