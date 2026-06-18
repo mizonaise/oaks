@@ -67,6 +67,10 @@ export type Box = {
 type Node = ZoneNode;
 type Slice = { size: number | null; weight: number; minSize?: number };
 
+// Minimum size (mm) for an axis to count as renderable. Below this a box is a
+// degenerate sliver: it rounds to "0" in the UI and has no visible volume.
+const MIN_AXIS = 0.5;
+
 function descriptorBranches(name: string): DescriptorBranch[] | undefined {
   return getDescriptors()[name];
 }
@@ -363,11 +367,13 @@ export function walkZone(
     scope: FlatVars,
     clickable?: string,
   ) => {
-    // A collapsed box (zero/negative on any axis) has no renderable volume.
-    // Don't emit it or recurse — otherwise descendants (including articles)
-    // get pushed with a zero dimension and run away into deep degenerate
-    // index chains like 0.0…0.0.
-    if (box.w <= 0 || box.h <= 0 || box.d <= 0) return;
+    // A collapsed box has no renderable volume. We treat any axis under
+    // `MIN_AXIS` mm as collapsed, not just <= 0: fixed-size subtraction can
+    // leave a sub-millimeter sliver (e.g. depth 0.3) that rounds to "0" in the
+    // UI and renders as a flat, invisible 500×2350×0 zone. Dropping it here
+    // also prunes its degenerate descendant chain (0.1…1.0) instead of pushing
+    // articles with a zero dimension.
+    if (box.w < MIN_AXIS || box.h < MIN_AXIS || box.d < MIN_AXIS) return;
 
     // If this node's name matches a namespace, layer those vars on top of
     // the inherited scope for this node and its descendants.
@@ -448,10 +454,10 @@ export function walkZone(
 
     slices.forEach((_, i) => {
       const size = sizes[i];
-      // A zero (or negative) slot can't hold anything renderable. Skip it
-      // entirely so we don't recurse into degenerate boxes and emit articles
-      // with a zero dimension (e.g. 500×2350×0).
-      if (size <= 0) {
+      // A sub-MIN_AXIS slot can't hold anything renderable. Skip it entirely so
+      // we don't recurse into degenerate boxes and emit articles with a zero
+      // dimension (e.g. 500×2350×0).
+      if (size < MIN_AXIS) {
         cursor += direction * size;
         return;
       }
@@ -467,7 +473,7 @@ export function walkZone(
       };
       const child = children[i];
       if (child) recurse(child, childBox, depth + 1, vars, facing);
-      else if (size > 0) {
+      else {
         out.push({
           ...childBox,
           depth: depth + 1,
