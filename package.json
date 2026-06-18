@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@oak-some/configurator-previewer": "^1.4.4",
-    "@processandtools/rp-article-designer": "^1.0.80",
+    "@oak-some/configurator-previewer": "^1.4.10",
+    "@processandtools/rp-article-designer": "^1.0.81",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@reduxjs/toolkit": "^2.12.0",

@@ -23,6 +23,8 @@ export const BoxItem = memo(function BoxItem ({
   box,
   dev = false,
   isSelected,
+  inSelectedSubtree = false,
+  isCameraZone = false,
   onSelect,
   globalVars,
   hidden = false,
@@ -33,7 +35,12 @@ export const BoxItem = memo(function BoxItem ({
 }: {
   box: ShapeBox
   dev?: boolean
+  /** True only for the exact selected box; drives the highlight. */
   isSelected: boolean
+  /** True for the selected box and its descendants; drives the door cascade. */
+  inSelectedSubtree?: boolean
+  /** Whether the current selection is a camera zone (framed, not opened). */
+  isCameraZone?: boolean
   onSelect: (index: string) => void
   globalVars: FlatVars
   /** When true, the box is between the framed zone and the camera; render nothing. */
@@ -67,6 +74,12 @@ export const BoxItem = memo(function BoxItem ({
   // doesn't occlude the zone.
   if (hidden) return null
 
+  // A camera zone is framed, not opened: its doors stay shut (only the global
+  // toggle opens them) and it highlights in a distinct color. A normal selected
+  // zone opens its doors and its children's, highlighting yellow.
+  const doorOpenForBox = isCameraZone ? doorOpen : doorOpen || inSelectedSubtree
+  const highlightColor = isCameraZone ? '#38bdf8' : '#facc15'
+
   return (
     <group position={[cx, cy, cz]}>
       {dev && (
@@ -74,7 +87,7 @@ export const BoxItem = memo(function BoxItem ({
           sx={sx}
           sy={sy}
           sz={sz}
-          color={isSelected ? '#facc15' : colorForBox(box)}
+          color={isSelected ? highlightColor : colorForBox(box)}
           selected={isSelected}
         />
       )}
@@ -85,6 +98,7 @@ export const BoxItem = memo(function BoxItem ({
           sz={sz}
           selected={isSelected}
           onSelect={handlePick}
+          color={highlightColor}
         />
       )}
       {box.sides && (
@@ -101,7 +115,7 @@ export const BoxItem = memo(function BoxItem ({
         <ArticleInBox
           box={box}
           articleName={articleName}
-          doorOpen={doorOpen || isSelected}
+          doorOpen={doorOpenForBox}
           showDims={showDims}
           contrasted={contrasted}
         />

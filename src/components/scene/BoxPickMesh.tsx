@@ -7,13 +7,16 @@ export const BoxPickMesh = memo(function BoxPickMesh ({
   sy,
   sz,
   selected,
-  onSelect
+  onSelect,
+  color = '#facc15'
 }: {
   sx: number
   sy: number
   sz: number
   selected: boolean
   onSelect: () => void
+  /** Fill color of the pick overlay when selected. */
+  color?: string
 }) {
   return (
     <mesh
@@ -24,7 +27,7 @@ export const BoxPickMesh = memo(function BoxPickMesh ({
     >
       <boxGeometry args={[sx + 10, sy + 10, sz + 10]} />
       <meshStandardMaterial
-        color='#facc15'
+        color={color}
         transparent
         opacity={selected ? 0.25 : 0}
         depthWrite={false}

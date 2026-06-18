@@ -57,6 +57,7 @@ export function ShapeViewer ({
   }, [shape, scopes])
 
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null)
+  const [showHierarchy, setShowHierarchy] = useState(false)
 
   // When a zone name is requested (e.g. via goToZone), select the first box
   // whose name matches it. `null`/no match leaves the current selection alone.
@@ -70,22 +71,40 @@ export function ShapeViewer ({
   }, [selectedName, boxes])
 
   return (
-    <div className={dev ? 'grid gap-3 sm:grid-cols-[12rem_1fr]' : 'grid gap-3'}>
+    <div>
       {dev && (
-        <Hierarchy
-          boxes={boxes}
-          selectedIndex={selectedIndex}
-          onSelect={setSelectedIndex}
-        />
+        <button
+          type='button'
+          onClick={() => setShowHierarchy(open => !open)}
+          aria-pressed={showHierarchy}
+          className='mb-2 rounded border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+        >
+          {showHierarchy ? 'Hide hierarchy' : 'Show hierarchy'}
+        </button>
       )}
-      <Shape3D
-        dev={dev}
-        boxes={boxes}
-        bounds={bounds}
-        globalVars={scopes.globalVars}
-        selectedIndex={selectedIndex}
-        onSelect={() => {}}
-      />
+      <div
+        className={
+          dev && showHierarchy
+            ? 'grid gap-3 sm:grid-cols-[30rem_1fr]'
+            : 'grid gap-3'
+        }
+      >
+        {dev && showHierarchy && (
+          <Hierarchy
+            boxes={boxes}
+            selectedIndex={selectedIndex}
+            onSelect={setSelectedIndex}
+          />
+        )}
+        <Shape3D
+          dev={dev}
+          boxes={boxes}
+          bounds={bounds}
+          globalVars={scopes.globalVars}
+          selectedIndex={selectedIndex}
+          onSelect={() => {}}
+        />
+      </div>
     </div>
   )
 }

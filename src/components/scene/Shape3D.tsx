@@ -47,9 +47,31 @@ function overlaps (
 }
 
 /**
- * Indexes of boxes that sit between the selected zone and the camera and would
- * occlude it, given the selected zone's `camera` side. Returns an empty set
- * when nothing is selected or the selection has no `camera` side.
+ * The `camera` side that governs a box index, found by walking up its ancestors
+ * (the box itself, then each shorter dotted-index prefix). `camera` lives only
+ * on the declaring node, so a selected descendant inherits it via this lookup.
+ * Returns undefined when no ancestor declares `camera` — i.e. not a camera zone.
+ */
+function cameraSideFor (
+  boxes: ShapeBox[],
+  index: string | null
+): string | undefined {
+  if (!index) return undefined
+  const byIndex = new Map(boxes.map(b => [b.index, b]))
+  for (
+    let key: string | undefined = index;
+    key;
+    key = key.includes('.') ? key.slice(0, key.lastIndexOf('.')) : undefined
+  ) {
+    const camera = byIndex.get(key)?.camera
+    if (camera) return camera
+  }
+  return undefined
+}
+
+/**
+ * Indexes of boxes that sit between the selected camera zone and the camera and
+ * would occlude it. Empty unless the selection resolves to a camera zone.
  *
  * Works in mm box space: pick the viewing axis from the `camera` side, keep
  * boxes that overlap the zone on the two perpendicular axes, then keep those
@@ -63,9 +85,10 @@ function occludingIndexes (
   const empty = new Set<string>()
   if (!selectedIndex) return empty
   const sel = boxes.find(b => b.index === selectedIndex)
-  if (!sel || !sel.camera) return empty
+  const camSide = cameraSideFor(boxes, selectedIndex)
+  if (!sel || !camSide) return empty
 
-  const side = sel.camera.toUpperCase()
+  const side = camSide.toUpperCase()
   // axis = the viewing axis; `front` is true when the camera looks from the
   // axis-max side toward the min (so occluders are at greater coords).
   let axis: 'x' | 'y' | 'z'
@@ -170,6 +193,16 @@ export function Shape3D ({
     [boxes, selectedIndex]
   )
 
+  // True only when the selected box is itself a `camera`-declaring node. That
+  // node is framed, not opened (doors stay shut); selecting a zone *inside* a
+  // camera zone is a normal selection and opens its doors.
+  const selectedIsCameraNode = useMemo(
+    () =>
+      selectedIndex != null &&
+      Boolean(boxes.find(b => b.index === selectedIndex)?.camera),
+    [boxes, selectedIndex]
+  )
+
   return (
     <div className='relative h-175 w-full overflow-hidden rounded border border-zinc-200 dark:border-zinc-800'>
       <button
@@ -221,11 +254,13 @@ export function Shape3D ({
                   key={`${b.index}-${i}`}
                   box={b}
                   dev={dev}
-                  isSelected={
+                  isSelected={b.index === selectedIndex}
+                  inSelectedSubtree={
                     selectedIndex != null &&
                     (b.index === selectedIndex ||
                       b.index.startsWith(`${selectedIndex}.`))
                   }
+                  isCameraZone={selectedIsCameraNode}
                   onSelect={onSelect}
                   globalVars={globalVars}
                   hidden={hiddenIndexes.has(b.index)}
