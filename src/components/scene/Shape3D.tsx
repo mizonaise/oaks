@@ -34,17 +34,9 @@ type Props = {
 const MM = 1
 const SCALE = 0.001
 
-// Open interval overlap with a small epsilon, so boxes merely touching at a
-// face (a shared panel) don't count as overlapping.
+// Small epsilon (mm) so a box merely touching the zone's near face (a shared
+// panel) isn't treated as being in front of it.
 const EPS = 1
-function overlaps (
-  aMin: number,
-  aMax: number,
-  bMin: number,
-  bMax: number
-): boolean {
-  return aMin < bMax - EPS && bMin < aMax - EPS
-}
 
 /**
  * The `camera` side that governs a box index, found by walking up its ancestors
@@ -134,17 +126,12 @@ function occludingIndexes (
   const hidden = new Set<string>()
   for (const b of boxes) {
     if (inSubtree(b)) continue
-    // Overlap on the two perpendicular axes (otherwise it's off to the side).
-    if (axis !== 'x' && !overlaps(b.x, b.x + b.w, sel.x, sel.x + sel.w))
-      continue
-    if (axis !== 'y' && !overlaps(b.y, b.y + b.h, sel.y, sel.y + sel.h))
-      continue
-    if (axis !== 'z' && !overlaps(b.z, b.z + b.d, sel.z, sel.z + sel.d))
-      continue
 
+    // Hide everything on the camera side of the zone's near face, regardless of
+    // whether it overlaps the zone's footprint — clears the whole space between
+    // the camera and the framed zone, not just what directly occludes it.
     const bMin = b[axis]
     const bMax = bMin + (axis === 'x' ? b.w : axis === 'y' ? b.h : b.d)
-    // On the camera side of the zone's near face.
     const onCameraSide = front ? bMax > selFace + EPS : bMin < selFace - EPS
     if (onCameraSide) hidden.add(b.index)
   }
