@@ -219,8 +219,8 @@ export function Shape3D ({
       >
         <ContrastIcon />
       </button>
-      <Canvas shadows>
-        <SceneLights />
+      <Canvas shadows='soft' dpr={[1, 2]}>
+        <SceneLights radius={Math.hypot(w, h, d) / 2} />
         {/* <OrthographicCamera makeDefault zoom={100} position={[0, h / 2, 100]} /> */}
         {dev ? (
           <OrthographicCamera
