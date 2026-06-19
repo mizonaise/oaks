@@ -101,27 +101,28 @@ function pOrientation(facing?: string): string {
  * depth the opposite way — so Y = `-box.z`. The back run sits at `box.z = 0`,
  * unaffected.
  *
- * X depends on whether the part is rotated (a side wing) — derived empirically:
- *  - FRONT / back run: `box.x - shapeW/2`  (e.g. 550 → -1450).
- *  - A side wing's `PInsertion` is its INNER x face (toward the unit center),
- *    measured from the centered origin: `shapeW/2 - innerFace`, where the inner
- *    face is `box.x + box.w` for a RIGHT-tagged wing (sitting at low x) and
- *    `box.x` for a LEFT-tagged wing (sitting at high x). The two wings are
- *    mirrored, so this resolves to:
- *      RIGHT: shapeW/2 - box.x - box.w   (0,500   → 1500)
- *      LEFT:  shapeW/2 - box.x           (3500    → -1500)
+ * X (centered on shapeW/2), derived empirically against ListBuilder. The wings
+ * sit flush at the outer wall:
+ *      FRONT / back run: box.x - shapeW/2          (550    → -1450)
+ *      RIGHT (low x):    box.x - shapeW/2          (0      → -2000)
+ *      LEFT  (high x):   box.x + box.w - shapeW/2  (3500,500 → 2000)
  */
 function pInsertion(
-  box: { x: number; y: number; z: number; w: number },
+  box: { x: number; y: number; z: number; w: number; d: number },
   shape: { w: number; h: number },
   facing?: string,
 ): string {
   const half = shape.w / 2;
   let x: number;
-  if (facing === "RIGHT") x = half - box.x - box.w;
-  else if (facing === "LEFT") x = half - box.x;
+  // Wings sit flush at the outer wall: RIGHT (low x) uses its near edge `box.x`,
+  // LEFT (high x) uses its far edge `box.x + box.w`.
+  if (facing === "RIGHT") x = box.x - half;
+  else if (facing === "LEFT") x = box.x + box.w - half;
   else x = box.x - half;
-  const y = -box.z;
+  // Y is the inverted depth (`-box.z`). The RIGHT (90°) wing's origin lands at
+  // the far edge of its run slice, so shift it back by the slice extent
+  // (`box.d`, the run-direction size that becomes SIZEX).
+  const y = facing === "RIGHT" ? -box.z - box.d : -box.z;
   const z = box.y - shape.h / 2;
   return `${Math.round(x)},${Math.round(y)},${Math.round(z)}`;
 }
@@ -230,7 +231,7 @@ export function buildShapeXml(
     {
       pname: shapeName,
       vars: mainVars,
-      pins: pInsertion({ x: 0, y: 0, z: 0, w: bounds.w }, bounds),
+      pins: pInsertion({ x: 0, y: 0, z: 0, w: bounds.w, d: bounds.d }, bounds),
       port: pOrientation(),
     },
     ...collectZoneSets(shape, scopes, nested, globalChanges, bounds),
