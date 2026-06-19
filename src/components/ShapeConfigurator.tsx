@@ -52,6 +52,27 @@ function sameVar (a: unknown, b: unknown): boolean {
   return String(a) === String(b)
 }
 
+/**
+ * Flatten a (possibly nested) LabelSet into flat `"key": "value"` pairs.
+ * Nested groups are joined with " › " so the path stays readable.
+ */
+function flattenLabels (
+  obj: Record<string, unknown>,
+  prefix = ''
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const k in obj) {
+    const v = obj[k]
+    const key = prefix ? `${prefix} › ${k}` : k
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      Object.assign(out, flattenLabels(v as Record<string, unknown>, key))
+    } else {
+      out[key] = String(v)
+    }
+  }
+  return out
+}
+
 function readNested (target: Record<string, unknown>, name: string): unknown {
   const parts = name.includes('.') ? name.split('.') : ['global', name]
   let cur: unknown = target
@@ -142,6 +163,11 @@ export function ShapeConfigurator ({
   // Zone name requested from the form (via a `goToZone` attribute). Drives the
   // viewer to select the matching box by name.
   const [selectedZone, setSelectedZone] = useState<string | null>(null)
+
+  // Human-readable description of the current selection, emitted by the form as
+  // a (possibly nested) label set. Shown as flat "key: value" rows under the
+  // canvas so the user sees what's configured.
+  const [labels, setLabels] = useState<Record<string, string>>({})
 
   const handleChangeVariables = useCallback((name: string, value: unknown) => {
     setNestedUpdates(prev => {
@@ -280,6 +306,7 @@ export function ShapeConfigurator ({
             scopes={resolvedScopes}
             selectedName={selectedZone}
           />
+          <LabelsSection labels={labels} />
           {dev && (
             <>
               <Panel
@@ -303,7 +330,11 @@ export function ShapeConfigurator ({
             }}
             onGoToZone={(zoneId: string) => {
               // Select the box whose zone name matches in the viewer.
+              console.log('Go To Zone: =================', zoneId)
               setSelectedZone(zoneId)
+            }}
+            onLabelSetChange={labelSet => {
+              setLabels(flattenLabels(labelSet as Record<string, unknown>))
             }}
             // Auto-switch to the mobile (nested tab-strip) layout below 768px,
             // desktop above. `layout` is omitted so it doesn't force one mode.
@@ -361,6 +392,35 @@ function StatusScreen ({
         </pre>
       )}
     </div>
+  )
+}
+
+/**
+ * Description of the current form/article selection, shown under the canvas as
+ * `key: value` rows. Hidden when there's nothing to describe.
+ */
+function LabelsSection ({ labels }: { labels: Record<string, string> }) {
+  const entries = Object.entries(labels)
+  if (entries.length === 0) return null
+  return (
+    <section className='rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950'>
+      <h3 className='mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500'>
+        Description
+      </h3>
+      <dl className='grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2'>
+        {entries.map(([key, value]) => (
+          <div
+            key={key}
+            className='flex items-baseline justify-between gap-3 border-b border-zinc-100 pb-1 dark:border-zinc-800'
+          >
+            <dt className='text-sm text-zinc-500'>{key}</dt>
+            <dd className='text-sm font-medium text-zinc-900 text-right dark:text-zinc-100'>
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   )
 }
 
