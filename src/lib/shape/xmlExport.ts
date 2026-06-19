@@ -94,19 +94,36 @@ function pOrientation(facing?: string): string {
 }
 
 /**
- * Box min-corner → `PInsertion` string, in the XML's centered frame: the shape
- * is centered on width (X) and height (Z) and floored on depth (Y), matching
- * the renderer's `-w/2 … -h/2` offset.
- *   PInsertion = (box.x - shapeW/2,  box.z,  box.y - shapeH/2)
+ * Box → `PInsertion` string in the XML's centered frame (shape centered on width
+ * X and height Z, floored on depth Y, matching the renderer's `-w/2 … -h/2`).
+ *
+ * The depth axis (XML Y) is inverted vs the tree's `box.z` — ListBuilder runs
+ * depth the opposite way — so Y = `-box.z`. The back run sits at `box.z = 0`,
+ * unaffected.
+ *
+ * X depends on whether the part is rotated (a side wing) — derived empirically:
+ *  - FRONT / back run: `box.x - shapeW/2`  (e.g. 550 → -1450).
+ *  - A side wing's `PInsertion` is its INNER x face (toward the unit center),
+ *    measured from the centered origin: `shapeW/2 - innerFace`, where the inner
+ *    face is `box.x + box.w` for a RIGHT-tagged wing (sitting at low x) and
+ *    `box.x` for a LEFT-tagged wing (sitting at high x). The two wings are
+ *    mirrored, so this resolves to:
+ *      RIGHT: shapeW/2 - box.x - box.w   (0,500   → 1500)
+ *      LEFT:  shapeW/2 - box.x           (3500    → -1500)
  */
 function pInsertion(
-  box: { x: number; y: number; z: number },
+  box: { x: number; y: number; z: number; w: number },
   shape: { w: number; h: number },
+  facing?: string,
 ): string {
-  const x = Math.round(box.x - shape.w / 2);
-  const y = Math.round(box.z);
-  const z = Math.round(box.y - shape.h / 2);
-  return `${x},${y},${z}`;
+  const half = shape.w / 2;
+  let x: number;
+  if (facing === "RIGHT") x = half - box.x - box.w;
+  else if (facing === "LEFT") x = half - box.x;
+  else x = box.x - half;
+  const y = -box.z;
+  const z = box.y - shape.h / 2;
+  return `${Math.round(x)},${Math.round(y)},${Math.round(z)}`;
 }
 
 /**
@@ -148,7 +165,7 @@ function collectZoneSets(
     sets.push({
       pname: model,
       vars,
-      pins: pInsertion(box, bounds),
+      pins: pInsertion(box, bounds, facing),
       port: pOrientation(facing),
     });
   }
@@ -213,7 +230,7 @@ export function buildShapeXml(
     {
       pname: shapeName,
       vars: mainVars,
-      pins: pInsertion({ x: 0, y: 0, z: 0 }, bounds),
+      pins: pInsertion({ x: 0, y: 0, z: 0, w: bounds.w }, bounds),
       port: pOrientation(),
     },
     ...collectZoneSets(shape, scopes, nested, globalChanges, bounds),
