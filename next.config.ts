@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   reactStrictMode: false,
+  // Allow LAN access to the dev server (and its HMR socket) from other devices.
+  allowedDevOrigins: ["192.168.33.139", "192.168.33.*"],
   async rewrites() {
     return [
       // Proxy the shape API (api.tecnibo.com) through a same-origin path.

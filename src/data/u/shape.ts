@@ -1,42 +1,38 @@
 export const shape = {
-  name: "OAKSOME_SHAPE_U_TEST_V1",
+  name: "OAKSOME_SHAPE_U",
   width: "($ZM_W + $ZL_D + $ZR_D) mm mm",
   depth: "$ZONE_D mm mm",
   height: "($ZONE_H) mm mm",
   cps: {
-    CP_1_TSI_1000_C1: {
-      mat: "$MAT_TS_1",
-      surf: "$SRF_TS_1_EXT",
-    },
-    CP_1_BA_1000: {
-      mat: "$MAT_BA_1",
-      surf: "$SRF_BA_1_TOP",
-    },
     CP_1_FI_10S0: {
       mat: "$MAT_FI_1",
       surf: "$SRF_FI_1_TOP",
-    },
-    WACA_LY_D: {
-      mat: "NO_MAT",
-      surf: "NO_SURF",
-    },
-    CP_1_CM_0000: {
-      mat: "$MAT_CM_1",
-      surf: "$SRF_CM_1_TOP",
     },
     CP_1_FI_S010: {
       mat: "$MAT_FI_1",
       surf: "$SRF_FI_1_TOP",
     },
+    CP_1_TSI_1000_C1: {
+      mat: "$MAT_TS_1",
+      surf: "$SRF_TS_1_EXT",
+    },
+    WACA_LY_D: {
+      mat: "NO_MAT",
+      surf: "NO_SURF",
+    },
     WACA_LY_D_DW: {
       mat: "NO_MAT",
       surf: "NO_SURF",
     },
-    WACA_LY_D1: {
-      mat: "NO_MAT",
-      surf: "NO_SURF",
+    CP_1_BA_1000: {
+      mat: "$MAT_BA_1",
+      surf: "$SRF_BA_1_TOP",
     },
-    WACA_LY_D1_DW: {
+    CP_1_CM_0000: {
+      mat: "$MAT_CM_1",
+      surf: "$SRF_CM_1_TOP",
+    },
+    WACA_LY_D1: {
       mat: "NO_MAT",
       surf: "NO_SURF",
     },
@@ -44,13 +40,17 @@ export const shape = {
       mat: "$MAT_FI_1",
       surf: "$SRF_FI_1_TOP",
     },
-    WACA_LY_DB_D: {
+    WACA_LY_D1_DW: {
       mat: "NO_MAT",
       surf: "NO_SURF",
     },
     CP_1_FI_1111: {
       mat: "$MAT_FI_1",
       surf: "$SRF_FI_1_TOP",
+    },
+    WACA_LY_DB_D: {
+      mat: "NO_MAT",
+      surf: "NO_SURF",
     },
     WACA_LY_DB_D_DW: {
       mat: "NO_MAT",
@@ -71,183 +71,188 @@ export const shape = {
     ZR_D: "500",
     ZONE_D: "8000",
     ZONE_H: "3000",
-    ZM_D: "500",
-    IS_ML_N: "1",
-    IS_ML_P: "0",
-    BASE_HEIGHT: "100",
-    CROWN_HEIGHT: "100",
-    ZM_STEP: "($ZMA_W/$ZM_CNT)",
-    ZMA_W: "($ZM_W -50 - 50)",
     ZL_W: "6000",
-    ZM_CNT: "10",
     Front_Side_GAP: "2.5",
     ZR_W: "7000",
     IS_LL_P: "1",
+    ZM_D: "500",
     IS_RL_N: "0",
-    IS_BI_L: "1",
+    IS_ML_N: "1",
+    BASE_HEIGHT: "100",
     IS_BI_R: "1",
-    MAT_FI_1_THK: "$MAT_FR_1_THK",
+    IS_BI_L: "1",
+    CROWN_HEIGHT: "100",
+    IS_ML_P: "0",
     FI_1_THK: "($MAT_FI_1_THK + 2*($SRF_FI_1_THK))",
+    MAT_FI_1_THK: "$MAT_FR_1_THK",
+    ZM_STEP: "($ZMA_W/$ZM_CNT)",
     MAT_FR_1_THK: "16",
-    ZFL_W: "50",
-    ZM_CNT_01: "1",
-    SRF_FI_1_THK: "$SRF_FR_1_THK",
+    ZMA_W: "($ZM_W -50 - 50)",
     ZL_STEP: "($ZLA_W / $ZL_CNT)",
-    DS_WACA_ZM_ART_99: "#DS_WACA_U_ART_01",
-    SRF_FR_1_THK: "0.8",
+    ZFL_W: "50",
+    ZM_CNT: "10",
+    SRF_FI_1_THK: "$SRF_FR_1_THK",
     ZLA_W: "($ZL_W - ($FI_1_THK *(1-$IS_BI_L)) - ($IS_BI_L*$ZFL_W) - 50)",
+    SRF_FR_1_THK: "0.8",
+    ZM_CNT_01: "1",
+    ZL_CNT: "10",
     DS_WACA_ZM_ART_01: "#DS_WACA_U_ART_01",
+    DS_WACA_ZM_ART_99: "#DS_WACA_U_ART_01",
     ZR_STEP: "($ZRA_W / $ZR_CNT)",
     ZFR_W: "50",
-    ZL_CNT: "10",
     ZRA_W: "($ZR_W - ($FI_1_THK *(1-$IS_BI_R)) - ($IS_BI_R*$ZFR_W) - 50)",
-    ZM_CNT_ACC_02: "($ZM_CNT_ACC_01 + $ZM_CNT_02)",
-    MAT_TS_1: "$MAT_1",
     ZR_CNT: "9",
     ZL_CNT_01: "1",
-    ZM_CNT_ACC_01: "$ZM_CNT_01",
-    MAT_1: "EG_ED_W980_ST2_18mm",
+    ZM_CNT_ACC_02: "($ZM_CNT_ACC_01 + $ZM_CNT_02)",
+    MAT_FI_1: "$MAT_FR_1",
     ZL_CNT_ACC_01: "$ZL_CNT_01",
-    MAT_BA_1: "$MAT_FR_1",
+    ZM_CNT_ACC_01: "$ZM_CNT_01",
+    MAT_FR_1: "UN_RW_HGS_MDFFB_16",
     ZR_CNT_01: "2",
-    ZM_CNT_02: "1",
-    SRF_TS_1_EXT: "$SURF_TS_1_EXT",
     DS_WACA_ZL_ART_01: "#DS_WACA_U_ART_01",
     DS_WACA_ZL_ART_99: "#DS_WACA_U_ART_01",
-    MAT_FR_1: "UN_RW_HGS_MDFFB_16",
-    SRF_BA_1_TOP: "$SRF_FR_1_TOP",
+    ZM_CNT_02: "1",
+    SRF_FI_1_TOP: "$SRF_FR_1_TOP",
     ZR_CNT_ACC_01: "$ZR_CNT_01",
-    SURF_TS_1_EXT: "NO_SURF",
-    MAT_FI_1: "$MAT_FR_1",
+    MAT_TS_1: "$MAT_1",
     DS_WACA_ZM_ART_02: "#DS_WACA_U_ART_01",
     SRF_FR_1_TOP: "EG_HPL_HGP_W980_ST7_0_8",
-    MAT_CM_1: "$MAT_FR_1",
     ZB_D: "500",
-    SRF_FI_1_TOP: "$SRF_FR_1_TOP",
-    SRF_CM_1_TOP: "$SRF_FR_1_TOP",
+    HAS_HC: "0",
+    MAT_1: "EG_ED_W980_ST2_18mm",
+    SRF_TS_1_EXT: "$SURF_TS_1_EXT",
     DS_WACA_ZR_ART_01: "#DS_WACA_U_ART_01",
+    HAS_DR: "0",
+    MAT_BA_1: "$MAT_FR_1",
+    SURF_TS_1_EXT: "NO_SURF",
     ZL_CNT_ACC_02: "($ZL_CNT_ACC_01 + $ZL_CNT_02)",
+    MAT_CM_1: "$MAT_FR_1",
+    IS_DR_EXT: "0",
+    SRF_BA_1_TOP: "$SRF_FR_1_TOP",
+    SRF_CM_1_TOP: "$SRF_FR_1_TOP",
     ZM_CNT_ACC_03: "($ZM_CNT_ACC_02 + $ZM_CNT_03)",
     ZL_CNT_02: "2",
+    ZL_CNT_99: "1",
     ZM_CNT_03: "2",
     DS_WACA_ZL_ART_02: "#DS_WACA_U_ART_01",
-    DS_WACA_ZM_ART_03: "#DS_WACA_U_ART_01",
     ZR_CNT_ACC_02: "($ZR_CNT_ACC_01 + $ZR_CNT_02)",
+    DS_WACA_ZM_ART_03: "#DS_WACA_U_ART_01",
     ZR_CNT_02: "1",
+    DS_WACA_ZR_ART_02: "#DS_WACA_U_ART_01",
     ZL_CNT_ACC_03: "($ZL_CNT_ACC_02 + $ZL_CNT_03)",
     ZM_CNT_ACC_04: "($ZM_CNT_ACC_03 + $ZM_CNT_04)",
-    ZM_CNT_04: "1",
-    DS_WACA_ZR_ART_02: "#DS_WACA_U_ART_01",
     ZL_CNT_03: "1",
-    DS_WACA_ZM_ART_04: "#DS_WACA_U_ART_01",
-    DS_WACA_ZL_ART_03: "#DS_WACA_U_ART_01",
     ZR_CNT_ACC_03: "($ZR_CNT_ACC_02 + $ZR_CNT_03)",
-    ZM_CNT_ACC_05: "($ZM_CNT_ACC_04 + $ZM_CNT_05)",
+    ZM_CNT_04: "1",
+    DS_WACA_ZL_ART_03: "#DS_WACA_U_ART_01",
     ZR_CNT_03: "2",
-    ZL_CNT_ACC_04: "($ZL_CNT_ACC_03 + $ZL_CNT_04)",
-    ZM_CNT_05: "2",
-    ZL_CNT_04: "2",
+    DS_WACA_ZM_ART_04: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_03: "#DS_WACA_U_ART_01",
+    ZL_CNT_ACC_04: "($ZL_CNT_ACC_03 + $ZL_CNT_04)",
+    ZM_CNT_99: "1",
+    ZL_CNT_04: "2",
+    ZM_CNT_ACC_05: "($ZM_CNT_ACC_04 + $ZM_CNT_05)",
     DS_WACA_ZL_ART_04: "#DS_WACA_U_ART_01",
-    DS_WACA_ZM_ART_05: "#DS_WACA_U_ART_01",
     ZR_CNT_ACC_04: "($ZR_CNT_ACC_03 + $ZR_CNT_04)",
+    ZM_CNT_05: "2",
     ZR_CNT_04: "1",
-    ZL_CNT_ACC_05: "($ZL_CNT_ACC_04 + $ZL_CNT_05)",
-    ZM_CNT_ACC_06: "($ZM_CNT_ACC_05 + $ZM_CNT_06)",
+    DS_WACA_ZM_ART_05: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_04: "#DS_WACA_U_ART_01",
-    ZL_CNT_05: "1",
+    ZM_CNT_ACC_06: "($ZM_CNT_ACC_05 + $ZM_CNT_06)",
+    ZL_CNT_ACC_05: "($ZL_CNT_ACC_04 + $ZL_CNT_05)",
     ZM_CNT_06: "1",
+    ZL_CNT_05: "1",
+    ZR_CNT_ACC_05: "($ZR_CNT_ACC_04 + $ZR_CNT_05)",
     DS_WACA_ZL_ART_05: "#DS_WACA_U_ART_01",
     DS_WACA_ZM_ART_06: "#DS_WACA_U_ART_01",
-    ZR_CNT_ACC_05: "($ZR_CNT_ACC_04 + $ZR_CNT_05)",
     ZR_CNT_05: "2",
+    DS_WACA_ZR_ART_05: "#DS_WACA_U_ART_01",
     ZL_CNT_ACC_06: "($ZL_CNT_ACC_05 + $ZL_CNT_06)",
     ZM_CNT_ACC_07: "($ZM_CNT_ACC_06 + $ZM_CNT_07)",
-    DS_WACA_ZR_ART_05: "#DS_WACA_U_ART_01",
-    ZM_CNT_07: "1",
-    ZL_CNT_06: "2",
-    DS_WACA_ZM_ART_07: "#DS_WACA_U_ART_01",
-    DS_WACA_ZL_ART_06: "#DS_WACA_U_ART_01",
     ZR_CNT_ACC_06: "($ZR_CNT_ACC_05 + $ZR_CNT_06)",
+    ZL_CNT_06: "2",
+    ZM_CNT_07: "1",
     ZR_CNT_06: "1",
+    DS_WACA_ZL_ART_06: "#DS_WACA_U_ART_01",
+    DS_WACA_ZM_ART_07: "#DS_WACA_U_ART_01",
+    DS_WACA_ZR_ART_06: "#DS_WACA_U_ART_01",
+    ZR_CNT_ACC_07: "($ZR_CNT_ACC_06 + $ZR_CNT_07)",
     ZM_CNT_ACC_08: "($ZM_CNT_ACC_07 + $ZM_CNT_08)",
     ZL_CNT_ACC_07: "($ZL_CNT_ACC_06 + $ZL_CNT_07)",
-    DS_WACA_ZR_ART_06: "#DS_WACA_U_ART_01",
     ZM_CNT_08: "1",
+    ZR_CNT_07: "1",
     ZL_CNT_07: "1",
     DS_WACA_ZM_ART_08: "#DS_WACA_U_ART_01",
     DS_WACA_ZL_ART_07: "#DS_WACA_U_ART_01",
-    ZR_CNT_ACC_07: "($ZR_CNT_ACC_06 + $ZR_CNT_07)",
-    ZM_CNT_ACC_09: "($ZM_CNT_ACC_08 + $ZM_CNT_09)",
-    ZR_CNT_07: "1",
-    ZL_CNT_ACC_08: "($ZL_CNT_ACC_07 + $ZL_CNT_08)",
-    ZM_CNT_09: "1",
     DS_WACA_ZR_ART_07: "#DS_WACA_U_ART_01",
-    ZL_CNT_08: "1",
-    DS_WACA_ZM_ART_09: "#DS_WACA_U_ART_01",
-    DS_WACA_ZL_ART_08: "#DS_WACA_U_ART_01",
+    ZM_CNT_ACC_09: "($ZM_CNT_ACC_08 + $ZM_CNT_09)",
+    ZL_CNT_ACC_08: "($ZL_CNT_ACC_07 + $ZL_CNT_08)",
     ZR_CNT_ACC_08: "($ZR_CNT_ACC_07 + $ZR_CNT_08)",
+    ZL_CNT_08: "1",
+    ZM_CNT_09: "1",
     ZR_CNT_08: "1",
-    ZM_CNT_ACC_10: "($ZM_CNT_ACC_09 + $ZM_CNT_10)",
+    DS_WACA_ZL_ART_08: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_08: "#DS_WACA_U_ART_01",
+    DS_WACA_ZM_ART_09: "#DS_WACA_U_ART_01",
+    ZM_CNT_ACC_10: "($ZM_CNT_ACC_09 + $ZM_CNT_10)",
     ZL_CNT_ACC_09: "($ZL_CNT_ACC_08 + $ZL_CNT_09)",
     ZM_CNT_10: "1",
+    ZR_CNT_ACC_09: "($ZR_CNT_ACC_08 + $ZR_CNT_09)",
     ZL_CNT_09: "1",
     DS_WACA_ZM_ART_10: "#DS_WACA_U_ART_01",
-    DS_WACA_ZL_ART_09: "#DS_WACA_U_ART_01",
-    ZR_CNT_ACC_09: "($ZR_CNT_ACC_08 + $ZR_CNT_09)",
     ZR_CNT_09: "1",
-    ZL_CNT_ACC_10: "($ZL_CNT_ACC_09 + $ZL_CNT_10)",
-    ZM_CNT_ACC_11: "($ZM_CNT_ACC_10 + $ZM_CNT_11)",
+    DS_WACA_ZL_ART_09: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_09: "#DS_WACA_U_ART_01",
-    ZL_CNT_10: "1",
+    ZM_CNT_ACC_11: "($ZM_CNT_ACC_10 + $ZM_CNT_11)",
     ZM_CNT_11: "1",
-    DS_WACA_ZL_ART_10: "#DS_WACA_U_ART_01",
+    ZL_CNT_ACC_10: "($ZL_CNT_ACC_09 + $ZL_CNT_10)",
     DS_WACA_ZM_ART_11: "#DS_WACA_U_ART_01",
     ZR_CNT_ACC_10: "($ZR_CNT_ACC_09 + $ZR_CNT_10)",
-    ZL_CNT_ACC_11: "($ZL_CNT_ACC_10 + $ZL_CNT_11)",
+    ZL_CNT_10: "1",
     ZR_CNT_10: "1",
-    ZM_CNT_ACC_12: "($ZM_CNT_ACC_11 + $ZM_CNT_12)",
-    ZL_CNT_11: "1",
+    DS_WACA_ZL_ART_10: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_10: "#DS_WACA_U_ART_01",
+    ZM_CNT_ACC_12: "($ZM_CNT_ACC_11 + $ZM_CNT_12)",
     ZM_CNT_12: "1",
-    DS_WACA_ZL_ART_11: "#DS_WACA_U_ART_01",
+    ZL_CNT_ACC_11: "($ZL_CNT_ACC_10 + $ZL_CNT_11)",
     DS_WACA_ZM_ART_12: "#DS_WACA_U_ART_01",
-    ZL_CNT_ACC_12: "($ZL_CNT_ACC_11 + $ZL_CNT_12)",
     ZR_CNT_ACC_11: "($ZR_CNT_ACC_10 + $ZR_CNT_11)",
-    ZM_CNT_ACC_13: "($ZM_CNT_ACC_12 + $ZM_CNT_13)",
     ZR_CNT_11: "1",
+    ZL_CNT_11: "1",
+    DS_WACA_ZL_ART_11: "#DS_WACA_U_ART_01",
+    DS_WACA_ZR_ART_11: "#DS_WACA_U_ART_01",
+    ZL_CNT_ACC_12: "($ZL_CNT_ACC_11 + $ZL_CNT_12)",
+    ZM_CNT_ACC_13: "($ZM_CNT_ACC_12 + $ZM_CNT_13)",
+    ZR_CNT_ACC_12: "($ZR_CNT_ACC_11 + $ZR_CNT_12)",
     ZL_CNT_12: "1",
     ZM_CNT_13: "1",
-    DS_WACA_ZR_ART_11: "#DS_WACA_U_ART_01",
+    ZR_CNT_12: "1",
     DS_WACA_ZL_ART_12: "#DS_WACA_U_ART_01",
     DS_WACA_ZM_ART_13: "#DS_WACA_U_ART_01",
-    ZL_CNT_ACC_13: "($ZL_CNT_ACC_12 + $ZL_CNT_13)",
-    ZL_CNT_13: "1",
-    ZR_CNT_ACC_12: "($ZR_CNT_ACC_11 + $ZR_CNT_12)",
-    ZM_CNT_ACC_14: "($ZM_CNT_ACC_13 + $ZM_CNT_14)",
-    ZR_CNT_12: "1",
-    ZM_CNT_14: "1",
-    DS_WACA_ZL_ART_13: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_12: "#DS_WACA_U_ART_01",
-    DS_WACA_ZM_ART_14: "#DS_WACA_U_ART_01",
-    ZL_CNT_ACC_14: "($ZL_CNT_ACC_13 + $ZL_CNT_14)",
-    ZL_CNT_14: "1",
+    ZL_CNT_ACC_13: "($ZL_CNT_ACC_12 + $ZL_CNT_13)",
+    ZM_CNT_ACC_14: "($ZM_CNT_ACC_13 + $ZM_CNT_14)",
     ZR_CNT_ACC_13: "($ZR_CNT_ACC_12 + $ZR_CNT_13)",
-    ZM_CNT_ACC_15: "($ZM_CNT_ACC_14 + $ZM_CNT_15)",
+    ZL_CNT_13: "1",
+    ZM_CNT_14: "1",
     ZR_CNT_13: "1",
-    DS_WACA_ZL_ART_14: "#DS_WACA_U_ART_01",
-    ZM_CNT_15: "1",
+    DS_WACA_ZM_ART_14: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_13: "#DS_WACA_U_ART_01",
-    DS_WACA_ZM_ART_15: "#DS_WACA_U_ART_01",
+    DS_WACA_ZL_ART_13: "#DS_WACA_U_ART_01",
+    ZM_CNT_ACC_15: "($ZM_CNT_ACC_14 + $ZM_CNT_15)",
     ZR_CNT_ACC_14: "($ZR_CNT_ACC_13 + $ZR_CNT_14)",
-    ZL_CNT_ACC_15: "($ZL_CNT_ACC_14 + $ZL_CNT_15)",
+    ZL_CNT_ACC_14: "($ZL_CNT_ACC_13 + $ZL_CNT_14)",
+    ZM_CNT_15: "1",
     ZR_CNT_14: "1",
+    ZL_CNT_14: "1",
+    DS_WACA_ZM_ART_15: "#DS_WACA_U_ART_01",
     DS_WACA_ZR_ART_14: "#DS_WACA_U_ART_01",
+    DS_WACA_ZL_ART_14: "#DS_WACA_U_ART_01",
+    ZR_CNT_ACC_15: "($ZR_CNT_ACC_14 + $ZR_CNT_15)",
+    ZL_CNT_ACC_15: "($ZL_CNT_ACC_14 + $ZL_CNT_15)",
+    ZR_CNT_15: "1",
     ZL_CNT_15: "1",
     DS_WACA_ZL_ART_15: "#DS_WACA_U_ART_01",
-    ZR_CNT_ACC_15: "($ZR_CNT_ACC_14 + $ZR_CNT_15)",
-    ZR_CNT_15: "1",
   },
   descriptors: {
     DS_LD_ZM_SZ_01: [
@@ -371,49 +376,6 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZM_SZ_02: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZM_CNT_ACC_02 - $ZM_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZM_CNT_02 * $ZM_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZM_CNT_ACC_02 - $ZM_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
     DS_LD_ZL_SZ_01: [
       {
         action: "($ZL_CNT_01 * $ZL_STEP ) mm:1",
@@ -483,6 +445,76 @@ export const shape = {
         ],
       },
     ],
+    DS_ZFL_FR: [
+      {
+        action: "CP_1_FI_1111",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "AD zone info01",
+                comparison: "=",
+                rightValue: "1",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 2,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_LD_ZM_SZ_02: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<=",
+                rightValue: "$ZM_CNT_ACC_02 - $ZM_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZM_CNT_02 * $ZM_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">",
+                rightValue: "$ZM_CNT_ACC_02 - $ZM_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
     DS_ZFR_SI: [
       {
         action: "CP_1_FI_1000",
@@ -509,7 +541,76 @@ export const shape = {
         ],
       },
     ],
-    DS_ZFL_FR: [
+    DS_LD_ZR_SZ_01: [
+      {
+        action: "1:($ZR_CNT_01 * $ZR_STEP ) mm",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "!=",
+                rightValue: "1-$IS_RL_N",
+              },
+              {
+                leftValue: "0",
+                comparison: ">",
+                rightValue: "$ZR_CNT_ACC_01 - $ZR_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "1:(1 * $ZR_STEP ) mm",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "!=",
+                rightValue: "1-$IS_RL_N",
+              },
+              {
+                leftValue: "0",
+                comparison: "<=",
+                rightValue: "$ZR_CNT_ACC_01 - $ZR_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "1:($ZB_D + $ZR_STEP +50) mm",
+        nodenum: 3,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "=",
+                rightValue: "1-$IS_RL_N",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 4,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_ZFR_FR: [
       {
         action: "CP_1_FI_1111",
         nodenum: 1,
@@ -753,102 +854,6 @@ export const shape = {
       {
         action: "",
         nodenum: 9,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
-    DS_LD_ZR_SZ_01: [
-      {
-        action: "1:($ZR_CNT_01 * $ZR_STEP ) mm",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "!=",
-                rightValue: "1-$IS_RL_N",
-              },
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZR_CNT_ACC_01 - $ZR_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "1:(1 * $ZR_STEP ) mm",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "!=",
-                rightValue: "1-$IS_RL_N",
-              },
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZR_CNT_ACC_01 - $ZR_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "1:($ZB_D + $ZR_STEP +50) mm",
-        nodenum: 3,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "=",
-                rightValue: "1-$IS_RL_N",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 4,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
-    DS_ZFR_FR: [
-      {
-        action: "CP_1_FI_1111",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "AD zone info01",
-                comparison: "=",
-                rightValue: "1",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 2,
         roles: [
           {
             roles: [],
@@ -1114,49 +1119,6 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZM_SZ_05: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZM_CNT_ACC_05 - $ZM_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZM_CNT_05 * $ZM_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZM_CNT_ACC_05 - $ZM_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
     DS_LD_ZL_SZ_04: [
       {
         action: "1",
@@ -1185,6 +1147,49 @@ export const shape = {
                 leftValue: "0",
                 comparison: ">",
                 rightValue: "$ZL_CNT_ACC_04 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_LD_ZM_SZ_05: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<=",
+                rightValue: "$ZM_CNT_ACC_05 - $ZM_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZM_CNT_05 * $ZM_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">",
+                rightValue: "$ZM_CNT_ACC_05 - $ZM_CNT",
               },
             ],
           },
@@ -1372,49 +1377,6 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZL_SZ_06: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZL_CNT_ACC_06 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZL_CNT_06 * $ZL_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZL_CNT_ACC_06 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
     DS_LD_ZM_SZ_07: [
       {
         action: "1",
@@ -1443,6 +1405,49 @@ export const shape = {
                 leftValue: "0",
                 comparison: ">",
                 rightValue: "$ZM_CNT_ACC_07 - $ZM_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_LD_ZL_SZ_06: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<=",
+                rightValue: "$ZL_CNT_ACC_06 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZL_CNT_06 * $ZL_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">",
+                rightValue: "$ZL_CNT_ACC_06 - $ZL_CNT",
               },
             ],
           },
@@ -1544,49 +1549,6 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZL_SZ_07: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZL_CNT_ACC_07 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZL_CNT_07 * $ZL_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZL_CNT_ACC_07 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
     DS_LD_ZR_SZ_07: [
       {
         action: "0:1",
@@ -1615,6 +1577,49 @@ export const shape = {
                 leftValue: "0",
                 comparison: ">",
                 rightValue: "$ZR_CNT_ACC_07 - $ZR_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_LD_ZL_SZ_07: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<=",
+                rightValue: "$ZL_CNT_ACC_07 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZL_CNT_07 * $ZL_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">",
+                rightValue: "$ZL_CNT_ACC_07 - $ZL_CNT",
               },
             ],
           },
@@ -1673,49 +1678,6 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZL_SZ_08: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZL_CNT_ACC_08 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZL_CNT_08 * $ZL_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZL_CNT_ACC_08 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
     DS_LD_ZR_SZ_08: [
       {
         action: "0:1",
@@ -1744,6 +1706,49 @@ export const shape = {
                 leftValue: "0",
                 comparison: ">",
                 rightValue: "$ZR_CNT_ACC_08 - $ZR_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_LD_ZL_SZ_08: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<=",
+                rightValue: "$ZL_CNT_ACC_08 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZL_CNT_08 * $ZL_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">",
+                rightValue: "$ZL_CNT_ACC_08 - $ZL_CNT",
               },
             ],
           },
@@ -2017,49 +2022,6 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZL_SZ_11: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZL_CNT_ACC_11 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZL_CNT_11 * $ZL_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZL_CNT_ACC_11 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
     DS_LD_ZM_SZ_12: [
       {
         action: "1",
@@ -2088,6 +2050,49 @@ export const shape = {
                 leftValue: "0",
                 comparison: ">",
                 rightValue: "$ZM_CNT_ACC_12 - $ZM_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_LD_ZL_SZ_11: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<=",
+                rightValue: "$ZL_CNT_ACC_11 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZL_CNT_11 * $ZL_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">",
+                rightValue: "$ZL_CNT_ACC_11 - $ZL_CNT",
               },
             ],
           },
@@ -2146,49 +2151,6 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZL_SZ_12: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<=",
-                rightValue: "$ZL_CNT_ACC_12 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZL_CNT_12 * $ZL_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">",
-                rightValue: "$ZL_CNT_ACC_12 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
     DS_LD_ZM_SZ_13: [
       {
         action: "1",
@@ -2232,7 +2194,7 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZL_SZ_13: [
+    DS_LD_ZL_SZ_12: [
       {
         action: "1",
         nodenum: 1,
@@ -2242,15 +2204,15 @@ export const shape = {
             roles: [
               {
                 leftValue: "0",
-                comparison: "<",
-                rightValue: "$ZL_CNT_ACC_13 - $ZL_CNT",
+                comparison: "<=",
+                rightValue: "$ZL_CNT_ACC_12 - $ZL_CNT",
               },
             ],
           },
         ],
       },
       {
-        action: "($ZL_CNT_13 * $ZL_STEP ) mm:1",
+        action: "($ZL_CNT_12 * $ZL_STEP ) mm:1",
         nodenum: 2,
         roles: [
           {
@@ -2258,8 +2220,8 @@ export const shape = {
             roles: [
               {
                 leftValue: "0",
-                comparison: ">=",
-                rightValue: "$ZL_CNT_ACC_13 - $ZL_CNT",
+                comparison: ">",
+                rightValue: "$ZL_CNT_ACC_12 - $ZL_CNT",
               },
             ],
           },
@@ -2318,6 +2280,49 @@ export const shape = {
         ],
       },
     ],
+    DS_LD_ZL_SZ_13: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<",
+                rightValue: "$ZL_CNT_ACC_13 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZL_CNT_13 * $ZL_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">=",
+                rightValue: "$ZL_CNT_ACC_13 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
     DS_LD_ZM_SZ_14: [
       {
         action: "1",
@@ -2346,49 +2351,6 @@ export const shape = {
                 leftValue: "0",
                 comparison: ">",
                 rightValue: "$ZM_CNT_ACC_14 - $ZM_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "",
-        nodenum: 3,
-        roles: [
-          {
-            roles: [],
-          },
-        ],
-      },
-    ],
-    DS_LD_ZL_SZ_14: [
-      {
-        action: "1",
-        nodenum: 1,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: "<",
-                rightValue: "$ZL_CNT_ACC_14 - $ZL_CNT",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        action: "($ZL_CNT_14 * $ZL_STEP ) mm:1",
-        nodenum: 2,
-        roles: [
-          {
-            operator: "AND",
-            roles: [
-              {
-                leftValue: "0",
-                comparison: ">=",
-                rightValue: "$ZL_CNT_ACC_14 - $ZL_CNT",
               },
             ],
           },
@@ -2533,7 +2495,7 @@ export const shape = {
         ],
       },
     ],
-    DS_LD_ZL_SZ_15: [
+    DS_LD_ZL_SZ_14: [
       {
         action: "1",
         nodenum: 1,
@@ -2544,14 +2506,14 @@ export const shape = {
               {
                 leftValue: "0",
                 comparison: "<",
-                rightValue: "$ZL_CNT_ACC_15 - $ZL_CNT",
+                rightValue: "$ZL_CNT_ACC_14 - $ZL_CNT",
               },
             ],
           },
         ],
       },
       {
-        action: "($ZL_CNT_15 * $ZL_STEP ) mm:1",
+        action: "($ZL_CNT_14 * $ZL_STEP ) mm:1",
         nodenum: 2,
         roles: [
           {
@@ -2560,7 +2522,7 @@ export const shape = {
               {
                 leftValue: "0",
                 comparison: ">=",
-                rightValue: "$ZL_CNT_ACC_15 - $ZL_CNT",
+                rightValue: "$ZL_CNT_ACC_14 - $ZL_CNT",
               },
             ],
           },
@@ -2604,6 +2566,49 @@ export const shape = {
                 leftValue: "0",
                 comparison: ">=",
                 rightValue: "$ZR_CNT_ACC_15 - $ZR_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "",
+        nodenum: 3,
+        roles: [
+          {
+            roles: [],
+          },
+        ],
+      },
+    ],
+    DS_LD_ZL_SZ_15: [
+      {
+        action: "1",
+        nodenum: 1,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: "<",
+                rightValue: "$ZL_CNT_ACC_15 - $ZL_CNT",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        action: "($ZL_CNT_15 * $ZL_STEP ) mm:1",
+        nodenum: 2,
+        roles: [
+          {
+            operator: "AND",
+            roles: [
+              {
+                leftValue: "0",
+                comparison: ">=",
+                rightValue: "$ZL_CNT_ACC_15 - $ZL_CNT",
               },
             ],
           },
@@ -2730,7 +2735,7 @@ export const shape = {
                     },
                   },
                   {
-                    name: "SELECTABLE_3",
+                    name: "CAMERA_3",
                     index: "0.0.1.1.1",
                     divDir: "V",
                     linDiv: "$BASE_HEIGHT mm:1:$CROWN_HEIGHT mm",
@@ -4678,7 +4683,7 @@ export const shape = {
                       },
                     ],
                     clickable: "LEFT",
-                    modifiable: true,
+                    camera: "LEFT",
                     sides: {
                       "0": null,
                       "1": null,
@@ -4806,7 +4811,7 @@ export const shape = {
                     },
                   },
                   {
-                    name: "SELECTABLE_1",
+                    name: "CAMERA_1",
                     index: "0.1.0.1.1",
                     divDir: "V",
                     linDiv: "$BASE_HEIGHT mm:1:$CROWN_HEIGHT mm",
@@ -6800,7 +6805,7 @@ export const shape = {
                       },
                     ],
                     clickable: "RIGHT",
-                    modifiable: true,
+                    camera: "RIGHT",
                     sides: {
                       "0": null,
                       "1": null,
@@ -6929,7 +6934,7 @@ export const shape = {
                 },
               },
               {
-                name: "SELECTABLE_0",
+                name: "CAMERA_0",
                 index: "0.2.1.1",
                 divDir: "V",
                 linDiv: "$BASE_HEIGHT mm:1:$CROWN_HEIGHT mm",
@@ -8837,7 +8842,7 @@ export const shape = {
                   },
                 ],
                 clickable: "FRONT",
-                modifiable: true,
+                camera: "FRONT",
                 sides: {
                   "0": null,
                   "1": null,
@@ -9324,8 +9329,8 @@ export const shape = {
         },
       },
     ],
-    clickable: "FRONT",
     modifiable: true,
+    clickable: "FRONT",
     sides: {
       "0": null,
       "1": null,
