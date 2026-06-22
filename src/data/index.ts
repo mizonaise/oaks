@@ -22,7 +22,7 @@ export const shapes = {
   l: {
     name: "OAKSOME_SHAPE_L",
     form: {
-      id: "116",
+      id: "130",
       name: "Shape_L_V02",
       version: "1.0.0",
     },
@@ -38,7 +38,7 @@ export const shapes = {
   cmb: {
     name: "OAKSOME_SHAPE_CMB_1111",
     form: {
-      id: "115",
+      id: "121",
       name: "Shape_CMB_V03",
       version: "1.0.0",
     },
