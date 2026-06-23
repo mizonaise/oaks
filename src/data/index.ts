@@ -43,6 +43,15 @@ export const shapes = {
       version: "1.0.0",
     },
   },
+
+  cmbos: {
+    name: "OS_SHAPE_CMB_1111",
+    form: {
+      id: "135",
+      name: "OS_SHAPE_CMB_1111",
+      version: "1.0.0",
+    },
+  },
 };
 
 export type ShapeKey = keyof typeof shapes;
@@ -93,6 +102,7 @@ export const datasets = {
   F: { form: f.form, shape: f.shape, formExpo: f.formExpo },
   L: { form: l.form, shape: l.shape, formExpo: l.formExpo },
   CMB: { form: cmb.form, shape: cmb.shape, formExpo: cmb.formExpo },
+  CMBT: { form: cmb.form, shape: cmb.shape, formExpo: cmb.formExpo },
 } satisfies Record<string, Dataset>;
 
 export type DatasetId = keyof typeof datasets;
@@ -110,7 +120,7 @@ export function getDatasetName(id: DatasetId): string | undefined {
 }
 
 /** Summary rows for listing every available shape (e.g. the landing page). */
-export const datasetList = datasetIds.map((id) => ({
-  id,
-  name: getDatasetName(id) ?? id,
-}));
+// export const datasetList = datasetIds.map((id) => ({
+//   id,
+//   name: getDatasetName(id) ?? id,
+// }));
