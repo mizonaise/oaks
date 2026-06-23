@@ -52,6 +52,10 @@ export type Box = {
   isArticle: boolean;
   index: string;
   name?: string;
+  // Names of all named ancestor zones (root → parent), in order. Lets callers
+  // layer each ancestor zone's namespace onto a descendant article, matching
+  // the variable inheritance `walkZone` applies to `vars`.
+  nameChain?: string[];
   // Article-only: the original node + the variable scope in effect at this
   // point in the tree, used to resolve `divider` → article name.
   node?: ZoneNode;
@@ -385,6 +389,7 @@ export function walkZone(
     depth: number,
     scope: FlatVars,
     clickable?: string,
+    chain: string[] = [],
   ) => {
     // A collapsed box has no renderable volume. We treat any axis under
     // `MIN_AXIS` mm as collapsed, not just <= 0: fixed-size subtraction can
@@ -408,6 +413,7 @@ export function walkZone(
       isArticle,
       index: node.index ?? "",
       name: node.name,
+      nameChain: chain,
       node: isArticle ? node : undefined,
       vars: isArticle ? vars : undefined,
       sides: extractSides(node, vars),
@@ -417,9 +423,13 @@ export function walkZone(
 
     if (isArticle) return;
 
+    // Children inherit this node's namespace, so they also inherit its place in
+    // the name chain.
+    const childChain = node.name ? [...chain, node.name] : chain;
+
     if (node.divDir === "I") {
       for (const c of node.children ?? [])
-        recurse(c, box, depth + 1, vars, facing);
+        recurse(c, box, depth + 1, vars, facing, childChain);
       return;
     }
 
@@ -454,7 +464,7 @@ export function walkZone(
     const children = node.children ?? [];
 
     if (!slices || slices.length === 0 || !axis) {
-      for (const c of children) recurse(c, box, depth + 1, vars, facing);
+      for (const c of children) recurse(c, box, depth + 1, vars, facing, childChain);
       return;
     }
 
@@ -491,13 +501,14 @@ export function walkZone(
         d: axis === "z" ? size : box.d,
       };
       const child = children[i];
-      if (child) recurse(child, childBox, depth + 1, vars, facing);
+      if (child) recurse(child, childBox, depth + 1, vars, facing, childChain);
       else {
         out.push({
           ...childBox,
           depth: depth + 1,
           isArticle: false,
           index: `${node.index ?? ""}#${i}`,
+          nameChain: childChain,
         });
       }
       cursor += direction * size;

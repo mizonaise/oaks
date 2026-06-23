@@ -157,9 +157,17 @@ function collectZoneSets(
     if (!model) continue;
     const zoneName = box.node.name;
     const facing = box.clickable;
+    // Layer every ancestor zone's namespace (root → parent) then the article's
+    // own, so a parent zone's overrides reach its child articles — matching the
+    // variable inheritance `walkZone` already applies. Nearer scopes win.
+    const chainVars = (box.nameChain ?? []).reduce<Record<string, unknown>>(
+      (acc, ns) => ({ ...acc, ...scopeVars(nested, ns) }),
+      {},
+    );
     const vars: Record<string, unknown> = {
       ...sizeVars(box, facing),
       ...globalChanges,
+      ...chainVars,
       ...(zoneName ? scopeVars(nested, zoneName) : {}),
       ___MODEL_NAME: model,
     };
