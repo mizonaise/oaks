@@ -165,7 +165,7 @@ export const RoomWalls = memo(function RoomWalls ({
         position={[cx, wallH / 2, 0]}
         rotation={[0, 0, 0]}
         args={[roomW, wallH]}
-        map={backTex}
+        // map={backTex}
       />
 
       {/* Left wall — only when built-in on the left.
