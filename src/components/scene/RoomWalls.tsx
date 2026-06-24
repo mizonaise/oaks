@@ -17,7 +17,7 @@ export function isBuiltIn (raw: unknown): boolean {
 type WallBand = { axis: 'u' | 'v'; at: number; reach: number }
 
 const GRAY = 'rgba(196, 199, 204, 1)'
-const GRAY_TRANSPARENT = 'rgba(196, 199, 204, 0)'
+const GRAY_TRANSPARENT = 'rgba(255, 255, 255, 1)'
 
 /**
  * Builds a straight (linear) gradient texture: a gray band at `band.at` fading
@@ -115,6 +115,13 @@ export const RoomWalls = memo(function RoomWalls ({
     [sideAt, sideReach]
   )
 
+  // Ceiling: same banded gradient as the side walls, along its V axis (world z),
+  // so the gray band has the same width and sits at the front (by the unit).
+  const topTex = useMemo(
+    () => makeLinearGradient({ axis: 'v', at: sideAt, reach: sideReach }),
+    [sideAt, sideReach]
+  )
+
   const Plane = ({
     position,
     rotation,
@@ -135,7 +142,7 @@ export const RoomWalls = memo(function RoomWalls ({
       <planeGeometry args={args} />
       {/* A mapped wall is transparent: only the gray pool shows, fading to
           nothing. Floor/ceiling (no map) stay opaque white. */}
-      <meshStandardMaterial
+      <meshBasicMaterial
         color='#ffffff'
         map={map}
         transparent={map != null}
@@ -153,11 +160,12 @@ export const RoomWalls = memo(function RoomWalls ({
         args={[roomW, roomD]}
       />
 
-      {/* Ceiling */}
+      {/* Ceiling — back→front linear gradient (gray at back fading to white). */}
       <Plane
         position={[cx, wallH, roomD / 2]}
         rotation={[Math.PI / 2, 0, 0]}
         args={[roomW, roomD]}
+        map={topTex}
       />
 
       {/* Back wall (behind the shape, at z = 0) */}

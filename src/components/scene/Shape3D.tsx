@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   OrbitControls,
@@ -168,8 +168,6 @@ export function Shape3D ({
   // Constrain the horizontal orbit so the camera can't swing past a built-in
   // wall and see the unit from outside. A built-in side limits the camera to
   // the corridor between the walls; open sides allow free rotation.
-  const builtInLeft = isBuiltIn(globalVars.IS_BI_L)
-  const builtInRight = isBuiltIn(globalVars.IS_BI_R)
   const controlsRef = useRef<OrbitControlsImpl>(null)
 
   // When a zone with a `camera` side is selected, hide anything sitting between
@@ -219,7 +217,14 @@ export function Shape3D ({
       >
         <ContrastIcon />
       </button>
-      <Canvas shadows='soft' dpr={[1, 2]}>
+      <Canvas
+        shadows='soft'
+        dpr={[1, 2]}
+        // R3F defaults to ACES Filmic tone mapping, which renders a material
+        // `#ffffff` as a slightly off (grayish) white — so the canvas white
+        // doesn't match the page's CSS white. Disable it for true white.
+        gl={{ toneMapping: THREE.NoToneMapping }}
+      >
         <SceneLights radius={Math.hypot(w, h, d) / 2} />
         {/* <OrthographicCamera makeDefault zoom={100} position={[0, h / 2, 100]} /> */}
         {dev ? (
@@ -260,7 +265,11 @@ export function Shape3D ({
             })}
           </group>
 
-          {!dev && <RoomWalls w={w} h={h} d={d} globalVars={globalVars} />}
+          {!dev && (
+            <Suspense fallback={null}>
+              <RoomWalls w={w} h={h} d={d} globalVars={globalVars} />
+            </Suspense>
+          )}
           <GroundShadow w={w} d={d} />
         </group>
         <OrbitControls
