@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FlatVars } from '@/lib/form/expr'
 import { evalExpr } from '@/lib/form/expr'
 import { Hierarchy } from './Hierarchy'
@@ -59,15 +59,22 @@ export function ShapeViewer ({
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null)
   const [showHierarchy, setShowHierarchy] = useState(false)
 
+  // Last requested zone that resolved to a box with a `camera`. An empty
+  // goToZone falls back to this so the camera returns to the previous framed
+  // zone instead of clearing the selection.
+  const lastCameraZone = useRef<string | null>(null)
+
   // When a zone name is requested (e.g. via goToZone), select the first box
-  // whose name matches it. `null`/no match leaves the current selection alone.
+  // whose name matches it. An empty request falls back to the last zone that
+  // had a camera; if there's none, the current selection is left alone.
   useEffect(() => {
-    if (!selectedName) {
-      setSelectedIndex(null)
-    } else {
-      const match = boxes.find(b => b.name === selectedName)
-      if (match) setSelectedIndex(match.index)
-    }
+    const target = selectedName || lastCameraZone.current
+    if (!target) return
+    const match = boxes.find(b => b.name === target)
+    if (!match) return
+    setSelectedIndex(match.index)
+    // Remember camera zones so a later empty request can return here.
+    if (selectedName && match.camera) lastCameraZone.current = selectedName
   }, [selectedName, boxes])
 
   return (
