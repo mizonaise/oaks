@@ -746,10 +746,10 @@
   resolved "https://registry.yarnpkg.com/@nolyfill/is-core-module/-/is-core-module-1.0.39.tgz#3dc35ba0f1e66b403c00b39344f870298ebb1c8e"
   integrity sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==
 
-"@oak-some/configurator-previewer@^1.10.0":
-  version "1.10.0"
-  resolved "https://npm.pkg.github.com/download/@oak-some/configurator-previewer/1.10.0/aaab5a47e33d1d7228716ab031cd8f2d08a152a8#aaab5a47e33d1d7228716ab031cd8f2d08a152a8"
-  integrity sha512-HW/8WXpHYSjodwq6KCYD/GnBTKDwpMyEKIBUx0/qZKQYW+1ATGgK0FRHDhTXZd12tPfItbSk+PAlTdWbDld2bw==
+"@oak-some/configurator-previewer@^1.10.1":
+  version "1.10.1"
+  resolved "https://npm.pkg.github.com/download/@oak-some/configurator-previewer/1.10.1/c7b965a39fd165072d0cd5bff829a6b37bfb5ee2#c7b965a39fd165072d0cd5bff829a6b37bfb5ee2"
+  integrity sha512-moNiD+Dx6NWXWA7s9w3uM4mRCFb28dg8d0qmFf1n2P/fSu9D6Ix8JpV66WUWo7k8wCxKSAYzFAjbG4FrDZqXMg==
 
 "@oak-some/special-kms@^1.0.5":
   version "1.0.5"
