@@ -70,6 +70,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
               {
                 name: articleName,
                 visibility: true,
+                isShadowed: true,
                 isContrasted: contrasted,
                 isDimensioned: showDims,
                 isDoorOpen: doorOpen,
