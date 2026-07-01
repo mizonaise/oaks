@@ -216,9 +216,9 @@ export function buildShapeXml(
   scopes: Scopes,
 ): string {
   const basket = "3938";
-  const orderN = `OS_${new Date().getTime()}`;
+  const orderN = `SO_OS_${new Date().getTime()}`;
   const dispDate = new Date().toLocaleDateString("fr-FR");
-  const commandN = "O_TL_24_0623";
+  // const commandN = "O_TL_24_0623";
 
   const bounds = {
     w: readDim(shape.width, scopes.globalVars, 6000),
@@ -250,8 +250,6 @@ export function buildShapeXml(
 <XML Type="ListBuilder">
   <Order No="${orderN}" DispDate="${dispDate}" Basket="${basket}">
     <Head>
-      <COMM>${commandN}</COMM>
-      <ARTICLENO>${orderN}</ARTICLENO>
     </Head>
     <CONTACT_INFO>
       <FIELD_MOBILE></FIELD_MOBILE>
