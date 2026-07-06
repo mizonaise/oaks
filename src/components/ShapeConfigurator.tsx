@@ -14,6 +14,7 @@ import {
 } from '@/lib/store/api/tecniboApi'
 
 import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
+import { PriceDisplay } from '@/components/PriceDisplay'
 
 /**
  * Inverse of `setNested`: `{ global: { X: 1 }, A: { B: 2 } }` → `{ X: 1, "A.B": 2 }`.
@@ -321,6 +322,7 @@ export function ShapeConfigurator ({
           )}
         </div>
         <aside className='lg:flex-1 lg:max-w-md min-w-0 overflow-auto'>
+          <PriceDisplay scopes={resolvedScopes} shape={shape} />
           <ConfiguratorPreviewDialog
             onVariableSetChange={vars => {
               // console.log('onVariableSetChange', vars)

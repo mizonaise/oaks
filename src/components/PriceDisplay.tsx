@@ -1,0 +1,145 @@
+'use client'
+
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { FlatVars } from '@/lib/form/expr'
+import type { ShapeData } from '@/lib/shape/schema'
+import { computeZoneSizes } from '@/lib/shape/xmlExport'
+import {
+  useGetPricingMutation,
+  type PricingRequest
+} from '@/lib/store/api/tecniboApi'
+
+/** The resolved variable scopes as produced by `ShapeConfigurator`. */
+interface Scopes {
+  globalVars: FlatVars
+  namespaces: Record<string, FlatVars>
+}
+
+/**
+ * Stringify every value in a flat var map, dropping `undefined`/`null` (the
+ * pricing engine expects string values, matching the sample request body).
+ */
+function stringifyVars (vars: FlatVars): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const k in vars) {
+    const v = vars[k]
+    if (v === undefined || v === null) continue
+    out[k] = String(v)
+  }
+  return out
+}
+
+function toPricingRequest (scopes: Scopes, shape: ShapeData): PricingRequest {
+  // Article dimensions per zone, derived from the shape tree the same way the
+  // XML export does (width/depth/height, with the facing-based axis swap).
+  const zoneSizes = computeZoneSizes(shape, scopes)
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[pricing] zoneSizes', zoneSizes)
+  }
+
+  const namespaces: Record<string, Record<string, string>> = {}
+  for (const name in scopes.namespaces) {
+    const size = zoneSizes[name]
+    // Skip zones without valid dimensions: no computed size, or any of
+    // width/depth/height missing or zero. Those can't be priced.
+    if (
+      !size ||
+      !size.ART_SIZEX ||
+      !size.ART_SIZEY ||
+      !size.ART_SIZEZ
+    ) {
+      continue
+    }
+    namespaces[name] = {
+      ...stringifyVars(scopes.namespaces[name]),
+      // Inject the computed ART_SIZEX/Y/Z (overriding any stale values).
+      ART_SIZEX: String(size.ART_SIZEX),
+      ART_SIZEY: String(size.ART_SIZEY),
+      ART_SIZEZ: String(size.ART_SIZEZ)
+    }
+  }
+  return { globalVars: stringifyVars(scopes.globalVars), namespaces }
+}
+
+const euro = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 2
+})
+
+/**
+ * Price banner shown at the top of the form. Recomputes the total via the
+ * pricing endpoint whenever the resolved scopes change (debounced), so the
+ * displayed price tracks the user's edits.
+ */
+export function PriceDisplay ({
+  scopes,
+  shape
+}: {
+  scopes: Scopes
+  shape: ShapeData
+}) {
+  const [getPricing, { data, isLoading, isError }] = useGetPricingMutation()
+
+  // Keep the last successfully computed total so the price doesn't flash to a
+  // spinner on every recompute.
+  const [lastTotal, setLastTotal] = useState<number | null>(null)
+
+  const request = useMemo(
+    () => toPricingRequest(scopes, shape),
+    [scopes, shape]
+  )
+
+  // Serialize the body so we only refetch when it actually changes (the memo
+  // above mints a fresh object each render).
+  const requestKey = useMemo(() => JSON.stringify(request), [request])
+
+  const latestRequest = useRef(request)
+  latestRequest.current = request
+
+  useEffect(() => {
+    // Debounce: the form emits variable changes in bursts.
+    const t = setTimeout(() => {
+      void getPricing(latestRequest.current)
+        .unwrap()
+        .then(res => setLastTotal(res.totalPrice))
+        .catch(() => {
+          /* handled via isError below */
+        })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [requestKey, getPricing])
+
+  const total = data?.totalPrice ?? lastTotal
+  const showSpinner = isLoading && total === null
+
+  return (
+    <section className='mb-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950'>
+      <div className='flex items-baseline justify-between gap-3'>
+        <div>
+          <h3 className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
+            Total price
+          </h3>
+          {isError && total === null ? (
+            <p className='mt-1 text-sm text-red-600 dark:text-red-400'>
+              Price unavailable
+            </p>
+          ) : showSpinner ? (
+            <p className='mt-1 text-sm text-zinc-400'>Calculating…</p>
+          ) : (
+            <p className='mt-0.5 text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100'>
+              {total === null ? '—' : euro.format(total)}
+            </p>
+          )}
+        </div>
+        {isLoading && total !== null && (
+          <span
+            className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-300 border-t-transparent dark:border-zinc-600'
+            aria-label='Updating price'
+          />
+        )}
+      </div>
+    </section>
+  )
+}

@@ -12,6 +12,31 @@ interface ShapeResponse {
 }
 
 /**
+ * Request/response for the pricing endpoint:
+ * `POST /api/shape/pricing` → `api.tecnibo.com/pricing`.
+ * The body mirrors the resolved variable scopes ({ globalVars, namespaces }),
+ * with all values sent as strings (the pricing engine expects strings).
+ */
+export interface PricingRequest {
+  globalVars: Record<string, string>;
+  namespaces: Record<string, Record<string, string>>;
+}
+
+export interface PricingBreakdownItem {
+  pricingKey: string;
+  namespaceName: string;
+  nodenum: number;
+  expression: string;
+  amount: number;
+}
+
+export interface PricingResponse {
+  totalPrice: number;
+  descriptorTotals: Record<string, number>;
+  breakdown: PricingBreakdownItem[];
+}
+
+/**
  * RTK Query API for the Tecnibo backends. Three resources:
  *  - article: rp-engine article data (per article name)
  *  - shape:   shape definition (by remote shape name, e.g. OAKSOME_SHAPE_L)
@@ -59,8 +84,23 @@ export const tecniboApi = createApi({
         // },
       }),
     }),
+
+    // → api.tecnibo.com/pricing
+    // Computes the total price from the resolved variable scopes.
+    getPricing: builder.mutation<PricingResponse, PricingRequest>({
+      query: (body) => ({
+        url: `/api/shape/pricing`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      }),
+    }),
   }),
 });
 
-export const { useGetArticleQuery, useGetShapeQuery, useGetFormExpoQuery } =
-  tecniboApi;
+export const {
+  useGetArticleQuery,
+  useGetShapeQuery,
+  useGetFormExpoQuery,
+  useGetPricingMutation,
+} = tecniboApi;

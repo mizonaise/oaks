@@ -263,6 +263,64 @@ ${sets}
 `;
 }
 
+/**
+ * Per-zone article dimensions, keyed by zone namespace name (`ART_ZONE_FR_NN`),
+ * as `{ ART_SIZEX (width), ART_SIZEY (depth), ART_SIZEZ (height) }`.
+ *
+ * Walks the shape tree the same way `collectZoneSets` does and applies the same
+ * facing-based axis swap as `sizeVars`, so the sizes match what the XML export
+ * emits — just under the `ART_SIZE*` names the pricing engine expects.
+ */
+export function computeZoneSizes(
+  shape: ShapeData,
+  scopes: Scopes,
+): Record<string, { ART_SIZEX: number; ART_SIZEY: number; ART_SIZEZ: number }> {
+  const bounds = {
+    w: readDim(shape.width, scopes.globalVars, 6000),
+    d: readDim(shape.depth, scopes.globalVars, 500),
+    h: readDim(shape.height, scopes.globalVars, 3000),
+  };
+
+  const boxes = walkZone(
+    shape.zone as Parameters<typeof walkZone>[0],
+    { x: 0, y: 0, z: 0, ...bounds },
+    scopes.globalVars,
+    scopes.namespaces,
+  );
+
+  // The zone names we must key by are the namespace names actually sent to the
+  // pricing engine (`ART_ZONE_FR_NN`). An article leaf node's own `name` may
+  // differ from its zone namespace, so match the article's name chain (leaf
+  // first, then ancestors) against the known namespaces and key by that.
+  const known = new Set(Object.keys(scopes.namespaces));
+
+  const out: Record<
+    string,
+    { ART_SIZEX: number; ART_SIZEY: number; ART_SIZEZ: number }
+  > = {};
+  for (const box of boxes) {
+    if (!box.isArticle) continue;
+    // Prefer the article's own name, then walk up the ancestor chain (nearest
+    // first) to find the enclosing namespace that pricing knows about.
+    const candidates = [box.name, ...[...(box.nameChain ?? [])].reverse()];
+    const zoneName = candidates.find(
+      (n): n is string => !!n && known.has(n),
+    );
+    if (!zoneName || out[zoneName]) continue;
+    const { SIZEX, SIZEY, SIZEZ } = sizeVars(box, box.clickable) as {
+      SIZEX: number;
+      SIZEY: number;
+      SIZEZ: number;
+    };
+    out[zoneName] = {
+      ART_SIZEX: SIZEX,
+      ART_SIZEY: SIZEY,
+      ART_SIZEZ: SIZEZ,
+    };
+  }
+  return out;
+}
+
 /** Trigger a browser download of `content` as `filename`. */
 export function downloadXml(filename: string, content: string): void {
   const blob = new Blob([content], { type: "application/xml" });
