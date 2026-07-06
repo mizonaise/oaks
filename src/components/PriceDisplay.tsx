@@ -114,13 +114,17 @@ export function PriceDisplay ({
   const total = data?.totalPrice ?? lastTotal
   const showSpinner = isLoading && total === null
 
-  // Non-null, non-zero descriptor totals shown in the price-details tooltip.
+  // Non-null, non-zero descriptor totals shown in the price-details tooltip,
+  // grouped by comment (prices summed) so a comment appears once.
   const details = useMemo(() => {
     const totals = data?.descriptorTotals
     if (!totals) return []
-    return Object.values(totals).filter(
-      d => d.price != null && d.price !== 0
-    )
+    const byComment = new Map<string, number>()
+    for (const d of Object.values(totals)) {
+      if (d.price == null || d.price === 0) continue
+      byComment.set(d.comment, (byComment.get(d.comment) ?? 0) + d.price)
+    }
+    return [...byComment].map(([comment, price]) => ({ comment, price }))
   }, [data])
 
   return (
@@ -142,9 +146,9 @@ export function PriceDisplay ({
                 </button>
                 <div className='pointer-events-none absolute left-0 top-full z-10 mt-1 w-max min-w-40 rounded-md border border-zinc-200 bg-white p-2 text-xs opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 dark:border-zinc-800 dark:bg-zinc-900'>
                   <dl className='space-y-1'>
-                    {details.map((d, i) => (
+                    {details.map(d => (
                       <div
-                        key={`${d.comment}-${i}`}
+                        key={d.comment}
                         className='flex justify-between gap-4'
                       >
                         <dt className='text-zinc-500 dark:text-zinc-400'>
