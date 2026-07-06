@@ -30,9 +30,15 @@ export interface PricingBreakdownItem {
   amount: number;
 }
 
+/** Per-descriptor total, keyed by descriptor id (e.g. `DS_PRICING_MAT_CC`). */
+export interface DescriptorTotal {
+  comment: string;
+  price: number;
+}
+
 export interface PricingResponse {
   totalPrice: number;
-  descriptorTotals: Record<string, number>;
+  descriptorTotals: Record<string, DescriptorTotal>;
   breakdown: PricingBreakdownItem[];
 }
 
