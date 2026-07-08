@@ -29,7 +29,8 @@ body {
 /* ─────────────────────────────────────────────────────────────────
 @oak-some/configurator-previewer — standalone stylesheet
 No framework required. Re-map the tokens below to your brand.
-Theme: GREEN (#c1fd48). Requires previewer ≥ 1.10.0 for the slider stepper.
+Theme: GREEN (#c1fd48). Requires previewer ≥ 1.10.0 for the slider stepper,
+≥ 1.13.2 for the field/tab info affordance (tap-to-open on mobile).
 ───────────────────────────────────────────────────────────────── */
 
 /* ── Tokens ───────────────────────────────────────────────────── */
@@ -117,6 +118,9 @@ Theme: GREEN (#c1fd48). Requires previewer ≥ 1.10.0 for the slider stepper.
 
 /* Square, flush, uppercase tabs */
 [data-previewer] [data-tab] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 20px;
   font-family: var(--p-font);
   font-size: 0.75rem;
@@ -141,6 +145,24 @@ Theme: GREEN (#c1fd48). Requires previewer ≥ 1.10.0 for the slider stepper.
   color: var(--p-primary-contrast);
   background: var(--p-primary);
   font-weight: 600;
+}
+/* Info icon on a tab: inherit the tab's text color so it reads on idle and
+active tabs alike; undo the tab's uppercase so the italic "i" isn't "I" */
+[data-previewer] [data-tab] [data-field-info-icon] {
+  color: currentColor;
+  border-color: currentColor;
+  letter-spacing: 0;
+  text-transform: none;
+}
+[data-previewer] [data-tab] [data-field-info-icon]:hover {
+  color: var(--p-bg);
+  background: var(--p-text);
+  border-color: var(--p-text);
+}
+[data-previewer] [data-tab][data-active="true"] [data-field-info-icon]:hover {
+  color: var(--p-primary);
+  background: var(--p-primary-contrast);
+  border-color: var(--p-primary-contrast);
 }
 
 /* Tab panel side padding; nested TAB sections bleed back to the edge
@@ -210,11 +232,22 @@ so their tab strips stay aligned at every nesting level */
 [data-previewer]
   [data-type="FIELD"]:has([data-slider-wrapper])
   [data-field-label] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-weight: 600;
   color: var(--p-text);
   white-space: nowrap;
+  min-width: 0;
+}
+/* Only the text ellipsizes when cramped — the info icon must never be clipped */
+[data-previewer]
+  [data-type="FIELD"]:has([data-slider-wrapper])
+  [data-field-label]
+  [data-field-label-text] {
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 [data-previewer]
   [data-type="FIELD"]:has([data-slider-wrapper])
@@ -224,16 +257,78 @@ so their tab strips stay aligned at every nesting level */
 }
 
 [data-previewer] [data-field-label] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--p-font);
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--p-text-sec);
   line-height: 1.4;
 }
+/* labelTop fields: label sits on its own line above the control */
+[data-previewer] [data-field-label][data-label-top="true"] {
+  display: flex;
+}
 
 [data-previewer] [data-field-control] {
   display: flex;
   align-items: center;
+}
+
+/* ── Field info tooltip ───────────────────────────────────────── */
+[data-previewer] [data-field-info] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+[data-previewer] [data-field-info-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 15px;
+  height: 15px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  color: #000000;
+  background: transparent;
+  border: 1.5px solid #000000;
+  border-radius: 50%;
+  cursor: help;
+  user-select: none;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+[data-previewer] [data-field-info-icon]:hover {
+  color: #ffffff;
+  background: #000000;
+  border-color: #000000;
+}
+/* Tooltip is rendered position: fixed by the package (top/left set inline);
+these are cosmetics only. Not scoped under [data-previewer] on purpose. */
+[data-field-info-tooltip] {
+  z-index: 2147483647;
+  /* Never exceed the viewport on narrow (mobile) screens */
+  max-width: min(260px, calc(100vw - 16px));
+  width: max-content;
+  padding: 6px 9px;
+  font-family: var(--p-font);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--p-bg);
+  background: var(--p-text);
+  border-radius: var(--p-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  white-space: normal;
+  pointer-events: none;
 }
 
 [data-previewer] [data-no-options] {
@@ -258,7 +353,6 @@ tracking it. --_pct (0–1) is set inline by the package. */
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: left 80ms linear;
 }
 
 /* −/+ buttons: round chips, revealed on field hover */
@@ -480,10 +574,6 @@ tracking it. --_pct (0–1) is set inline by the package. */
   background: var(--p-primary);
   border-color: var(--p-primary);
 }
-[data-previewer] [data-option][data-selected="true"]:hover {
-  background: var(--p-primary-dk);
-  border-color: var(--p-primary-dk);
-}
 
 [data-previewer] [data-combo-image] {
   width: 24px;
@@ -576,22 +666,22 @@ unselected = small round number chip — all on one aligned baseline ───�
   justify-content: center;
   overflow: hidden;
   border: 2px solid transparent;
-  border-radius: var(--p-radius);
-  background: var(--p-hover);
+  /* border-radius: var(--p-radius); */
+  background: var(--p-divider);
 }
 [data-previewer] [data-combo-type="circle"]:hover {
   border-color: var(--p-divider);
-  background: var(--p-hover);
+  background: var(--p-divider);
 }
 [data-previewer] [data-combo-type="circle"][data-selected="true"] {
-  border-color: var(--p-primary);
+  border-color: var(--p-text);
   background: var(--p-bg);
 }
 [data-previewer] [data-combo-type="circle"] [data-combo-image] {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: var(--p-radius);
+  /* border-radius: var(--p-radius); */
 }
 
 /* ── Mobile (layout="mobile" or below the responsive breakpoint) ── */
@@ -638,4 +728,17 @@ mobile only adds nested-panel spacing and full-width controls. */
   [data-type="FIELD"]:has([data-slider-wrapper])
   [data-field-control] {
   width: 100%;
+}
+/* Slider label stacks on its own row on mobile — keep the icon inline with the
+text (the desktop grid alignment no longer applies) */
+[data-previewer][data-layout="mobile"]
+  [data-type="FIELD"]:has([data-slider-wrapper])
+  [data-field-label] {
+  justify-content: flex-start;
+}
+/* Info icon on a mobile tab: the tab strip scrolls horizontally, so keep the
+icon from being squeezed. On mobile the tooltip is tap-only (the package
+disables hover in mobile layout). */
+[data-previewer][data-layout="mobile"] [data-tab] [data-field-info-icon] {
+  flex: none;
 }
