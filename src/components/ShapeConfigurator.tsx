@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ShapeViewer } from '@/components/scene/ShapeViewer'
 import { resolveVariables } from '@/lib/form/variables'
 import type { FlatVars } from '@/lib/form/expr'
@@ -155,6 +155,18 @@ export function ShapeConfigurator ({
   // the registry pointed at the previous shape.
   setShapeData(shape)
 
+  // Seed the form from the URL query string: every `?FIELD=value` pair becomes
+  // an `initialValues` entry (`{ FIELD: 'value' }`). Read from
+  // `window.location.search` (client-only) once on mount — SSR has no URL, so
+  // it starts empty and fills in after hydration.
+  const [initialValues, setInitialValues] = useState<Record<string, string>>({})
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const values: Record<string, string> = {}
+    for (const [key, value] of params.entries()) values[key] = value
+    setInitialValues(values)
+  }, [])
+
   // Nested-by-dots updates emitted by the form (bare names → under "global",
   // dotted names → nested objects).
   const [nestedUpdates, setNestedUpdates] = useState<Record<string, unknown>>(
@@ -169,6 +181,7 @@ export function ShapeConfigurator ({
   // a (possibly nested) label set. Shown as flat "key: value" rows under the
   // canvas so the user sees what's configured.
   const [labels, setLabels] = useState<Record<string, string>>({})
+  const [formValues, setFormValues] = useState<Record<string, string>>({})
 
   const handleChangeVariables = useCallback((name: string, value: unknown) => {
     setNestedUpdates(prev => {
@@ -259,7 +272,8 @@ export function ShapeConfigurator ({
         action,
         name,
         // Raw form values as emitted by the configurator (nested by dots).
-        // form: nestedUpdates,
+        form: formValues,
+        description: labels,
         // Resolved variable scopes driving the shape.
         // Same body the pricing endpoint receives (globalVars + namespaces).
         shape: toPricingRequest(resolvedScopes, shape),
@@ -372,6 +386,7 @@ export function ShapeConfigurator ({
         <aside className='lg:flex-1 lg:max-w-md min-w-0 overflow-auto'>
           <PriceDisplay scopes={resolvedScopes} shape={shape} />
           <ConfiguratorPreviewDialog
+            initialValues={initialValues}
             onVariableSetChange={vars => {
               // console.log('onVariableSetChange', vars)
               for (const [name, value] of Object.entries(vars)) {
@@ -380,14 +395,12 @@ export function ShapeConfigurator ({
             }}
             onGoToZone={(zoneId: string) => {
               // Select the box whose zone name matches in the viewer.
-              console.log('Go To Zone: =================', zoneId)
               setSelectedZone(zoneId)
             }}
             onNameSetChange={names => {
-              console.log('onNameSetChange', names)
+              setFormValues(names)
             }}
             onLabelSetChange={labelSet => {
-              console.log('onLabelSetChange', labelSet)
               setLabels(flattenLabels(labelSet as Record<string, unknown>))
             }}
             // Auto-switch to the mobile (nested tab-strip) layout below 768px,
