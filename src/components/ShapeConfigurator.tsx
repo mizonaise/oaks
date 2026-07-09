@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ShapeViewer } from '@/components/scene/ShapeViewer'
 import { resolveVariables } from '@/lib/form/variables'
 import type { FlatVars } from '@/lib/form/expr'
@@ -14,7 +14,7 @@ import {
 } from '@/lib/store/api/tecniboApi'
 
 import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
-import { PriceDisplay } from '@/components/PriceDisplay'
+import { PriceDisplay, toPricingRequest } from '@/components/PriceDisplay'
 
 /**
  * Inverse of `setNested`: `{ global: { X: 1 }, A: { B: 2 } }` → `{ X: 1, "A.B": 2 }`.
@@ -239,6 +239,51 @@ export function ShapeConfigurator ({
     downloadXml(`${name}_${Date.now()}.xml`, xml)
   }, [nestedUpdates, refs, shape, resolvedScopes])
 
+  // Snapshot function for the 3D canvas, supplied by ShapeViewer once the
+  // canvas mounts. Returns a PNG data URL (or null if unavailable).
+  const captureCanvasRef = useRef<(() => string | null) | null>(null)
+
+  // Build the full payload posted to the parent window: the XML export, the
+  // raw form values, the resolved shape scopes, the exact pricing-endpoint
+  // request body, and a PNG snapshot of the canvas.
+  const buildMessagePayload = useCallback(
+    (action: 'addToCart' | 'fav') => {
+      const name = refs?.shapeName ?? 'SHAPE'
+      const xmlContent = buildShapeXml(
+        nestedUpdates,
+        name,
+        shape,
+        resolvedScopes
+      )
+      const res = {
+        action,
+        name,
+        // Raw form values as emitted by the configurator (nested by dots).
+        // form: nestedUpdates,
+        // Resolved variable scopes driving the shape.
+        // Same body the pricing endpoint receives (globalVars + namespaces).
+        shape: toPricingRequest(resolvedScopes, shape),
+        xmlFile: {
+          filename: `${name}_${Date.now()}.xml`,
+          content: xmlContent
+        },
+        // PNG snapshot of the current 3D view, as a data URL.
+        image: captureCanvasRef.current?.() ?? null
+      }
+      console.log('[message] payload', res)
+      return res
+    },
+    [nestedUpdates, refs, shape, resolvedScopes]
+  )
+
+  const handleAddToCart = useCallback(() => {
+    window.parent.postMessage(buildMessagePayload('addToCart'), '*')
+  }, [buildMessagePayload])
+
+  const handleFavorite = useCallback(() => {
+    window.parent.postMessage(buildMessagePayload('fav'), '*')
+  }, [buildMessagePayload])
+
   // Unknown id: there's no shape name or form id to fetch.
   if (!refs) {
     return (
@@ -306,6 +351,9 @@ export function ShapeConfigurator ({
             shape={shape}
             scopes={resolvedScopes}
             selectedName={selectedZone}
+            onCaptureReady={fn => {
+              captureCanvasRef.current = fn
+            }}
           />
           <LabelsSection labels={labels} />
           {dev && (
@@ -335,7 +383,11 @@ export function ShapeConfigurator ({
               console.log('Go To Zone: =================', zoneId)
               setSelectedZone(zoneId)
             }}
+            onNameSetChange={names => {
+              console.log('onNameSetChange', names)
+            }}
             onLabelSetChange={labelSet => {
+              console.log('onLabelSetChange', labelSet)
               setLabels(flattenLabels(labelSet as Record<string, unknown>))
             }}
             // Auto-switch to the mobile (nested tab-strip) layout below 768px,
@@ -345,6 +397,25 @@ export function ShapeConfigurator ({
             imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
             configuratorJson={formExpo}
           />
+
+          <div className='mt-10 flex items-center gap-3'>
+            <button
+              type='button'
+              onClick={handleAddToCart}
+              className='inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
+            >
+              <CartIcon />
+              Add to cart
+            </button>
+            <button
+              type='button'
+              onClick={handleFavorite}
+              aria-label='Add to favorites'
+              className='inline-flex items-center justify-center rounded-md border border-zinc-300 px-3 py-2.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'
+            >
+              <HeartIcon />
+            </button>
+          </div>
         </aside>
       </main>
     </div>
@@ -423,6 +494,44 @@ function LabelsSection ({ labels }: { labels: Record<string, string> }) {
         ))}
       </dl>
     </section>
+  )
+}
+
+// Shopping-cart glyph for the add-to-cart button.
+function CartIcon () {
+  return (
+    <svg
+      width='18'
+      height='18'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <circle cx='9' cy='20' r='1' />
+      <circle cx='18' cy='20' r='1' />
+      <path d='M2 3h2l2.4 12.4a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7H5' />
+    </svg>
+  )
+}
+
+// Heart glyph for the favorites button.
+function HeartIcon () {
+  return (
+    <svg
+      width='18'
+      height='18'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <path d='M12 21C12 21 4 13.7 4 8.5A4.5 4.5 0 0 1 12 5.5 4.5 4.5 0 0 1 20 8.5C20 13.7 12 21 12 21z' />
+    </svg>
   )
 }
 

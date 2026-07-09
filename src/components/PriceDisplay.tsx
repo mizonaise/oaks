@@ -10,7 +10,7 @@ import {
 } from '@/lib/store/api/tecniboApi'
 
 /** The resolved variable scopes as produced by `ShapeConfigurator`. */
-interface Scopes {
+export interface Scopes {
   globalVars: FlatVars
   namespaces: Record<string, FlatVars>
 }
@@ -29,7 +29,10 @@ function stringifyVars (vars: FlatVars): Record<string, string> {
   return out
 }
 
-function toPricingRequest (scopes: Scopes, shape: ShapeData): PricingRequest {
+export function toPricingRequest (
+  scopes: Scopes,
+  shape: ShapeData
+): PricingRequest {
   // Article dimensions per zone, derived from the shape tree the same way the
   // XML export does (width/depth/height, with the facing-based axis swap).
   const zoneSizes = computeZoneSizes(shape, scopes)

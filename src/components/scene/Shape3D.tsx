@@ -29,6 +29,10 @@ type Props = {
    *  in-scene label, with the `w`/`h`/`d` flags selecting which of the box's
    *  dimensions to include. */
   dimCpConfig?: DimCpConfig
+  /** Receives a `() => string | null` that snapshots the WebGL canvas as a PNG
+   *  data URL (null if the canvas isn't ready). Called on mount so a parent can
+   *  capture the current view on demand (e.g. for add-to-cart). */
+  onCaptureReady?: (capture: () => string | null) => void
 }
 
 const MM = 1
@@ -153,13 +157,31 @@ export function Shape3D ({
   globalVars,
   selectedIndex,
   onSelect,
-  dimCpConfig = DEFAULT_DIM_CP_CONFIG
+  dimCpConfig = DEFAULT_DIM_CP_CONFIG,
+  onCaptureReady
 }: Props) {
   const w = bounds.w * MM * SCALE
   const d = bounds.d * MM * SCALE
   const h = bounds.h * MM * SCALE
   const ox = -w / 2
   const oz = -d / 2
+
+  // The underlying <canvas> element, so a parent can snapshot the current view.
+  // `preserveDrawingBuffer` (below) keeps the framebuffer readable after the
+  // frame, which `toDataURL` needs.
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    if (!onCaptureReady) return
+    onCaptureReady(() => {
+      const canvas = canvasRef.current
+      if (!canvas) return null
+      try {
+        return canvas.toDataURL('image/png')
+      } catch {
+        return null
+      }
+    })
+  }, [onCaptureReady])
 
   const [showDims, setShowDims] = useState(false)
   const [doorsOpen, setDoorsOpen] = useState(false)
@@ -218,12 +240,15 @@ export function Shape3D ({
         <ContrastIcon />
       </button>
       <Canvas
+        ref={canvasRef}
         shadows='soft'
         dpr={[1, 2]}
         // R3F defaults to ACES Filmic tone mapping, which renders a material
         // `#ffffff` as a slightly off (grayish) white — so the canvas white
         // doesn't match the page's CSS white. Disable it for true white.
-        gl={{ toneMapping: THREE.NoToneMapping }}
+        // `preserveDrawingBuffer` keeps the framebuffer readable after each
+        // frame so `canvas.toDataURL()` can snapshot the current view.
+        gl={{ toneMapping: THREE.NoToneMapping, preserveDrawingBuffer: true }}
       >
         <SceneLights radius={Math.hypot(w, h, d) / 2} />
         {/* <OrthographicCamera makeDefault zoom={100} position={[0, h / 2, 100]} /> */}

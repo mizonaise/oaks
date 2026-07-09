@@ -22,6 +22,9 @@ type Props = {
   dev?: boolean
   /** When set, selects the box whose zone `name` matches (e.g. from goToZone). */
   selectedName?: string | null
+  /** Receives a `() => string | null` that snapshots the canvas as a PNG data
+   *  URL, so a parent can capture the current view on demand. */
+  onCaptureReady?: (capture: () => string | null) => void
 }
 
 export function readDim (
@@ -40,7 +43,8 @@ export function ShapeViewer ({
   shape,
   scopes,
   dev = false,
-  selectedName
+  selectedName,
+  onCaptureReady
 }: Props) {
   const { boxes, bounds } = useMemo(() => {
     const { globalVars, namespaces } = scopes
@@ -110,6 +114,7 @@ export function ShapeViewer ({
           globalVars={scopes.globalVars}
           selectedIndex={selectedIndex}
           onSelect={() => {}}
+          onCaptureReady={onCaptureReady}
         />
       </div>
     </div>
