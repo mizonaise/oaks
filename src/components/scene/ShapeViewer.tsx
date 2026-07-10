@@ -73,7 +73,10 @@ export function ShapeViewer ({
   // had a camera; if there's none, the current selection is left alone.
   useEffect(() => {
     const target = selectedName || lastCameraZone.current
-    if (!target) return
+    if (!target) {
+      setSelectedIndex(null)
+      return
+    }
     const match = boxes.find(b => b.name === target)
     if (!match) return
     setSelectedIndex(match.index)
