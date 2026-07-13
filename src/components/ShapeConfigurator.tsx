@@ -284,7 +284,6 @@ export function ShapeConfigurator ({
         // PNG snapshot of the current 3D view, as a data URL.
         image: captureCanvasRef.current?.() ?? null
       }
-      console.log('[message] payload', res)
       return res
     },
     [nestedUpdates, refs, shape, resolvedScopes]

@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { Html } from '@react-three/drei'
+import { Edges, Html } from '@react-three/drei'
 import type { ResolvedCp } from './resolveCp'
 import { useTextureWithFallback } from './useTextureWithFallback'
 
@@ -70,6 +70,7 @@ export const CpPanel = memo(function CpPanel ({
         ) : (
           <meshStandardMaterial key='plain' color='#888' />
         )}
+        <Edges color={'#000000'} opacity={0.20} transparent={true} />
       </mesh>
       {dims?.map((d, k) => {
         // Centered on the box center, floating just in front of the front face.

@@ -152,6 +152,31 @@ function resolveDescriptor(name: string, X: number, vars: FlatVars): string {
   return "";
 }
 
+// Splits a `<weight>+<expr>mm` filler token into its weight and min-size
+// expressions, or returns null if the token isn't of that form. Both parts may
+// be arbitrary expressions containing their own `+` and parentheses (e.g.
+// `(round($ZF_CNT/2 - 0.4))+($IS_BI_L * $ZFL_W)mm`), so we split on the *last*
+// top-level `+` (depth 0) rather than a regex, then require a trailing `mm`.
+function splitWeightPlusMin(
+  token: string,
+): { weight: string; size: string } | null {
+  if (!/(\s*mm)+\s*$/i.test(token)) return null;
+  const body = token.replace(/(\s*mm)+\s*$/i, "").trim();
+  let depth = 0;
+  let splitAt = -1;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    else if (ch === "+" && depth === 0) splitAt = i;
+  }
+  if (splitAt < 0) return null;
+  const weight = body.slice(0, splitAt).trim();
+  const size = body.slice(splitAt + 1).trim();
+  if (weight === "" || size === "") return null;
+  return { weight, size };
+}
+
 function parseLinDiv(
   linDiv: string | undefined,
   parentAxisSize: number,
@@ -164,20 +189,29 @@ function parseLinDiv(
   }
 
   if (spec === "") return null;
-
-  return spec.split(":").map((rawToken) => {
+  if (linDiv === "#DS_LD_ZF_BA") {
+    console.log("parseLinDiv: resolved #DS_LD_ZF_BA →", spec);
+  }
+  const specs = spec.split(":").map((rawToken) => {
     const token = rawToken.trim();
     // Filler with minimum size: `<weight>+<expr>mm` (e.g. `1+400mm`).
-    const min = /^(\d+)\s*\+\s*(.+?)(?:\s*mm)+\s*$/i.exec(token);
+    // The weight is a bare integer or a fully-parenthesized expression
+    // (e.g. `(round($ZF_CNT/2 - 0.4))`); the min size is the trailing `mm`
+    // expression. Split on the top-level `+` between them so a `+` *inside*
+    // either side's parentheses doesn't get mistaken for the separator.
+    const min = splitWeightPlusMin(token);
     if (min) {
-      const weight = Number(min[1]);
-      const sizeExpr = min[2].trim();
+      const weightExpr = min.weight;
+      const weightNum = /^-?\d+(?:\.\d+)?$/.test(weightExpr)
+        ? Number(weightExpr)
+        : evalExpr(weightExpr, {}, {}, vars);
+      const sizeExpr = min.size;
       const minSize = /^-?\d+(?:\.\d+)?$/.test(sizeExpr)
         ? Number(sizeExpr)
         : evalExpr(sizeExpr, {}, {}, vars);
       return {
         size: null,
-        weight,
+        weight: Number.isFinite(weightNum) ? weightNum : 0,
         minSize: Number.isFinite(minSize) ? minSize : 0,
       };
     }
@@ -190,6 +224,15 @@ function parseLinDiv(
     const value = Number.isFinite(n) ? n : 0;
     return hasMm ? { size: value, weight: 0 } : { size: null, weight: value };
   });
+  if (linDiv === "#DS_LD_ZF_BA") {
+    console.log(
+      "parseLinDiv: resolved #DS_LD_ZF_BA →",
+      spec,
+      parentAxisSize,
+      specs,
+    );
+  }
+  return specs;
 }
 
 // Resolve a side-slot value: token like "AD zone info01" or literal "0".
@@ -311,47 +354,56 @@ function extractSides(node: Node, vars: FlatVars): BoxSides | undefined {
 
 function distribute(slices: Slice[], total: number): number[] {
   // Fixed slices are MINIMUMS that grow: they take at least their declared
-  // size, and any space a filler can't claim is added back to them. A filler
-  // with a `minSize` only "activates" if its weighted share of the leftover
-  // meets that minimum; otherwise it collapses to 0 and its share is absorbed
-  // by the fixed slices (split in proportion to their declared size).
+  // size, and any space no filler claims is added back to them.
   //
-  // `2300mm:1+400mm` in total 2551 → leftover 251 < 400, so the filler is
-  // inactive and the 251 goes to the fixed slice → [2551, 0].
-  // The same spec in total 3000 → leftover 700 ≥ 400, filler keeps it →
-  // [2300, 700].
+  // A filler with a `minSize` treats it as a GUARANTEED BASE: the slice takes
+  // that base first, then shares the space left after every base/fixed size in
+  // proportion to its `weight`. A filler with no base (`minSize` 0) is a plain
+  // weighted share. A base filler that can't fit its full base in the space
+  // still available collapses to 0, and that space is absorbed by the fixed
+  // slices (in proportion to their declared size) — dropping one frees space
+  // for the rest, so we iterate until the active set is stable.
+  //
+  // `(2)+115mm:(2)+538mm` in total 3000 → bases 115+538=653, remainder 2347
+  // split 2:2 → [115+1173.5, 538+1173.5] = [1288.5, 1711.5].
+  // `2300mm:1+400mm` in total 3000 → base 400 fits, remainder 300 → [2300, 700];
+  // in total 2551 → leftover 251 < base 400, filler collapses → [2551, 0].
   const fixedSum = slices.reduce((s, sl) => s + (sl.size ?? 0), 0);
+  const baseOf = (sl: Slice) => (sl.size === null ? (sl.minSize ?? 0) : 0);
 
-  // Decide which fillers are active. A filler with no minSize is always
-  // active; one with a minSize is active only when its share of the leftover
-  // (computed among the currently-active fillers) meets the minimum. Dropping
-  // a filler frees space for the rest, which can in turn push another below
-  // its minimum — so iterate until the active set is stable.
+  // Decide which base fillers are active. A filler is active unless its base
+  // doesn't fit in the leftover remaining after the fixed slices and the other
+  // active fillers' bases. Dropping one frees its base, which can let another
+  // fit — but dropping only ever adds space, so a single pass removing the
+  // fillers that don't fit (largest base first) reaches a stable set.
   const fillers = slices.filter((sl) => sl.size === null);
   const active = new Set(fillers);
   for (;;) {
     const leftover = Math.max(0, total - fixedSum);
-    const weightSum = [...active].reduce((s, sl) => s + sl.weight, 0);
-    const below = [...active].find(
-      (sl) =>
-        sl.minSize != null &&
-        weightSum > 0 &&
-        (leftover * sl.weight) / weightSum < sl.minSize,
+    const baseSum = [...active].reduce((s, sl) => s + baseOf(sl), 0);
+    if (baseSum <= leftover) break;
+    // Drop the active filler with the largest base until the bases fit.
+    const worst = [...active].reduce(
+      (a, b) => (baseOf(b) > baseOf(a) ? b : a),
     );
-    if (!below) break;
-    active.delete(below);
+    active.delete(worst);
     if (active.size === 0) break;
   }
 
   const leftover = Math.max(0, total - fixedSum);
+  const activeBaseSum = [...active].reduce((s, sl) => s + baseOf(sl), 0);
+  // Space shared by weight, after every active base is reserved.
+  const remainderPool = Math.max(0, leftover - activeBaseSum);
   const activeWeight = [...active].reduce((s, sl) => s + sl.weight, 0);
   const fillerShare = (sl: Slice) =>
-    active.has(sl) && activeWeight > 0
-      ? (leftover * sl.weight) / activeWeight
+    active.has(sl)
+      ? baseOf(sl) +
+        (activeWeight > 0 ? (remainderPool * sl.weight) / activeWeight : 0)
       : 0;
 
-  // Space the inactive fillers couldn't claim is absorbed by the fixed slices,
-  // distributed in proportion to their declared size.
+  // Space no filler claims is absorbed by the fixed slices, distributed in
+  // proportion to their declared size. This is the base of every inactive
+  // filler plus any remainder no active weight could claim.
   const claimed = [...active].reduce((s, sl) => s + fillerShare(sl), 0);
   const absorbed = Math.max(0, leftover - claimed);
 
@@ -364,7 +416,8 @@ function distribute(slices: Slice[], total: number): number[] {
   let fixedCursor = 0;
   return slices.map((sl) => {
     if (sl.size !== null) {
-      const grown = fixedSum > 0 ? sl.size + (absorbed * sl.size) / fixedSum : 0;
+      const grown =
+        fixedSum > 0 ? sl.size + (absorbed * sl.size) / fixedSum : 0;
       const avail = Math.max(0, total - fixedCursor);
       const placed = Math.min(grown, avail);
       fixedCursor += placed;
@@ -464,7 +517,8 @@ export function walkZone(
     const children = node.children ?? [];
 
     if (!slices || slices.length === 0 || !axis) {
-      for (const c of children) recurse(c, box, depth + 1, vars, facing, childChain);
+      for (const c of children)
+        recurse(c, box, depth + 1, vars, facing, childChain);
       return;
     }
 

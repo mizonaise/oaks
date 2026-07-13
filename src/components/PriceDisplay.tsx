@@ -37,9 +37,9 @@ export function toPricingRequest (
   // XML export does (width/depth/height, with the facing-based axis swap).
   const zoneSizes = computeZoneSizes(shape, scopes)
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[pricing] zoneSizes', zoneSizes)
-  }
+  // if (process.env.NODE_ENV !== 'production') {
+  //   console.log('[pricing] zoneSizes', zoneSizes)
+  // }
 
   const namespaces: Record<string, Record<string, string>> = {}
   for (const name in scopes.namespaces) {
