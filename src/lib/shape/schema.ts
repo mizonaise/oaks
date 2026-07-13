@@ -26,6 +26,17 @@ export type ZoneNode = {
 export type SidePart = {
   inSet?: number
   inSetFor?: string
+  // Per-edge oversize (mm) growing the panel outward past the box footprint,
+  // each with an optional `*For` expression evaluated in preference to the
+  // precomputed number. start/end = horizontal edges, top/bot = vertical edges.
+  startOff?: number
+  startOffFor?: string
+  endOff?: number
+  endOffFor?: string
+  topOff?: number
+  topOffFor?: string
+  botOff?: number
+  botOffFor?: string
   partType?: string
   cpName?: string | null
 }

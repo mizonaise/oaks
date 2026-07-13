@@ -18,6 +18,10 @@ export const CpPanel = memo(function CpPanel ({
   axis,
   sign,
   inSet = 0,
+  startOff = 0,
+  endOff = 0,
+  topOff = 0,
+  botOff = 0,
   sx,
   sy,
   sz,
@@ -28,6 +32,14 @@ export const CpPanel = memo(function CpPanel ({
   sign: 1 | -1
   /** Offset (mm) along the face normal; negative pulls the panel inward. */
   inSet?: number
+  /** Oversize (mm) grown outward along the panel's horizontal in-plane axis:
+   *  `startOff` on the negative side, `endOff` on the positive side. */
+  startOff?: number
+  endOff?: number
+  /** Oversize (mm) grown outward along the panel's vertical in-plane axis:
+   *  `topOff` on the positive side, `botOff` on the negative side. */
+  topOff?: number
+  botOff?: number
   sx: number
   sy: number
   sz: number
@@ -37,8 +49,28 @@ export const CpPanel = memo(function CpPanel ({
   const tex = useTextureWithFallback(cp.textureUrl)
   // Thickness in scene units; fall back to 2mm so a 0-thickness cp still shows.
   const t = Math.max(cp.thickness, 2) * MM
+
+  // The panel's normal is `axis`; the other two axes lie in its plane. `start`/
+  // `end` grow it along the horizontal in-plane axis (x, or z for an x-normal
+  // face), `top`/`bot` along the vertical one (y, or z for a y-normal face).
+  const hAxis: FaceAxis = axis === 'x' ? 'z' : 'x'
+  const vAxis: FaceAxis = axis === 'y' ? 'z' : 'y'
+  // Per-axis grow amounts: [negative-side, positive-side]. start/bot extend the
+  // negative side, end/top the positive side.
+  const grow: Record<FaceAxis, [number, number]> = { x: [0, 0], y: [0, 0], z: [0, 0] }
+  grow[hAxis] = [startOff * MM, endOff * MM]
+  grow[vAxis] = [botOff * MM, topOff * MM]
+  // Size along an axis = base span + both grow sides; center shift = half the
+  // difference so the panel extends outward past the grown edge.
+  const span = (base: number, a: FaceAxis) => base + grow[a][0] + grow[a][1]
+  const shift = (a: FaceAxis) => (grow[a][1] - grow[a][0]) / 2
+
   const args: [number, number, number] =
-    axis === 'x' ? [t, sy, sz] : axis === 'y' ? [sx, t, sz] : [sx, sy, t]
+    axis === 'x'
+      ? [t, span(sy, 'y'), span(sz, 'z')]
+      : axis === 'y'
+        ? [span(sx, 'x'), t, span(sz, 'z')]
+        : [span(sx, 'x'), span(sy, 'y'), t]
   // Panel edge wireframe, rebuilt only when the box dimensions change.
   const edges = useMemo(
     () => new THREE.EdgesGeometry(new THREE.BoxGeometry(...args)),
@@ -47,12 +79,13 @@ export const CpPanel = memo(function CpPanel ({
   // Flush position at the face, then shift along the face normal by `inSet`:
   // negative pushes the panel outward (past the face), positive pulls it inward
   // (toward the box center). The face normal points outward by `sign`, so an
-  // inward shift subtracts `sign * inSet`.
+  // inward shift subtracts `sign * inSet`. In-plane axes stay centered except
+  // for the oversize shift, which keeps the un-grown edge fixed.
   const offsetMm = inSet * MM
   const pos: [number, number, number] = [
-    axis === 'x' ? sign * (sx / 2 - t / 2) - sign * offsetMm : 0,
-    axis === 'y' ? sign * (sy / 2 - t / 2) - sign * offsetMm : 0,
-    axis === 'z' ? sign * (sz / 2 - t / 2) - sign * offsetMm : 0
+    axis === 'x' ? sign * (sx / 2 - t / 2) - sign * offsetMm : shift('x'),
+    axis === 'y' ? sign * (sy / 2 - t / 2) - sign * offsetMm : shift('y'),
+    axis === 'z' ? sign * (sz / 2 - t / 2) - sign * offsetMm : shift('z')
   ]
   // Arrows float just in front of the box, through its center. Each successive
   // arrow is nudged a little further forward so they don't z-fight or overlap.

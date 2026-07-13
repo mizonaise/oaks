@@ -10,6 +10,11 @@ type FaceSpec = {
   cpRef: string | null | undefined
   /** Inward offset (mm) from the box face, from the side's `inSet`. */
   inSet: number
+  /** Per-edge oversize (mm): grow the panel outward past the box footprint. */
+  startOff: number
+  endOff: number
+  topOff: number
+  botOff: number
   axis: FaceAxis
   sign: 1 | -1
 }
@@ -30,42 +35,30 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
   /** Per-CP dimension config; `null`/`undefined` hides all labels. */
   dimCpConfig?: DimCpConfig | null
 }) {
-  const faces = useMemo<FaceSpec[]>(
-    () => [
-      { cpRef: sides.top?.cp, inSet: sides.top?.inSet ?? 0, axis: 'y', sign: 1 },
-      {
-        cpRef: sides.bottom?.cp,
-        inSet: sides.bottom?.inSet ?? 0,
-        axis: 'y',
-        sign: -1
-      },
-      {
-        cpRef: sides.front?.cp,
-        inSet: sides.front?.inSet ?? 0,
-        axis: 'z',
-        sign: 1
-      },
-      {
-        cpRef: sides.back?.cp,
-        inSet: sides.back?.inSet ?? 0,
-        axis: 'z',
-        sign: -1
-      },
-      {
-        cpRef: sides.right?.cp,
-        inSet: sides.right?.inSet ?? 0,
-        axis: 'x',
-        sign: 1
-      },
-      {
-        cpRef: sides.left?.cp,
-        inSet: sides.left?.inSet ?? 0,
-        axis: 'x',
-        sign: -1
-      }
-    ],
-    [sides]
-  )
+  const faces = useMemo<FaceSpec[]>(() => {
+    const spec = (
+      face: ShapeBoxSides[keyof ShapeBoxSides],
+      axis: FaceAxis,
+      sign: 1 | -1
+    ): FaceSpec => ({
+      cpRef: face?.cp,
+      inSet: face?.inSet ?? 0,
+      startOff: face?.startOff ?? 0,
+      endOff: face?.endOff ?? 0,
+      topOff: face?.topOff ?? 0,
+      botOff: face?.botOff ?? 0,
+      axis,
+      sign
+    })
+    return [
+      spec(sides.top, 'y', 1),
+      spec(sides.bottom, 'y', -1),
+      spec(sides.front, 'z', 1),
+      spec(sides.back, 'z', -1),
+      spec(sides.right, 'x', 1),
+      spec(sides.left, 'x', -1)
+    ]
+  }, [sides])
   return (
     <>
       {faces.map((f, i) => {
@@ -95,6 +88,10 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
             axis={f.axis}
             sign={f.sign}
             inSet={f.inSet}
+            startOff={f.startOff}
+            endOff={f.endOff}
+            topOff={f.topOff}
+            botOff={f.botOff}
             sx={sx}
             sy={sy}
             sz={sz}

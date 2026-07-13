@@ -29,8 +29,20 @@ export type DimFlags = { w?: boolean; h?: boolean; d?: boolean };
 /** Map of CP name → which dimensions to show on panels using that CP. */
 export type DimCpConfig = Record<string, DimFlags>;
 
-/** A resolved face panel: its cp ref plus the inward offset (mm) from `inSet`. */
-export type SideFace = { cp: string; inSet: number };
+/**
+ * A resolved face panel: its cp ref plus the inward offset (mm) from `inSet`,
+ * and per-edge oversize amounts (mm) that grow the panel outward beyond the
+ * box footprint. `start`/`end` grow it along its horizontal in-plane axis,
+ * `top`/`bot` along its vertical in-plane axis.
+ */
+export type SideFace = {
+  cp: string;
+  inSet: number;
+  startOff: number;
+  endOff: number;
+  topOff: number;
+  botOff: number;
+};
 
 export type BoxSides = {
   top?: SideFace | null;
@@ -311,31 +323,49 @@ function resolveSideCp(
 
 function extractSides(node: Node, vars: FlatVars): BoxSides | undefined {
   const s = node.sides ?? {};
+  // Resolve an offset pair: prefer the `<name>For` expression when non-empty,
+  // otherwise fall back to the precomputed numeric `<name>`. Returns 0 when
+  // neither yields a finite number.
+  const resolveOff = (expr: unknown, num: unknown): number => {
+    const fromExpr =
+      typeof expr === "string" && expr.trim() !== ""
+        ? evalExpr(expr, {}, {}, vars)
+        : NaN;
+    if (Number.isFinite(fromExpr)) return fromExpr;
+    return typeof num === "number" && Number.isFinite(num) ? num : 0;
+  };
   const pick = (slot: unknown): SideFace | null => {
     if (!slot) return null;
     if (typeof slot === "string") {
       const cp = resolveSideCp(slot, node, vars);
-      return cp ? { cp, inSet: 0 } : null;
+      return cp
+        ? { cp, inSet: 0, startOff: 0, endOff: 0, topOff: 0, botOff: 0 }
+        : null;
     }
     if (typeof slot === "object" && "cpName" in (slot as object)) {
       const part = slot as {
         cpName?: string | null;
         inSet?: number;
         inSetFor?: string;
+        startOff?: number;
+        startOffFor?: string;
+        endOff?: number;
+        endOffFor?: string;
+        topOff?: number;
+        topOffFor?: string;
+        botOff?: number;
+        botOffFor?: string;
       };
       const cp = resolveSideCp(part.cpName ?? null, node, vars);
       if (!cp) return null;
-      // Prefer the `inSetFor` expression; fall back to the precomputed `inSet`.
-      const fromExpr =
-        part.inSetFor && part.inSetFor.trim() !== ""
-          ? evalExpr(part.inSetFor, {}, {}, vars)
-          : NaN;
-      const inSet = Number.isFinite(fromExpr)
-        ? fromExpr
-        : Number.isFinite(part.inSet)
-          ? (part.inSet as number)
-          : 0;
-      return { cp, inSet };
+      return {
+        cp,
+        inSet: resolveOff(part.inSetFor, part.inSet),
+        startOff: resolveOff(part.startOffFor, part.startOff),
+        endOff: resolveOff(part.endOffFor, part.endOff),
+        topOff: resolveOff(part.topOffFor, part.topOff),
+        botOff: resolveOff(part.botOffFor, part.botOff),
+      };
     }
     return null;
   };
