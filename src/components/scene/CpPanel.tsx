@@ -1,7 +1,8 @@
 'use client'
 
-import { memo } from 'react'
-import { Edges, Html } from '@react-three/drei'
+import { memo, useMemo } from 'react'
+import * as THREE from 'three'
+import { Html } from '@react-three/drei'
 import type { ResolvedCp } from './resolveCp'
 import { useTextureWithFallback } from './useTextureWithFallback'
 
@@ -38,6 +39,11 @@ export const CpPanel = memo(function CpPanel ({
   const t = Math.max(cp.thickness, 2) * MM
   const args: [number, number, number] =
     axis === 'x' ? [t, sy, sz] : axis === 'y' ? [sx, t, sz] : [sx, sy, t]
+  // Panel edge wireframe, rebuilt only when the box dimensions change.
+  const edges = useMemo(
+    () => new THREE.EdgesGeometry(new THREE.BoxGeometry(...args)),
+    args
+  )
   // Flush position at the face, then shift along the face normal by `inSet`:
   // negative pushes the panel outward (past the face), positive pulls it inward
   // (toward the box center). The face normal points outward by `sign`, so an
@@ -70,7 +76,11 @@ export const CpPanel = memo(function CpPanel ({
         ) : (
           <meshStandardMaterial key='plain' color='#888' />
         )}
-        <Edges color={'#000000'} opacity={0.20} transparent={true} />
+        {/* Wireframe outline of the panel edges, drawn as a child so it inherits
+            the mesh transform. Native three.js edges (no drei helper). */}
+        <lineSegments geometry={edges}>
+          <lineBasicMaterial color={'#000000'} opacity={0.2} transparent={true} />
+        </lineSegments>
       </mesh>
       {dims?.map((d, k) => {
         // Centered on the box center, floating just in front of the front face.
