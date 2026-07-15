@@ -264,11 +264,11 @@ export function Shape3D ({
         {/* <OrthographicCamera makeDefault position={[0, 0, 100]} zoom={100} /> */}
         <group position={[ox, 0, oz]}>
           <group scale={[SCALE, SCALE, SCALE]}>
-            {boxes.map((b, i) => {
+            {boxes.map(b => {
               if (b.depth === 0 && !b.isArticle) return null
               return (
                 <BoxItem
-                  key={`${b.index}-${i}`}
+                  key={b.index}
                   box={b}
                   dev={dev}
                   isSelected={b.index === selectedIndex}
