@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@oak-some/configurator-previewer": "^1.14.3",
+    "@oak-some/configurator-previewer": "^1.14.4",
     "@processandtools/rp-article-designer": "^1.0.86",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
