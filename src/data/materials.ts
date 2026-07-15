@@ -1,48 +1,23 @@
 export const materials = {
-  DE_VN_HGS_MDF_S4_01_19: {
-    name: "DE_VN_HGS_MDF_S4_01_19",
-    render: "DE_S4_01",
-    thickness: 19,
+  MDF12_Prepeint: {
+    name: "MDF12_Prepeint",
+    render: "SAC_002",
+    thickness: 12,
   },
-  DE_VN_HGS_MDF_S4_02_19: {
-    name: "DE_VN_HGS_MDF_S4_02_19",
-    render: "DE_S4_02",
-    thickness: 19,
+  MDF18_Prepeint: {
+    name: "MDF18_Prepeint",
+    render: "SAC_002",
+    thickness: 18,
   },
-  DE_VN_HGS_MDF_S4_04_19: {
-    name: "DE_VN_HGS_MDF_S4_04_19",
-    render: "DE_S4_04",
-    thickness: 19,
+  UN_RW_HGS_MDFFB_16: {
+    name: "UN_RW_HGS_MDFFB_16",
+    render: "UN_MDF_RAW",
+    thickness: 16,
   },
-  DE_VN_HGS_MDF_S4_05_19: {
-    name: "DE_VN_HGS_MDF_S4_05_19",
-    render: "DE_S4_05",
-    thickness: 19,
-  },
-  DE_VN_HGS_MDF_S4_06_19: {
-    name: "DE_VN_HGS_MDF_S4_06_19",
-    render: "DE_S4_06",
-    thickness: 19,
-  },
-  DE_VN_HGS_MDF_S4_07_19: {
-    name: "DE_VN_HGS_MDF_S4_07_19",
-    render: "DE_S4_07",
-    thickness: 19,
-  },
-  DE_VN_HGS_MDF_S4_08_19: {
-    name: "DE_VN_HGS_MDF_S4_08_19",
-    render: "DE_S4_08",
-    thickness: 19,
-  },
-  DE_VN_HGS_MDF_S4_09_19: {
-    name: "DE_VN_HGS_MDF_S4_09_19",
-    render: "DE_S4_09",
-    thickness: 19,
-  },
-  DE_VN_HGS_MDF_S4_14_19: {
-    name: "DE_VN_HGS_MDF_S4_14_19",
-    render: "DE_S4_14",
-    thickness: 19,
+  UN_RW_HGS_MDFFB_12: {
+    name: "UN_RW_HGS_MDFFB_12",
+    render: "UN_MDF_RAW",
+    thickness: 12,
   },
   UN_EV_HGS_PBO_00025_CST_18: {
     name: "UN_EV_HGS_PBO_00025_CST_18",
@@ -214,6 +189,11 @@ export const materials = {
     render: "UN_0U287_CST",
     thickness: 18,
   },
+  UN_EV_HGS_PBO_0U292_CST_18: {
+    name: "UN_EV_HGS_PBO_0U292_CST_18",
+    render: "UN_0U292_CST",
+    thickness: 18,
+  },
   UN_EV_HGS_PBO_0U310_BST_18: {
     name: "UN_EV_HGS_PBO_0U310_BST_18",
     render: "UN_0U310_BST",
@@ -334,6 +314,11 @@ export const materials = {
     render: "UN_0U823_CST",
     thickness: 18,
   },
+  UN_EV_HGS_MDF_0U826_MST_18: {
+    name: "UN_EV_HGS_MDF_0U826_MST_18",
+    render: "UN_0U828_MST",
+    thickness: 18,
+  },
   UN_EV_HGS_MDF_0U827_MST_18: {
     name: "UN_EV_HGS_MDF_0U827_MST_18",
     render: "UN_0U827_MST",
@@ -359,11 +344,6 @@ export const materials = {
     render: "UN_0UD59_BST",
     thickness: 18,
   },
-  UN_EV_HGS_PBO_0UD81_CST_18: {
-    name: "UN_EV_HGS_PBO_0UD81_CST_18",
-    render: "UN_0UD81_CST",
-    thickness: 18,
-  },
   UN_EV_HGS_MDF_0UD81_MST_18: {
     name: "UN_EV_HGS_MDF_0UD81_MST_18",
     render: "UN_0UD81_MST",
@@ -384,9 +364,9 @@ export const materials = {
     render: "UN_0WE28_MST",
     thickness: 18,
   },
-  UN_EV_HGS_PBO_0WE31_BST_18: {
-    name: "UN_EV_HGS_PBO_0WE31_BST_18",
-    render: "UN_0WE31_BST",
+  UN_EV_HGS_PBO_0WE28_W07_18: {
+    name: "UN_EV_HGS_PBO_0WE28_W07_18",
+    render: "UN_0WE28_W07",
     thickness: 18,
   },
   UN_EV_HGS_PBO_0WE31_CST_18: {
@@ -394,383 +374,33 @@ export const materials = {
     render: "UN_0WE31_CST",
     thickness: 18,
   },
-  MDF18_Prepeint: {
-    name: "MDF18_Prepeint",
-    render: "SAC_002",
-    thickness: 18,
+  NULL: {
+    name: "NULL",
+    render: "",
+    thickness: 0,
   },
-  UN_EV_HGS_MDF_0H915_V2A_12: {
-    name: "UN_EV_HGS_MDF_0H915_V2A_12",
-    render: "UN_0H915_V2A",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U115_CST_12: {
-    name: "UN_EV_HGS_MDF_0U115_CST_12",
-    render: "UN_0U115_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U139_BST_12: {
-    name: "UN_EV_HGS_MDF_0U139_BST_12",
-    render: "UN_0U139_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U141_BST_12: {
-    name: "UN_EV_HGS_MDF_0U141_BST_12",
-    render: "UN_0U141_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U150_BST_12: {
-    name: "UN_EV_HGS_MDF_0U150_BST_12",
-    render: "UN_0U150_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U284_CST_12: {
-    name: "UN_EV_HGS_MDF_0U284_CST_12",
-    render: "UN_0U284_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U287_CST_12: {
-    name: "UN_EV_HGS_MDF_0U287_CST_12",
-    render: "UN_0U287_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U310_BST_12: {
-    name: "UN_EV_HGS_MDF_0U310_BST_12",
-    render: "UN_0U310_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U311_BST_12: {
-    name: "UN_EV_HGS_MDF_0U311_BST_12",
-    render: "UN_0U311_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U312_BST_12: {
-    name: "UN_EV_HGS_MDF_0U312_BST_12",
-    render: "UN_0U312_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U313_BST_12: {
-    name: "UN_EV_HGS_MDF_0U313_BST_12",
-    render: "UN_0U313_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U641_BST_12: {
-    name: "UN_EV_HGS_MDF_0U641_BST_12",
-    render: "UN_0U641_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U642_BST_12: {
-    name: "UN_EV_HGS_MDF_0U642_BST_12",
-    render: "UN_0U642_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U643_BST_12: {
-    name: "UN_EV_HGS_MDF_0U643_BST_12",
-    render: "UN_0U643_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U645_BST_12: {
-    name: "UN_EV_HGS_MDF_0U645_BST_12",
-    render: "UN_0U645_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U646_BST_12: {
-    name: "UN_EV_HGS_MDF_0U646_BST_12",
-    render: "UN_0U646_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U647_BST_12: {
-    name: "UN_EV_HGS_MDF_0U647_BST_12",
-    render: "UN_0U647_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U648_BST_12: {
-    name: "UN_EV_HGS_MDF_0U648_BST_12",
-    render: "UN_0U648_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U651_BST_12: {
-    name: "UN_EV_HGS_MDF_0U651_BST_12",
-    render: "UN_0U651_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U653_BST_12: {
-    name: "UN_EV_HGS_MDF_0U653_BST_12",
-    render: "UN_0U653_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U813_BST_12: {
-    name: "UN_EV_HGS_MDF_0U813_BST_12",
-    render: "UN_0U813_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U814_BST_12: {
-    name: "UN_EV_HGS_MDF_0U814_BST_12",
-    render: "UN_0U814_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U815_BST_12: {
-    name: "UN_EV_HGS_MDF_0U815_BST_12",
-    render: "UN_0U815_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U817_BST_12: {
-    name: "UN_EV_HGS_MDF_0U817_BST_12",
-    render: "UN_0U817_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U818_BST_12: {
-    name: "UN_EV_HGS_MDF_0U818_BST_12",
-    render: "UN_0U818_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U820_BST_12: {
-    name: "UN_EV_HGS_MDF_0U820_BST_12",
-    render: "UN_0U820_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U821_BST_12: {
-    name: "UN_EV_HGS_MDF_0U821_BST_12",
-    render: "UN_0U821_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U822_BST_12: {
-    name: "UN_EV_HGS_MDF_0U822_BST_12",
-    render: "UN_0U822_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0U823_CST_12: {
-    name: "UN_EV_HGS_MDF_0U823_CST_12",
-    render: "UN_0U823_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_00025_CST_12: {
-    name: "UN_EV_HGS_PBO_00025_CST_12",
-    render: "UN_00025_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_00551_CST_12: {
-    name: "UN_EV_HGS_PBO_00551_CST_12",
-    render: "UN_00551_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_00625_CST_12: {
-    name: "UN_EV_HGS_PBO_00625_CST_12",
-    render: "UN_00625_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0H251_W06_12: {
-    name: "UN_EV_HGS_MDF_0H251_W06_12",
-    render: "UN_0H251_W06",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0H362_BST_12: {
-    name: "UN_EV_HGS_PBO_0H362_BST_12",
-    render: "UN_0H362_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0H591_W07_12: {
-    name: "UN_EV_HGS_PBO_0H591_W07_12",
-    render: "UN_0H591_W07",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0H593_W07_12: {
-    name: "UN_EV_HGS_MDF_0H593_W07_12",
-    render: "UN_0H593_W07",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0H594_W07_12: {
-    name: "UN_EV_HGS_MDF_0H594_W07_12",
-    render: "UN_0H594_W07",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0H596_W07_12: {
-    name: "UN_EV_HGS_PBO_0H596_W07_12",
-    render: "UN_0H596_W07",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0H597_W07_12: {
-    name: "UN_EV_HGS_PBO_0H597_W07_12",
-    render: "UN_0H597_W07",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0H598_W07_12: {
-    name: "UN_EV_HGS_MDF_0H598_W07_12",
-    render: "UN_0H598_W07",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0H720_BST_12: {
-    name: "UN_EV_HGS_PBO_0H720_BST_12",
-    render: "UN_0H720_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0H912_V2A_12: {
-    name: "UN_EV_HGS_MDF_0H912_V2A_12",
-    render: "UN_0H912_V2A",
-    thickness: 12,
-  },
-  UN_EV_HGS_MDF_0H914_V2A_12: {
-    name: "UN_EV_HGS_MDF_0H914_V2A_12",
-    render: "UN_0H914_V2A",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0U127_CST_12: {
-    name: "UN_EV_HGS_PBO_0U127_CST_12",
-    render: "UN_0U127_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0U147_CST_12: {
-    name: "UN_EV_HGS_PBO_0U147_CST_12",
-    render: "UN_0U147_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0U172_CST_12: {
-    name: "UN_EV_HGS_PBO_0U172_CST_12",
-    render: "UN_0U172_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0U222_CST_12: {
-    name: "UN_EV_HGS_PBO_0U222_CST_12",
-    render: "UN_0U222_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0U271_CST_12: {
-    name: "UN_EV_HGS_PBO_0U271_CST_12",
-    render: "UN_0U271_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0U655_CST_12: {
-    name: "UN_EV_HGS_PBO_0U655_CST_12",
-    render: "UN_0U655_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0U656_BST_12: {
-    name: "UN_EV_HGS_PBO_0U656_BST_12",
-    render: "UN_0U656_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0UD59_BST_12: {
-    name: "UN_EV_HGS_PBO_0UD59_BST_12",
-    render: "UN_0UD59_BST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0WE26_CST_12: {
-    name: "UN_EV_HGS_PBO_0WE26_CST_12",
-    render: "UN_0WE26_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0WE28_CST_12: {
-    name: "UN_EV_HGS_PBO_0WE28_CST_12",
-    render: "UN_0WE28_CST",
-    thickness: 12,
-  },
-  UN_EV_HGS_PBO_0WE31_BST_12: {
-    name: "UN_EV_HGS_PBO_0WE31_BST_12",
-    render: "UN_0WE31_BST",
-    thickness: 12,
-  },
-  UN_RW_HGS_MDFFB_16: {
-    name: "UN_RW_HGS_MDFFB_16",
+  UN_RW_HGF_MDFFL_06: {
+    name: "UN_RW_HGF_MDFFL_06",
     render: "UN_MDF_RAW",
-    thickness: 16,
+    thickness: 6,
   },
-  WC_VN_HGS_MDF_01_13: {
-    name: "WC_VN_HGS_MDF_01_13",
-    render: "",
-    thickness: 0,
+  SW_CHENE_06: {
+    name: "SW_CHENE_06",
+    render: "Oak chalked bright",
+    thickness: 6,
   },
-  WC_VN_HGS_MDF_01_19: {
-    name: "WC_VN_HGS_MDF_01_19",
-    render: "DE_S4_01",
-    thickness: 19,
-  },
-  WC_VN_HGS_MDF_02_13: {
-    name: "WC_VN_HGS_MDF_02_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_02_19: {
-    name: "WC_VN_HGS_MDF_02_19",
-    render: "DE_S4_02",
-    thickness: 19,
-  },
-  WC_VN_HGS_MDF_04_13: {
-    name: "WC_VN_HGS_MDF_04_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_04_19: {
-    name: "WC_VN_HGS_MDF_04_19",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_05_13: {
-    name: "WC_VN_HGS_MDF_05_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_05_19: {
-    name: "WC_VN_HGS_MDF_05_19",
-    render: "DE_S4_05",
-    thickness: 19,
-  },
-  WC_VN_HGS_MDF_06_13: {
-    name: "WC_VN_HGS_MDF_06_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_06_19: {
-    name: "WC_VN_HGS_MDF_06_19",
-    render: "DE_S4_06",
-    thickness: 19,
-  },
-  WC_VN_HGS_MDF_07_13: {
-    name: "WC_VN_HGS_MDF_07_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_07_19: {
-    name: "WC_VN_HGS_MDF_07_19",
-    render: "DE_S4_07",
-    thickness: 19,
-  },
-  WC_VN_HGS_MDF_08_13: {
-    name: "WC_VN_HGS_MDF_08_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_08_19: {
-    name: "WC_VN_HGS_MDF_08_19",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_09_13: {
-    name: "WC_VN_HGS_MDF_09_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_09_19: {
-    name: "WC_VN_HGS_MDF_09_19",
-    render: "DE_S4_09",
-    thickness: 19,
-  },
-  WC_VN_HGS_MDF_14_13: {
-    name: "WC_VN_HGS_MDF_14_13",
-    render: "",
-    thickness: 0,
-  },
-  WC_VN_HGS_MDF_14_19: {
-    name: "WC_VN_HGS_MDF_14_19",
-    render: "",
-    thickness: 0,
+  SW_NOYER_06: {
+    name: "SW_NOYER_06",
+    render: "iX_Walnut_G",
+    thickness: 6,
   },
 };
 
 export const surfaces = {
-  NO_SURF: {
-    name: "NO_SURF",
-    render: "NO_RENDER",
-    thickness: 0,
+  COAT_WD_193954_TPG_BOM: {
+    name: "COAT_WD_193954_TPG_BOM",
+    render: "193954_TPG",
+    thickness: 0.1,
   },
   BO_COAT_WD_BT_1205_BOM: {
     name: "BO_COAT_WD_BT_1205_BOM",
@@ -837,19 +467,9 @@ export const surfaces = {
     render: "BO_TC_15",
     thickness: 0.1,
   },
-  BO_COAT_WD_TC_17_BOM: {
-    name: "BO_COAT_WD_TC_17_BOM",
-    render: "BO_TC_17",
-    thickness: 0.1,
-  },
   BO_COAT_WD_TC_21_BOM: {
     name: "BO_COAT_WD_TC_21_BOM",
     render: "BO_TC_21",
-    thickness: 0.1,
-  },
-  BO_COAT_WD_TC_22_BOM: {
-    name: "BO_COAT_WD_TC_22_BOM",
-    render: "BO_TC_22",
     thickness: 0.1,
   },
   BO_COAT_WD_TC_3_BOM: {
@@ -872,11 +492,6 @@ export const surfaces = {
     render: "BO_TC_35",
     thickness: 0.1,
   },
-  BO_COAT_WD_TC_37_BOM: {
-    name: "BO_COAT_WD_TC_37_BOM",
-    render: "BO_TC_37",
-    thickness: 0.1,
-  },
   BO_COAT_WD_TC_38_BOM: {
     name: "BO_COAT_WD_TC_38_BOM",
     render: "BO_TC_38",
@@ -890,11 +505,6 @@ export const surfaces = {
   BO_COAT_WD_TC_47_BOM: {
     name: "BO_COAT_WD_TC_47_BOM",
     render: "BO_TC_47",
-    thickness: 0.1,
-  },
-  BO_COAT_WD_TC_49_BOM: {
-    name: "BO_COAT_WD_TC_49_BOM",
-    render: "BO_TC_49",
     thickness: 0.1,
   },
   BO_COAT_WD_TC_5_BOM: {
@@ -1147,11 +757,6 @@ export const surfaces = {
     render: "BO_WE_Y79",
     thickness: 0.1,
   },
-  BO_COAT_WD_WE_Y82_BOM: {
-    name: "BO_COAT_WD_WE_Y82_BOM",
-    render: "BO_WE_Y82",
-    thickness: 0.1,
-  },
   BO_COAT_WD_WE_Y85_BOM: {
     name: "BO_COAT_WD_WE_Y85_BOM",
     render: "BO_WE_Y85",
@@ -1172,14 +777,59 @@ export const surfaces = {
     render: "BO_WE_Z116",
     thickness: 0.1,
   },
-  COAT_WD_193954_TPG_BOM: {
-    name: "COAT_WD_193954_TPG_BOM",
-    render: "193954_TPG",
+  WC_VNR_DLV_S4_01: {
+    name: "WC_VNR_DLV_S4_01",
+    render: "DE_S4_01",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_02: {
+    name: "WC_VNR_DLV_S4_02",
+    render: "DE_S4_02",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_04: {
+    name: "WC_VNR_DLV_S4_04",
+    render: "DE_S4_04",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_05: {
+    name: "WC_VNR_DLV_S4_05",
+    render: "DE_S4_05",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_06: {
+    name: "WC_VNR_DLV_S4_06",
+    render: "DE_S4_06",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_07: {
+    name: "WC_VNR_DLV_S4_07",
+    render: "DE_S4_07",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_08: {
+    name: "WC_VNR_DLV_S4_08",
+    render: "DE_S4_08",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_09: {
+    name: "WC_VNR_DLV_S4_09",
+    render: "DE_S4_09",
+    thickness: 0.6,
+  },
+  WC_VNR_DLV_S4_14: {
+    name: "WC_VNR_DLV_S4_14",
+    render: "DE_S4_14",
+    thickness: 0.6,
+  },
+  COAT_WD_9004_MAT_BOM: {
+    name: "COAT_WD_9004_MAT_BOM",
+    render: "RAL_9004",
     thickness: 0.1,
   },
-  COAT_WD_9005_MAT_BOM: {
-    name: "COAT_WD_9005_MAT_BOM",
-    render: "RAL_9005",
+  COAT_WD_9010_MAT_BOM: {
+    name: "COAT_WD_9010_MAT_BOM",
+    render: "RAL_9010",
     thickness: 0.1,
   },
   COAT_WD_9016_MAT_BOM: {
@@ -1187,14 +837,34 @@ export const surfaces = {
     render: "RAL_9016",
     thickness: 0.1,
   },
-  COAT_WD_9021_MAT_BOM: {
-    name: "COAT_WD_9021_MAT_BOM",
+  NO_SURF: {
+    name: "NO_SURF",
     render: "NO_RENDER",
-    thickness: 0.1,
+    thickness: 0,
+  },
+  UN_HPL_HGP_00025_CST_0_7: {
+    name: "UN_HPL_HGP_00025_CST_0_7",
+    render: "UN_00025_CST",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_00551_CST_0_7: {
+    name: "UN_HPL_HGP_00551_CST_0_7",
+    render: "UN_00551_CST",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_00625_CST_0_7: {
+    name: "UN_HPL_HGP_00625_CST_0_7",
+    render: "UN_00625_CST",
+    thickness: 0.7,
   },
   UN_HPL_HGP_0H251_W06_0_7: {
     name: "UN_HPL_HGP_0H251_W06_0_7",
     render: "UN_0H251_W06",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_0H362_BST_0_7: {
+    name: "UN_HPL_HGP_0H362_BST_0_7",
+    render: "UN_0H362_BST",
     thickness: 0.7,
   },
   UN_HPL_HGP_0H591_W07_0_7: {
@@ -1225,6 +895,11 @@ export const surfaces = {
   UN_HPL_HGP_0H598_W07_0_7: {
     name: "UN_HPL_HGP_0H598_W07_0_7",
     render: "UN_0H598_W07",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_0H720_BST_0_7: {
+    name: "UN_HPL_HGP_0H720_BST_0_7",
+    render: "UN_0H720_BST",
     thickness: 0.7,
   },
   UN_HPL_HGP_0H912_V2A_0_7: {
@@ -1262,6 +937,16 @@ export const surfaces = {
     render: "UN_0H927_V2A",
     thickness: 0.7,
   },
+  UN_HPL_HGP_0U115_CST_0_7: {
+    name: "UN_HPL_HGP_0U115_CST_0_7",
+    render: "UN_0U115_CST",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_0U127_CST_0_7: {
+    name: "UN_HPL_HGP_0U127_CST_0_7",
+    render: "UN_0U127_CST",
+    thickness: 0.7,
+  },
   UN_HPL_HGP_0U139_BST_0_7: {
     name: "UN_HPL_HGP_0U139_BST_0_7",
     render: "UN_0U139_BST",
@@ -1285,6 +970,26 @@ export const surfaces = {
   UN_HPL_HGP_0U172_CST_0_7: {
     name: "UN_HPL_HGP_0U172_CST_0_7",
     render: "UN_0U172_CST",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_0U222_CST_0_7: {
+    name: "UN_HPL_HGP_0U222_CST_0_7",
+    render: "UN_0U222_CST",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_0U271_CST_0_7: {
+    name: "UN_HPL_HGP_0U271_CST_0_7",
+    render: "UN_0U271_CST",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_0U284_CST_0_7: {
+    name: "UN_HPL_HGP_0U284_CST_0_7",
+    render: "UN_0U284_CST",
+    thickness: 0.7,
+  },
+  UN_HPL_HGP_0U287_CST_0_7: {
+    name: "UN_HPL_HGP_0U287_CST_0_7",
+    render: "UN_0U287_CST",
     thickness: 0.7,
   },
   UN_HPL_HGP_0U310_BST_0_7: {
@@ -1352,6 +1057,11 @@ export const surfaces = {
     render: "UN_0U653_BST",
     thickness: 0.7,
   },
+  UN_HPL_HGP_0U655_CST_0_7: {
+    name: "UN_HPL_HGP_0U655_CST_0_7",
+    render: "UN_0U655_CST",
+    thickness: 0.7,
+  },
   UN_HPL_HGP_0U656_BST_0_7: {
     name: "UN_HPL_HGP_0U656_BST_0_7",
     render: "UN_0U656_BST",
@@ -1392,14 +1102,9 @@ export const surfaces = {
     render: "UN_0U821_BST",
     thickness: 0.7,
   },
-  UN_HPL_HGP_0U822_BST_0_7: {
-    name: "UN_HPL_HGP_0U822_BST_0_7",
-    render: "UN_0U822_BST",
-    thickness: 0.7,
-  },
-  UN_HPL_HGP_0U827_MST_0_7: {
-    name: "UN_HPL_HGP_0U827_MST_0_7",
-    render: "UN_0U827_MST",
+  UN_HPL_HGP_0U823_CST_0_7: {
+    name: "UN_HPL_HGP_0U823_CST_0_7",
+    render: "UN_0U823_CST",
     thickness: 0.7,
   },
   UN_HPL_HGP_0U828_MST_0_7: {
@@ -1422,48 +1127,23 @@ export const surfaces = {
     render: "UN_0UD59_BST",
     thickness: 0.7,
   },
-  WC_VNR_DLV_S4_01_1_0: {
-    name: "WC_VNR_DLV_S4_01_1_0",
-    render: "",
-    thickness: 0,
+  UN_HPL_HGP_0WE26_CST_0_7: {
+    name: "UN_HPL_HGP_0WE26_CST_0_7",
+    render: "UN_0WE26_CST",
+    thickness: 0.7,
   },
-  WC_VNR_DLV_S4_02_1_0: {
-    name: "WC_VNR_DLV_S4_02_1_0",
-    render: "",
-    thickness: 0,
+  UN_HPL_HGP_0WE28_CST_0_7: {
+    name: "UN_HPL_HGP_0WE28_CST_0_7",
+    render: "UN_0WE28_CST",
+    thickness: 0.7,
   },
-  WC_VNR_DLV_S4_04_1_0: {
-    name: "WC_VNR_DLV_S4_04_1_0",
-    render: "",
-    thickness: 0,
+  UN_HPL_HGP_0WE31_CST_0_7: {
+    name: "UN_HPL_HGP_0WE31_CST_0_7",
+    render: "UN_0WE31_CST",
+    thickness: 0.7,
   },
-  WC_VNR_DLV_S4_05_1_0: {
-    name: "WC_VNR_DLV_S4_05_1_0",
-    render: "",
-    thickness: 0,
-  },
-  WC_VNR_DLV_S4_06_1_0: {
-    name: "WC_VNR_DLV_S4_06_1_0",
-    render: "",
-    thickness: 0,
-  },
-  WC_VNR_DLV_S4_07_1_0: {
-    name: "WC_VNR_DLV_S4_07_1_0",
-    render: "",
-    thickness: 0,
-  },
-  WC_VNR_DLV_S4_08_1_0: {
-    name: "WC_VNR_DLV_S4_08_1_0",
-    render: "",
-    thickness: 0,
-  },
-  WC_VNR_DLV_S4_09_1_0: {
-    name: "WC_VNR_DLV_S4_09_1_0",
-    render: "",
-    thickness: 0,
-  },
-  WC_VNR_DLV_S4_14_1_0: {
-    name: "WC_VNR_DLV_S4_14_1_0",
+  NULL: {
+    name: "NULL",
     render: "",
     thickness: 0,
   },
