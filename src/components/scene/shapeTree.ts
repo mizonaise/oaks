@@ -201,10 +201,8 @@ function parseLinDiv(
   }
 
   if (spec === "") return null;
-  if (linDiv === "#DS_LD_ZF_BA") {
-    console.log("parseLinDiv: resolved #DS_LD_ZF_BA →", spec);
-  }
-  const specs = spec.split(":").map((rawToken) => {
+
+  return spec.split(":").map((rawToken) => {
     const token = rawToken.trim();
     // Filler with minimum size: `<weight>+<expr>mm` (e.g. `1+400mm`).
     // The weight is a bare integer or a fully-parenthesized expression
@@ -236,15 +234,6 @@ function parseLinDiv(
     const value = Number.isFinite(n) ? n : 0;
     return hasMm ? { size: value, weight: 0 } : { size: null, weight: value };
   });
-  if (linDiv === "#DS_LD_ZF_BA") {
-    console.log(
-      "parseLinDiv: resolved #DS_LD_ZF_BA →",
-      spec,
-      parentAxisSize,
-      specs,
-    );
-  }
-  return specs;
 }
 
 // Resolve a side-slot value: token like "AD zone info01" or literal "0".
@@ -413,9 +402,7 @@ function distribute(slices: Slice[], total: number): number[] {
     const baseSum = [...active].reduce((s, sl) => s + baseOf(sl), 0);
     if (baseSum <= leftover) break;
     // Drop the active filler with the largest base until the bases fit.
-    const worst = [...active].reduce(
-      (a, b) => (baseOf(b) > baseOf(a) ? b : a),
-    );
+    const worst = [...active].reduce((a, b) => (baseOf(b) > baseOf(a) ? b : a));
     active.delete(worst);
     if (active.size === 0) break;
   }

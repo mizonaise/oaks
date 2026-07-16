@@ -387,7 +387,6 @@ export function ShapeConfigurator ({
           <ConfiguratorPreviewDialog
             initialValues={initialValues}
             onVariableSetChange={vars => {
-              // console.log('onVariableSetChange', vars)
               for (const [name, value] of Object.entries(vars)) {
                 handleChangeVariables(name, value)
               }
