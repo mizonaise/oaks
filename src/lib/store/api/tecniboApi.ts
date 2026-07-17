@@ -43,16 +43,45 @@ export interface PricingResponse {
 }
 
 /**
- * RTK Query API for the Tecnibo backends. Three resources:
- *  - article: rp-engine article data (per article name)
+ * Raw rp-engine material/surface record, e.g.
+ * `GET /api/rp-engine/material-data/<NAME>` →
+ * `{ NAME, TEXT, THK, MATCAT | SURFCAT, GRAIN, RENDER }`.
+ */
+interface RpEngineMatSurf {
+  NAME: string;
+  TEXT: string;
+  THK: number;
+  GRAIN: number;
+  RENDER: string;
+  MATCAT?: string;
+  SURFCAT?: string;
+}
+
+/** Normalized material/surface shape consumed by `resolveCp`. */
+export interface MatSurfData {
+  name: string;
+  render: string;
+  thickness: number;
+}
+
+const toMatSurf = (r: RpEngineMatSurf): MatSurfData => ({
+  name: r.NAME,
+  render: r.RENDER,
+  thickness: r.THK,
+});
+
+/**
+ * RTK Query API for the Tecnibo backends. Resources:
+ *  - article / material / surface: rp-engine data (per name)
  *  - shape:   shape definition (by remote shape name, e.g. OAKSOME_SHAPE_L)
  *  - form:    configurator tree (by form id, e.g. 107)
  *
  * Requests go through same-origin proxy paths configured as Next.js rewrites
- * (see `next.config.ts`), so the two upstream hosts stay server-side and CORS
+ * (see `next.config.ts`), so the upstream hosts stay server-side and CORS
  * is avoided:
- *  - `/api/shape/*`   → NEXT_PUBLIC_SHAPE_API   (api.tecnibo.com)
- *  - `/api/backend/*` → NEXT_PUBLIC_BACKEND_API (backend.tecnibo.com)
+ *  - `/api/shape/*`     → NEXT_PUBLIC_SHAPE_API     (api.tecnibo.com)
+ *  - `/api/rp-engine/*` → NEXT_PUBLIC_RPENGINE_API  (backend.tecnibo.com)
+ *  - `/api/form-expo/*` → NEXT_PUBLIC_FORMEXPO_API  (backend.tecnibo.com)
  */
 export const tecniboApi = createApi({
   reducerPath: "tecniboApi",
@@ -63,7 +92,7 @@ export const tecniboApi = createApi({
     // → backend.tecnibo.com/api/rp-engine/article-data/<name>?forcerefresh=true
     getArticle: builder.query<ArticleData, string>({
       query: (articleName) => ({
-        url: `/api/article/${articleName}?forcerefresh=true`,
+        url: `/api/rp-engine/article-data/${articleName}?forcerefresh=true`,
         // The legacy fetch used cache: 'no-store'; mirror it here.
         cache: "no-store",
       }),
@@ -91,6 +120,18 @@ export const tecniboApi = createApi({
       }),
     }),
 
+    // → backend.tecnibo.com/api/rp-engine/material-data/<name>
+    getMaterial: builder.query<MatSurfData, string>({
+      query: (materialName) => `/api/rp-engine/material-data/${materialName}`,
+      transformResponse: toMatSurf,
+    }),
+
+    // → backend.tecnibo.com/api/rp-engine/surface-data/<name>
+    getSurface: builder.query<MatSurfData, string>({
+      query: (surfaceName) => `/api/rp-engine/surface-data/${surfaceName}`,
+      transformResponse: toMatSurf,
+    }),
+
     // → api.tecnibo.com/pricing
     // Computes the total price from the resolved variable scopes.
     getPricing: builder.mutation<PricingResponse, PricingRequest>({
@@ -108,5 +149,7 @@ export const {
   useGetArticleQuery,
   useGetShapeQuery,
   useGetFormExpoQuery,
+  useGetMaterialQuery,
+  useGetSurfaceQuery,
   useGetPricingMutation,
 } = tecniboApi;

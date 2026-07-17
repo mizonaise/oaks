@@ -1,15 +1,10 @@
-import { materials, surfaces } from "@/data/materials";
 import type { FlatVars } from "@/lib/form/expr";
 import { getCps } from "@/lib/shape/registry";
-
-const MATERIALS = materials as Record<
-  string,
-  { name: string; render: string; thickness: number }
->;
-const SURFACES = surfaces as Record<
-  string,
-  { name: string; render: string; thickness: number }
->;
+import {
+  useGetMaterialQuery,
+  useGetSurfaceQuery,
+} from "@/lib/store/api/tecniboApi";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 
 const TEXTURE_BASE =
   "https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/copy_2%2F";
@@ -32,14 +27,42 @@ function deref(raw: string | undefined, vars: FlatVars): string | null {
   return trimmed;
 }
 
-export function resolveCp(cpName: string, vars: FlatVars): ResolvedCp | null {
+/**
+ * Resolve a CP's material/surface *keys* from the shape registry + vars.
+ * Pure and synchronous — the keys are what the rp-engine endpoints are keyed by.
+ */
+export function resolveCpKeys(
+  cpName: string,
+  vars: FlatVars,
+): { matKey: string | null; surfKey: string | null } | null {
   const cp = getCps()[cpName];
   if (!cp) return null;
   const matKey = deref(cp.mat, vars);
   const surfKey = deref(cp.surf, vars);
-  const mat = matKey ? (MATERIALS[matKey] ?? null) : null;
-  const surf =
-    surfKey && surfKey !== "NO_SURF" ? (SURFACES[surfKey] ?? null) : null;
+  return {
+    matKey,
+    // `NO_SURF` is a sentinel for "no surface layer"; don't fetch it.
+    surfKey: surfKey && surfKey !== "NO_SURF" ? surfKey : null,
+  };
+}
+
+/**
+ * Resolve a CP to its rendered material/surface via the rp-engine API.
+ * Fetches material-data / surface-data for the derived keys (RTK Query caches
+ * per key), then assembles the `ResolvedCp` the panel renderer consumes.
+ * Returns `null` until the CP keys resolve; `ResolvedCp` once data is in.
+ */
+export function useResolveCp(
+  cpName: string,
+  vars: FlatVars,
+): ResolvedCp | null {
+  const keys = resolveCpKeys(cpName, vars);
+
+  const { data: mat } = useGetMaterialQuery(keys?.matKey ?? skipToken);
+  const { data: surf } = useGetSurfaceQuery(keys?.surfKey ?? skipToken);
+
+  if (!keys) return null;
+
   const thickness = (mat?.thickness ?? 0) + (surf?.thickness ?? 0);
   // Prefer surface render when present, else material render.
   const textureName = surf?.render ?? mat?.render ?? null;

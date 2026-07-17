@@ -3,7 +3,7 @@
 import { memo, useMemo } from 'react'
 import type { FlatVars } from '@/lib/form/expr'
 import { type BoxSides as ShapeBoxSides, type DimCpConfig } from './shapeTree'
-import { resolveCp } from './resolveCp'
+import { useResolveCp } from './resolveCp'
 import { CpPanel, type FaceAxis, type DimMeasure } from './CpPanel'
 
 type FaceSpec = {
@@ -18,6 +18,62 @@ type FaceSpec = {
   axis: FaceAxis
   sign: 1 | -1
 }
+
+/**
+ * One box face. Split into its own component so `useResolveCp` (which fires the
+ * material/surface queries) is called once per face at the top level — hooks
+ * can't run inside the `.map` callback below.
+ */
+const FacePanel = memo(function FacePanel ({
+  face,
+  vars,
+  dimCpConfig,
+  sx,
+  sy,
+  sz
+}: {
+  face: FaceSpec
+  vars: FlatVars
+  dimCpConfig?: DimCpConfig | null
+  sx: number
+  sy: number
+  sz: number
+}) {
+  const cp = useResolveCp(face.cpRef ?? '', vars)
+  if (!face.cpRef || !cp) return null
+  // Each enabled dimension becomes an arrowed measurement along its axis.
+  // w/h/d map to x/y/z; whichever axis is the panel's thickness uses the
+  // cp thickness (with CpPanel's 2mm floor), the others use the box span.
+  const cfg = dimCpConfig?.[face.cpRef]
+  const t = Math.max(cp.thickness, 2)
+  const dims: DimMeasure[] = cfg
+    ? (
+        [
+          ['w', 'x', face.axis === 'x' ? t : sx],
+          ['h', 'y', face.axis === 'y' ? t : sy],
+          ['d', 'z', face.axis === 'z' ? t : sz]
+        ] as Array<['w' | 'h' | 'd', FaceAxis, number]>
+      )
+        .filter(([dim]) => cfg[dim])
+        .map(([, axis, value]) => ({ axis, value: Math.round(value) }))
+    : []
+  return (
+    <CpPanel
+      cp={cp}
+      axis={face.axis}
+      sign={face.sign}
+      inSet={face.inSet}
+      startOff={face.startOff}
+      endOff={face.endOff}
+      topOff={face.topOff}
+      botOff={face.botOff}
+      sx={sx}
+      sy={sy}
+      sz={sz}
+      dims={dims}
+    />
+  )
+})
 
 export const BoxSidePanels = memo(function BoxSidePanels ({
   sx,
@@ -61,44 +117,21 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
   }, [sides])
   return (
     <>
-      {faces.map((f, i) => {
-        if (!f.cpRef) return null
-        const cp = resolveCp(f.cpRef, vars)
-        if (!cp) return null
-        // Each enabled dimension becomes an arrowed measurement along its axis.
-        // w/h/d map to x/y/z; whichever axis is the panel's thickness uses the
-        // cp thickness (with CpPanel's 2mm floor), the others use the box span.
-        const cfg = f.cpRef ? dimCpConfig?.[f.cpRef] : undefined
-        const t = Math.max(cp.thickness, 2)
-        const dims: DimMeasure[] = cfg
+      {faces.map((f, i) =>
+        f.cpRef
           ? (
-              [
-                ['w', 'x', f.axis === 'x' ? t : sx],
-                ['h', 'y', f.axis === 'y' ? t : sy],
-                ['d', 'z', f.axis === 'z' ? t : sz]
-              ] as Array<['w' | 'h' | 'd', FaceAxis, number]>
+            <FacePanel
+              key={i}
+              face={f}
+              vars={vars}
+              dimCpConfig={dimCpConfig}
+              sx={sx}
+              sy={sy}
+              sz={sz}
+            />
             )
-              .filter(([dim]) => cfg[dim])
-              .map(([, axis, value]) => ({ axis, value: Math.round(value) }))
-          : []
-        return (
-          <CpPanel
-            key={i}
-            cp={cp}
-            axis={f.axis}
-            sign={f.sign}
-            inSet={f.inSet}
-            startOff={f.startOff}
-            endOff={f.endOff}
-            topOff={f.topOff}
-            botOff={f.botOff}
-            sx={sx}
-            sy={sy}
-            sz={sz}
-            dims={dims}
-          />
-        )
-      })}
+          : null
+      )}
     </>
   )
 })

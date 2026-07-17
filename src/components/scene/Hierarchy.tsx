@@ -78,7 +78,7 @@ function Row ({
         <span className='text-zinc-400'>{box.index || '·'}</span>
         <span className='truncate'>{box.name ?? (box.isArticle ? 'article' : 'box')}</span>
         <span className='ml-auto text-zinc-400'>
-          {Math.round(box.w)}×{Math.round(box.h)}×{Math.round(box.d)}
+          {box.w.toFixed(2)}×{box.h.toFixed(2)}×{box.d.toFixed(2)}
         </span>
       </button>
       {node.children.map(c => (

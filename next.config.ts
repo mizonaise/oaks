@@ -13,16 +13,16 @@ const nextConfig: NextConfig = {
         source: "/api/shape/:path*",
         destination: `${process.env.NEXT_PUBLIC_SHAPE_API}/:path*`,
       },
-      // Proxy the backend API (backend.tecnibo.com) — serves article data and
-      // the configurator form `/tree`.
-      {
-        source: "/api/article/:path*",
-        destination: `${process.env.NEXT_PUBLIC_ARTICLE_API}/:path*`,
-      },
       // Proxy the form export API (backend.tecnibo.com) — serves the configurator form `/tree`.
       {
         source: "/api/form-expo/:path*",
         destination: `${process.env.NEXT_PUBLIC_FORMEXPO_API}/:path*`,
+      },
+      // Proxy the rp-engine API (backend.tecnibo.com) — serves article-data,
+      // material-data and surface-data lookups (per name).
+      {
+        source: "/api/rp-engine/:path*",
+        destination: `${process.env.NEXT_PUBLIC_RPENGINE_API}/:path*`,
       },
     ];
   },

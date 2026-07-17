@@ -45,6 +45,16 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/**
+ * Round to 2 decimal places. Rounding sizes/positions to whole millimetres
+ * accumulated a visible gap at the end of a run (each article lost up to 0.5mm);
+ * keeping 2 decimals preserves the sub-millimetre fit. Number() drops any
+ * trailing-zero noise (e.g. `12.5`, not `12.50`).
+ */
+function round2(n: number): number {
+  return Number(n.toFixed(2));
+}
+
 type SetEntry = {
   pname: string;
   vars: Record<string, unknown>;
@@ -71,9 +81,9 @@ function sizeVars(
   const w = sideways ? box.d : box.w;
   const d = sideways ? box.w : box.d;
   return {
-    SIZEX: Math.round(w),
-    SIZEY: Math.round(d),
-    SIZEZ: Math.round(box.h),
+    SIZEX: round2(w),
+    SIZEY: round2(d),
+    SIZEZ: round2(box.h),
   };
 }
 
@@ -124,7 +134,7 @@ function pInsertion(
   // (`box.d`, the run-direction size that becomes SIZEX).
   const y = facing === "RIGHT" ? -box.z - box.d : -box.z;
   const z = box.y - shape.h / 2;
-  return `${Math.round(x)},${Math.round(y)},${Math.round(z)}`;
+  return `${round2(x)},${round2(y)},${round2(z)}`;
 }
 
 /**
