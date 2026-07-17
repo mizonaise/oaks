@@ -13,7 +13,7 @@ export default function Home () {
         {(Object.keys(shapes) as Array<keyof typeof shapes>).map(val => (
           <li key={val}>
             <Link
-              href={`/shape/${val}`}
+              href={`/shape/${shapes[val].name}`}
               className='flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 transition-colors hover:border-gray-400 hover:bg-gray-50'
             >
               <span className='flex flex-col'>

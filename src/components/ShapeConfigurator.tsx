@@ -7,11 +7,7 @@ import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
 import { buildShapeXml, downloadXml } from '@/lib/shape/xmlExport'
 import type { ShapeData } from '@/lib/shape/schema'
-import { getShapeRefs } from '@/data'
-import {
-  useGetShapeQuery,
-  useGetFormExpoQuery
-} from '@/lib/store/api/tecniboApi'
+import { useGetShapeQuery } from '@/lib/store/api/tecniboApi'
 
 import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
 import { PriceDisplay, toPricingRequest } from '@/components/PriceDisplay'
@@ -108,33 +104,21 @@ function setNested (
 
 export function ShapeConfigurator ({
   dev = false,
-  id
+  shapeName
 }: {
   dev?: boolean
-  id: string
+  shapeName: string
 }) {
-  const refs = getShapeRefs(id)
-
   // Fetch the shape from the remote shape endpoint by its declared name
-  // (e.g. OAKSOME_SHAPE_L).
+  // (e.g. OAKSOME_SHAPE_FR). A single endpoint returns the shape, its exported
+  // configurator form (`{ configurator, sources }` or `null`) and pricing.
   const {
     data: remoteShape,
     isLoading: shapeLoading,
     isError: shapeError,
     error: shapeErrorObj
-  } = useGetShapeQuery(refs?.shapeName ?? '', {
-    skip: !refs?.shapeName
-  })
-
-  // Fetch the exported configurator from the form `/tree` endpoint by its id
-  // (e.g. 107).
-  const {
-    data: remoteFormExpo,
-    isLoading: formLoading,
-    isError: formError,
-    error: formErrorObj
-  } = useGetFormExpoQuery(refs?.formId ?? '', {
-    skip: !refs?.formId
+  } = useGetShapeQuery(shapeName, {
+    skip: !shapeName
   })
 
   // Stable reference: the `?? {}` fallback would otherwise mint a fresh object
@@ -142,12 +126,12 @@ export function ShapeConfigurator ({
   // below it.
   const shape = useMemo(
     () =>
-      (remoteShape ?? {}) as ShapeData & {
+      (remoteShape?.shape ?? {}) as ShapeData & {
         variables?: Record<string, unknown>
       },
     [remoteShape]
   )
-  const formExpo = remoteFormExpo?.data
+  const formExpo = remoteShape?.form ?? null
 
   // Register the remote shape's descriptors/cps BEFORE any child runs walkZone
   // / cp resolution. Calling synchronously in the render body (not inside a
@@ -247,10 +231,10 @@ export function ShapeConfigurator ({
   // Export the live changes (nestedUpdates) as an OAKSOME ListBuilder XML,
   // with one Set per article zone resolved from the shape tree.
   const handleDownloadXml = useCallback(() => {
-    const name = refs?.shapeName ?? 'SHAPE'
+    const name = shapeName || 'SHAPE'
     const xml = buildShapeXml(nestedUpdates, name, shape, resolvedScopes)
     downloadXml(`${name}_${Date.now()}.xml`, xml)
-  }, [nestedUpdates, refs, shape, resolvedScopes])
+  }, [nestedUpdates, shapeName, shape, resolvedScopes])
 
   // Snapshot function for the 3D canvas, supplied by ShapeViewer once the
   // canvas mounts. Returns a PNG data URL (or null if unavailable).
@@ -261,7 +245,7 @@ export function ShapeConfigurator ({
   // request body, and a PNG snapshot of the canvas.
   const buildMessagePayload = useCallback(
     (action: 'addToCart' | 'fav') => {
-      const name = refs?.shapeName ?? 'SHAPE'
+      const name = shapeName || 'SHAPE'
       const xmlContent = buildShapeXml(
         nestedUpdates,
         name,
@@ -286,7 +270,7 @@ export function ShapeConfigurator ({
       }
       return res
     },
-    [nestedUpdates, refs, shape, resolvedScopes]
+    [nestedUpdates, shapeName, shape, resolvedScopes]
   )
 
   const handleAddToCart = useCallback(() => {
@@ -297,18 +281,17 @@ export function ShapeConfigurator ({
     window.parent.postMessage(buildMessagePayload('fav'), '*')
   }, [buildMessagePayload])
 
-  // Unknown id: there's no shape name or form id to fetch.
-  if (!refs) {
+  // No shape name in the URL: there's nothing to fetch.
+  if (!shapeName) {
     return (
       <StatusScreen
         title='Unknown shape'
-        message={`No shape is registered for "${id}".`}
+        message='No shape name was provided.'
       />
     )
   }
 
-  const isLoading = shapeLoading || formLoading
-  if (isLoading) {
+  if (shapeLoading) {
     return (
       <StatusScreen
         title='Just a moment…'
@@ -317,28 +300,24 @@ export function ShapeConfigurator ({
     )
   }
 
-  if (shapeError || formError) {
-    const detail = errorMessage(shapeError ? shapeErrorObj : formErrorObj)
+  if (shapeError) {
+    const detail = errorMessage(shapeErrorObj)
     return (
       <StatusScreen
         title='Failed to load'
-        message={
-          shapeError
-            ? 'Could not load the shape.'
-            : 'Could not load the configurator.'
-        }
+        message='Could not load the shape.'
         detail={detail}
         tone='error'
       />
     )
   }
 
-  // Queries resolved without error but returned nothing usable.
-  if (!remoteShape || !formExpo) {
+  // Query resolved without error but returned nothing usable.
+  if (!remoteShape) {
     return (
       <StatusScreen
         title='Nothing to show'
-        message='The shape or configurator response was empty.'
+        message='The shape response was empty.'
         tone='error'
       />
     )
@@ -384,30 +363,36 @@ export function ShapeConfigurator ({
         </div>
         <aside className='lg:flex-1 lg:max-w-md min-w-0 overflow-auto'>
           <PriceDisplay scopes={resolvedScopes} shape={shape} />
-          <ConfiguratorPreviewDialog
-            initialValues={initialValues}
-            onVariableSetChange={vars => {
-              for (const [name, value] of Object.entries(vars)) {
-                handleChangeVariables(name, value)
-              }
-            }}
-            onGoToZone={(zoneId: string) => {
-              // Select the box whose zone name matches in the viewer.
-              setSelectedZone(zoneId)
-            }}
-            onNameSetChange={names => {
-              setFormValues(names)
-            }}
-            onLabelSetChange={labelSet => {
-              setLabels(flattenLabels(labelSet as Record<string, unknown>))
-            }}
-            // Auto-switch to the mobile (nested tab-strip) layout below 768px,
-            // desktop above. `layout` is omitted so it doesn't force one mode.
-            responsive
-            // imageSuffix='/public'
-            imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
-            configuratorJson={formExpo}
-          />
+          {formExpo ? (
+            <ConfiguratorPreviewDialog
+              initialValues={initialValues}
+              onVariableSetChange={vars => {
+                for (const [name, value] of Object.entries(vars)) {
+                  handleChangeVariables(name, value)
+                }
+              }}
+              onGoToZone={(zoneId: string) => {
+                // Select the box whose zone name matches in the viewer.
+                setSelectedZone(zoneId)
+              }}
+              onNameSetChange={names => {
+                setFormValues(names)
+              }}
+              onLabelSetChange={labelSet => {
+                setLabels(flattenLabels(labelSet as Record<string, unknown>))
+              }}
+              // Auto-switch to the mobile (nested tab-strip) layout below 768px,
+              // desktop above. `layout` is omitted so it doesn't force one mode.
+              responsive
+              // imageSuffix='/public'
+              imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
+              configuratorJson={formExpo}
+            />
+          ) : (
+            <p className='rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+              No configurator form is available for this shape.
+            </p>
+          )}
 
           <div className='mt-10 flex items-center gap-3'>
             <button

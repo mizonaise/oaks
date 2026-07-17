@@ -5,9 +5,13 @@ import type { ShapeData } from "@/lib/shape/schema";
 
 /**
  * Response envelope of the shape endpoint:
- * `GET /api/shape/shape/<SHAPE_NAME>` → `{ shape: ShapeData }`.
+ * `GET /api/shape/shape/<SHAPE_NAME>` → `{ form, pricing, shape }`.
+ * `form` is the exported configurator (`{ configurator, sources }`) or `null`
+ * when the article has no attached form.
  */
-interface ShapeResponse {
+export interface ShapeResponse {
+  form: ExportedConfigurator | null;
+  pricing: string;
   shape: ShapeData;
 }
 
@@ -99,25 +103,10 @@ export const tecniboApi = createApi({
     }),
 
     // → api.tecnibo.com/shape/<SHAPE_NAME>
-    getShape: builder.query<ShapeData, string>({
+    // Single endpoint returning the shape, its exported configurator form
+    // (`{ configurator, sources }` or `null`) and pricing in one payload.
+    getShape: builder.query<ShapeResponse, string>({
       query: (shapeName) => `/api/shape/shape/${shapeName}`,
-      transformResponse: (response: ShapeResponse) => response.shape,
-    }),
-
-    // → backend.tecnibo.com/digitalfactory/oaksome-api/api/configurator/<formId>/tree
-    // Returns the ExportedConfigurator JSON consumed directly by
-    // ConfiguratorPreviewDialog (as `formExpo`).
-    getFormExpo: builder.query<
-      { message: string; data: ExportedConfigurator },
-      string
-    >({
-      query: (formId) => ({
-        url: `/api/form-expo/${formId}/export`,
-        // headers: {
-        //   "X-Service-Token":
-        //     "215440b1bc77e95bcd39ca011d50fdec994edd3a5284abab065dd642ad2ae1cd",
-        // },
-      }),
     }),
 
     // → backend.tecnibo.com/api/rp-engine/material-data/<name>
@@ -148,7 +137,6 @@ export const tecniboApi = createApi({
 export const {
   useGetArticleQuery,
   useGetShapeQuery,
-  useGetFormExpoQuery,
   useGetMaterialQuery,
   useGetSurfaceQuery,
   useGetPricingMutation,
