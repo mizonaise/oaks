@@ -1,5 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { ArticleData } from "@processandtools/rp-article-designer";
+import type {
+  ArticleData,
+  DataEndpointMap,
+} from "@processandtools/rp-article-designer";
 import type { ExportedConfigurator } from "@oak-some/configurator-previewer";
 import type { ShapeData } from "@/lib/shape/schema";
 
@@ -121,6 +124,17 @@ export const tecniboApi = createApi({
       transformResponse: toMatSurf,
     }),
 
+    // Raw rp-engine records for the article designer's `getData` loader, which
+    // expects the untransformed shape (MaterialTypes/SurfaceTypes, uppercase
+    // keys) — unlike getMaterial/getSurface above, which normalize for
+    // resolveCp. Keyed by endpoint+name so RTK Query dedupes/caches per record.
+    getMaterialData: builder.query<DataEndpointMap["material-data"], string>({
+      query: (name) => `/api/rp-engine/material-data/${name}`,
+    }),
+    getSurfaceData: builder.query<DataEndpointMap["surface-data"], string>({
+      query: (name) => `/api/rp-engine/surface-data/${name}`,
+    }),
+
     // → api.tecnibo.com/pricing
     // Computes the total price from the resolved variable scopes.
     getPricing: builder.mutation<PricingResponse, PricingRequest>({
@@ -139,5 +153,7 @@ export const {
   useGetShapeQuery,
   useGetMaterialQuery,
   useGetSurfaceQuery,
+  useGetMaterialDataQuery,
+  useGetSurfaceDataQuery,
   useGetPricingMutation,
 } = tecniboApi;

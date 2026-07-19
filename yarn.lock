@@ -764,10 +764,10 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.8.tgz#6b79032e760a0899cd4204710beede972a3a185f"
   integrity sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==
 
-"@processandtools/rp-article-designer@^1.0.89":
-  version "1.0.89"
-  resolved "https://registry.yarnpkg.com/@processandtools/rp-article-designer/-/rp-article-designer-1.0.89.tgz#aa9b148a08c1f092d7091c31e2700cc4536a2e09"
-  integrity sha512-OmxGn3XRRuUPdeKJp6Tr8e1p0BPsaNB7bTOz4qGBYeaa1hDzfwE8oXQW+I54vN9pP2wfzWOZjRU5pDge2FgiTA==
+"@processandtools/rp-article-designer@^1.0.90":
+  version "1.0.90"
+  resolved "https://registry.yarnpkg.com/@processandtools/rp-article-designer/-/rp-article-designer-1.0.90.tgz#a3ae001c829626f018806663172c7713ebea4043"
+  integrity sha512-dcicJVT9Mhr2WoiG5iuU1JPKMqM8tMwykxXhMO8bAn23W5tfDpmfZiurbJ2NDOPfi/vVLCkdJTNPjwaEUwKOJA==
   dependencies:
     "@emotion/react" "^11.14.0"
     "@emotion/styled" "^11.14.1"

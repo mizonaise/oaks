@@ -1,9 +1,13 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { type Box as ShapeBox } from './shapeTree'
-import { ArticleGroupDesigner } from '@processandtools/rp-article-designer'
-import { useGetArticleQuery } from '@/lib/store/api/tecniboApi'
+import {
+  ArticleGroupDesigner,
+  type GetDataFn
+} from '@processandtools/rp-article-designer'
+import { useGetArticleQuery, tecniboApi } from '@/lib/store/api/tecniboApi'
+import { useAppStore } from '@/lib/store/hooks'
 
 const MM = 1
 const SCALE = 0.001
@@ -34,10 +38,26 @@ export const ArticleInBox = memo(function ArticleInBox ({
   contrasted?: boolean
 }) {
   const { data: res, isError, error } = useGetArticleQuery(articleName)
+  const store = useAppStore()
 
   if (isError) {
     console.error('Failed to fetch article data:', error)
   }
+
+  // Data loader for the article designer, backed by RTK Query instead of a
+  // hand-rolled fetch + cache: dispatching `initiate` reuses the store's cache
+  // and in-flight dedup, so repeated (endpoint, id) requests share one request.
+  const fetchData = useMemo<GetDataFn>(
+    () =>
+      ((endpoint, id) => {
+        const result =
+          endpoint === 'material-data'
+            ? store.dispatch(tecniboApi.endpoints.getMaterialData.initiate(id))
+            : store.dispatch(tecniboApi.endpoints.getSurfaceData.initiate(id))
+        return result.unwrap().catch(() => undefined)
+      }) as GetDataFn,
+    [store]
+  )
 
   // console.log('render ArticleInBox', { articleName, vars: box.vars })
 
@@ -78,6 +98,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
                 variables: box.vars as Record<string, string>
               }
             ]}
+            getData={fetchData}
           />
         )}
       </group>
