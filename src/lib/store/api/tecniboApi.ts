@@ -20,13 +20,23 @@ export interface ShapeResponse {
 
 /**
  * Request/response for the pricing endpoint:
- * `POST /api/shape/pricing` → `api.tecnibo.com/pricing`.
+ * `POST /api/shape/pricing/<PRICING_NAME>` → `api.tecnibo.com/pricing/<PRICING_NAME>`.
  * The body mirrors the resolved variable scopes ({ globalVars, namespaces }),
  * with all values sent as strings (the pricing engine expects strings).
  */
 export interface PricingRequest {
   globalVars: Record<string, string>;
   namespaces: Record<string, Record<string, string>>;
+}
+
+/**
+ * Arguments for the pricing mutation: the resolved scopes (`body`) plus the
+ * pricing router name to target (from the shape's `pricing` field, e.g.
+ * `DS_PRICING_ROUNTER`, with any leading `#` already stripped).
+ */
+export interface PricingArgs {
+  pricingName: string;
+  body: PricingRequest;
 }
 
 export interface PricingBreakdownItem {
@@ -135,11 +145,12 @@ export const tecniboApi = createApi({
       query: (name) => `/api/rp-engine/surface-data/${name}`,
     }),
 
-    // → api.tecnibo.com/pricing
-    // Computes the total price from the resolved variable scopes.
-    getPricing: builder.mutation<PricingResponse, PricingRequest>({
-      query: (body) => ({
-        url: `/api/shape/pricing`,
+    // → api.tecnibo.com/pricing/<PRICING_NAME>
+    // Computes the total price from the resolved variable scopes. The pricing
+    // router name comes from the shape's `pricing` field (leading `#` stripped).
+    getPricing: builder.mutation<PricingResponse, PricingArgs>({
+      query: ({ pricingName, body }) => ({
+        url: `/api/shape/pricing/${pricingName}`,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,

@@ -133,6 +133,10 @@ export function ShapeConfigurator ({
   )
   const formExpo = remoteShape?.form ?? null
 
+  // Pricing router name from the shape (e.g. `#DS_PRICING_ROUNTER`); strip the
+  // leading `#` before using it as the pricing endpoint segment.
+  const pricingName = (remoteShape?.pricing ?? '').replace(/^#/, '')
+
   // Register the remote shape's descriptors/cps BEFORE any child runs walkZone
   // / cp resolution. Calling synchronously in the render body (not inside a
   // useMemo) avoids any chance of useMemo cache + Strict-Mode replay leaving
@@ -362,7 +366,11 @@ export function ShapeConfigurator ({
           )}
         </div>
         <aside className='lg:flex-1 lg:max-w-md min-w-0 overflow-auto'>
-          <PriceDisplay scopes={resolvedScopes} shape={shape} />
+          <PriceDisplay
+            scopes={resolvedScopes}
+            shape={shape}
+            pricingName={pricingName}
+          />
           {formExpo ? (
             <ConfiguratorPreviewDialog
               initialValues={initialValues}

@@ -78,10 +78,13 @@ const euro = new Intl.NumberFormat('fr-FR', {
  */
 export function PriceDisplay ({
   scopes,
-  shape
+  shape,
+  pricingName
 }: {
   scopes: Scopes
   shape: ShapeData
+  /** Pricing router name from the shape (leading `#` already stripped). */
+  pricingName: string
 }) {
   const [getPricing, { data, isLoading, isError }] = useGetPricingMutation()
 
@@ -104,7 +107,7 @@ export function PriceDisplay ({
   useEffect(() => {
     // Debounce: the form emits variable changes in bursts.
     const t = setTimeout(() => {
-      void getPricing(latestRequest.current)
+      void getPricing({ pricingName, body: latestRequest.current })
         .unwrap()
         .then(res => setLastTotal(res.totalPrice))
         .catch(() => {
@@ -112,7 +115,7 @@ export function PriceDisplay ({
         })
     }, 400)
     return () => clearTimeout(t)
-  }, [requestKey, getPricing])
+  }, [requestKey, getPricing, pricingName])
 
   const total = data?.totalPrice ?? lastTotal
   const showSpinner = isLoading && total === null
