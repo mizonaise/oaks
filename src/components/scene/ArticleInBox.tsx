@@ -27,7 +27,8 @@ export const ArticleInBox = memo(function ArticleInBox ({
   articleName,
   doorOpen,
   showDims = false,
-  contrasted = false
+  contrasted = false,
+  hidden = false
 }: {
   box: ShapeBox
   articleName: string
@@ -36,6 +37,8 @@ export const ArticleInBox = memo(function ArticleInBox ({
   showDims?: boolean
   /** Toggles the article designer's contrast rendering. */
   contrasted?: boolean
+  /** Dev-only: when true, skip rendering the article designer entirely. */
+  hidden?: boolean
 }) {
   const { data: res, isError, error } = useGetArticleQuery(articleName)
   const store = useAppStore()
@@ -83,7 +86,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
         position={[0, (-box.h / 2) * MM, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
-        {res && (
+        {res && !hidden && (
           <ArticleGroupDesigner
             data={res}
             articleList={[

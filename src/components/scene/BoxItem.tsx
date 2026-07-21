@@ -31,7 +31,8 @@ export const BoxItem = memo(function BoxItem ({
   doorOpen,
   dimCpConfig,
   showDims = false,
-  contrasted = false
+  contrasted = false,
+  hideArticle = false
 }: {
   box: ShapeBox
   dev?: boolean
@@ -52,6 +53,8 @@ export const BoxItem = memo(function BoxItem ({
   showDims?: boolean
   /** Whether contrast rendering is on (drives the article designer's contrast). */
   contrasted?: boolean
+  /** Dev-only: when true, skip rendering the article designer. */
+  hideArticle?: boolean
 }) {
   const inset = box.isArticle ? 2 : 0
   const sx = Math.max((box.w - inset) * MM, 0.0001)
@@ -118,6 +121,7 @@ export const BoxItem = memo(function BoxItem ({
           doorOpen={doorOpenForBox}
           showDims={showDims}
           contrasted={contrasted}
+          hidden={hideArticle}
         />
       )}
     </group>

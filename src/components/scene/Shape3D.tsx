@@ -186,6 +186,8 @@ export function Shape3D ({
   const [showDims, setShowDims] = useState(false)
   const [doorsOpen, setDoorsOpen] = useState(false)
   const [contrasted, setContrasted] = useState(false)
+  // Dev-only: hide the article designer so only the box shell/panels show.
+  const [hideArticle, setHideArticle] = useState(false)
 
   // Constrain the horizontal orbit so the camera can't swing past a built-in
   // wall and see the unit from outside. A built-in side limits the camera to
@@ -239,6 +241,17 @@ export function Shape3D ({
       >
         <ContrastIcon />
       </button>
+      {dev && (
+        <button
+          type='button'
+          onClick={() => setHideArticle(open => !open)}
+          title={hideArticle ? 'Show article' : 'Hide article'}
+          aria-pressed={hideArticle}
+          className='absolute right-3 top-39 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+        >
+          <EyeIcon off={hideArticle} />
+        </button>
+      )}
       <Canvas
         ref={canvasRef}
         shadows='soft'
@@ -285,6 +298,7 @@ export function Shape3D ({
                   dimCpConfig={showDims ? dimCpConfig : null}
                   showDims={showDims}
                   contrasted={contrasted}
+                  hideArticle={hideArticle}
                 />
               )
             })}
@@ -566,6 +580,26 @@ function ContrastIcon () {
     >
       <circle cx='12' cy='12' r='9' />
       <path d='M12 3a9 9 0 0 1 0 18z' fill='currentColor' stroke='none' />
+    </svg>
+  )
+}
+
+// Eye glyph; a slash crosses it out when `off` (article hidden).
+function EyeIcon ({ off }: { off: boolean }) {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z' />
+      <circle cx='12' cy='12' r='3' />
+      {off && <path d='M3 3l18 18' />}
     </svg>
   )
 }
