@@ -15,6 +15,9 @@ type FaceSpec = {
   endOff: number
   topOff: number
   botOff: number
+  /** Horizontal axis runs opposite the anti-clockwise side walk (right/back),
+   *  so `startOff`/`endOff` swap which edge they move. */
+  flipH: boolean
   axis: FaceAxis
   sign: 1 | -1
 }
@@ -67,6 +70,7 @@ const FacePanel = memo(function FacePanel ({
       endOff={face.endOff}
       topOff={face.topOff}
       botOff={face.botOff}
+      flipH={face.flipH}
       sx={sx}
       sy={sy}
       sz={sz}
@@ -95,7 +99,8 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
     const spec = (
       face: ShapeBoxSides[keyof ShapeBoxSides],
       axis: FaceAxis,
-      sign: 1 | -1
+      sign: 1 | -1,
+      flipH = false
     ): FaceSpec => ({
       cpRef: face?.cp,
       inSet: face?.inSet ?? 0,
@@ -103,15 +108,19 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
       endOff: face?.endOff ?? 0,
       topOff: face?.topOff ?? 0,
       botOff: face?.botOff ?? 0,
+      flipH,
       axis,
       sign
     })
+    // Vertical sides walk anti-clockwise like a circle: 0 front → 1 right →
+    // 2 back → 3 left. front & left run with their horizontal axis; right &
+    // back run against it, so their start/end edges swap (flipH).
     return [
       spec(sides.top, 'y', 1),
       spec(sides.bottom, 'y', -1),
       spec(sides.front, 'z', 1),
-      spec(sides.back, 'z', -1),
-      spec(sides.right, 'x', 1),
+      spec(sides.back, 'z', -1, true),
+      spec(sides.right, 'x', 1, true),
       spec(sides.left, 'x', -1)
     ]
   }, [sides])

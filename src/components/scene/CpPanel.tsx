@@ -22,6 +22,7 @@ export const CpPanel = memo(function CpPanel ({
   endOff = 0,
   topOff = 0,
   botOff = 0,
+  flipH = false,
   sx,
   sy,
   sz,
@@ -32,14 +33,20 @@ export const CpPanel = memo(function CpPanel ({
   sign: 1 | -1
   /** Offset (mm) along the face normal; negative pulls the panel inward. */
   inSet?: number
-  /** Oversize (mm) grown outward along the panel's horizontal in-plane axis:
-   *  `startOff` on the negative side, `endOff` on the positive side. */
+  /** Offset (mm) on the panel's horizontal in-plane edges. `start`/`end` are the
+   *  panel's left/right edges seen from outside, walking the sides like a circle
+   *  (0 front → 1 right → 2 back → 3 left). By default `startOff` moves the
+   *  negative-side edge and `endOff` the positive-side edge; on faces whose
+   *  horizontal axis runs opposite that walk (`flipH`), the two swap. */
   startOff?: number
   endOff?: number
   /** Oversize (mm) grown outward along the panel's vertical in-plane axis:
    *  `topOff` on the positive side, `botOff` on the negative side. */
   topOff?: number
   botOff?: number
+  /** When true, the horizontal in-plane axis runs opposite the anti-clockwise
+   *  side walk, so `startOff`/`endOff` swap which edge they move. */
+  flipH?: boolean
   sx: number
   sy: number
   sz: number
@@ -58,10 +65,17 @@ export const CpPanel = memo(function CpPanel ({
   // Per-axis grow amounts: [negative-side, positive-side]. start/bot extend the
   // negative side, end/top the positive side.
   const grow: Record<FaceAxis, [number, number]> = { x: [0, 0], y: [0, 0], z: [0, 0] }
-  grow[hAxis] = [startOff * MM, endOff * MM]
+  // `start`/`end` are the panel's left/right edges seen from outside. On faces
+  // whose horizontal axis runs opposite the anti-clockwise walk, left is the
+  // positive side, so start/end swap which side they move.
+  grow[hAxis] = flipH
+    ? [endOff * MM, startOff * MM]
+    : [startOff * MM, endOff * MM]
   grow[vAxis] = [botOff * MM, topOff * MM]
-  // Size along an axis = base span + both grow sides; center shift = half the
-  // difference so the panel extends outward past the grown edge.
+  // Size along an axis = base span + both offsets. A positive offset adds to
+  // that edge, a negative one removes from it. Each offset moves ONLY its own
+  // edge: the panel shifts by half the size change so the opposite (un-offset)
+  // edge stays exactly where it was.
   const span = (base: number, a: FaceAxis) => base + grow[a][0] + grow[a][1]
   const shift = (a: FaceAxis) => (grow[a][1] - grow[a][0]) / 2
 
@@ -76,11 +90,14 @@ export const CpPanel = memo(function CpPanel ({
     () => new THREE.EdgesGeometry(new THREE.BoxGeometry(...args)),
     args
   )
+  // Offsets can shrink a dimension to zero or negative — don't render a
+  // degenerate/inverted panel. (Runs after hooks to keep hook order stable.)
+  if (args.some((d) => d <= 0)) return null
   // Flush position at the face, then shift along the face normal by `inSet`:
   // negative pushes the panel outward (past the face), positive pulls it inward
   // (toward the box center). The face normal points outward by `sign`, so an
-  // inward shift subtracts `sign * inSet`. In-plane axes stay centered except
-  // for the oversize shift, which keeps the un-grown edge fixed.
+  // inward shift subtracts `sign * inSet`. In-plane axes shift by `shift()` so
+  // each edge offset moves only its own edge, keeping the opposite edge fixed.
   const offsetMm = inSet * MM
   const pos: [number, number, number] = [
     axis === 'x' ? sign * (sx / 2 - t / 2) - sign * offsetMm : shift('x'),
