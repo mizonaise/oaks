@@ -5,7 +5,7 @@ import { ShapeViewer } from '@/components/scene/ShapeViewer'
 import { resolveVariables } from '@/lib/form/variables'
 import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
-import { buildShapeXml, downloadXml } from '@/lib/shape/xmlExport'
+import { buildShapeXml, downloadXml, downloadJson } from '@/lib/shape/xmlExport'
 import type { ShapeData } from '@/lib/shape/schema'
 import { useGetShapeQuery } from '@/lib/store/api/tecniboApi'
 
@@ -240,6 +240,12 @@ export function ShapeConfigurator ({
     downloadXml(`${name}_${Date.now()}.xml`, xml)
   }, [nestedUpdates, shapeName, shape, resolvedScopes])
 
+  // Export the resolved variable scopes (globalVars + namespaces) as JSON.
+  const handleDownloadScopes = useCallback(() => {
+    const name = shapeName || 'SHAPE'
+    downloadJson(`${name}_scopes_${Date.now()}.json`, resolvedScopes)
+  }, [shapeName, resolvedScopes])
+
   // Snapshot function for the 3D canvas, supplied by ShapeViewer once the
   // canvas mounts. Returns a PNG data URL (or null if unavailable).
   const captureCanvasRef = useRef<(() => string | null) | null>(null)
@@ -339,6 +345,13 @@ export function ShapeConfigurator ({
                 className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
               >
                 Download XML
+              </button>
+              <button
+                type='button'
+                onClick={handleDownloadScopes}
+                className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
+              >
+                Download JSON
               </button>
             </div>
           )}

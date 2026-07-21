@@ -333,7 +333,16 @@ export function computeZoneSizes(
 
 /** Trigger a browser download of `content` as `filename`. */
 export function downloadXml(filename: string, content: string): void {
-  const blob = new Blob([content], { type: "application/xml" });
+  downloadBlob(filename, content, "application/xml");
+}
+
+/** Trigger a browser download of `data` serialized as pretty JSON. */
+export function downloadJson(filename: string, data: unknown): void {
+  downloadBlob(filename, JSON.stringify(data, null, 2), "application/json");
+}
+
+function downloadBlob(filename: string, content: string, type: string): void {
+  const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
