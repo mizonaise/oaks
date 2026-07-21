@@ -83,7 +83,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
         position={[0, (-box.h / 2) * MM, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
-        {/* {res && (
+        {res && (
           <ArticleGroupDesigner
             data={res}
             articleList={[
@@ -100,7 +100,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
             ]}
             getData={fetchData}
           />
-        )} */}
+        )}
       </group>
     </group>
   )
