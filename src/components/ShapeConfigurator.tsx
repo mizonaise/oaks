@@ -176,6 +176,7 @@ export function ShapeConfigurator ({
   const [labels, setLabels] = useState<Record<string, string>>({})
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [showHierarchy, setShowHierarchy] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   const handleChangeVariables = useCallback((name: string, value: unknown) => {
     setNestedUpdates(prev => {
@@ -255,6 +256,27 @@ export function ShapeConfigurator ({
     const name = shapeName || 'SHAPE'
     downloadJson(`${name}_scopes_${Date.now()}.json`, resolvedScopes)
   }, [shapeName, resolvedScopes])
+
+  // Copy a shareable link to the clipboard: the current URL with the live form
+  // values encoded as `?FIELD=value` params (the same params the configurator
+  // seeds from on mount).
+  const handleCopyLink = useCallback(() => {
+    const url = new URL(window.location.href)
+    url.search = ''
+    for (const [key, value] of Object.entries(formValues)) {
+      if (value === undefined || value === null || value === '') continue
+      url.searchParams.set(key, String(value))
+    }
+    void navigator.clipboard
+      .writeText(url.toString())
+      .then(() => {
+        setLinkCopied(true)
+        setTimeout(() => setLinkCopied(false), 1500)
+      })
+      .catch(() => {
+        /* clipboard unavailable — no-op */
+      })
+  }, [formValues])
 
   // Snapshot function for the 3D canvas, supplied by ShapeViewer once the
   // canvas mounts. Returns a PNG data URL (or null if unavailable).
@@ -361,6 +383,13 @@ export function ShapeConfigurator ({
               className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
             >
               Download JSON
+            </button>
+            <button
+              type='button'
+              onClick={handleCopyLink}
+              className='inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+            >
+              {linkCopied ? 'Copied!' : 'Copy link'}
             </button>
             <button
               type='button'
