@@ -47,12 +47,7 @@ export function toPricingRequest (
     const size = zoneSizes[name]
     // Skip zones without valid dimensions: no computed size, or any of
     // width/depth/height missing or zero. Those can't be priced.
-    if (
-      !size ||
-      !size.ART_SIZEX ||
-      !size.ART_SIZEY ||
-      !size.ART_SIZEZ
-    ) {
+    if (!size || !size.ART_SIZEX || !size.ART_SIZEY || !size.ART_SIZEZ) {
       continue
     }
     namespaces[name] = {
@@ -74,10 +69,14 @@ const euro = new Intl.NumberFormat('fr-FR', {
 
 /**
  * Result of {@link usePricing}: the latest pricing response plus request
- * status. `data` is `undefined` until the first successful fetch.
+ * status. `data` is `undefined` until the first successful fetch. `request` is
+ * the body that was (or is about to be) sent — it holds the resolved
+ * per-namespace vars (namespace vars + injected `ART_SIZEX/Y/Z`) and
+ * `globalVars`, used by {@link PriceBreakdown} to resolve expression variables.
  */
 export interface UsePricingResult {
   data: PricingResponse | undefined
+  request: PricingRequest
   isLoading: boolean
   isError: boolean
 }
@@ -119,7 +118,7 @@ export function usePricing (
     return () => clearTimeout(t)
   }, [requestKey, getPricing, pricingName])
 
-  return { data, isLoading, isError }
+  return { data, request, isLoading, isError }
 }
 
 /**
@@ -212,17 +211,56 @@ export function PriceDisplay ({ pricing }: { pricing: UsePricingResult }) {
   )
 }
 
+/** A variable referenced by a pricing expression, resolved to its value. */
+interface ResolvedVar {
+  name: string
+  value: string | undefined
+  /** Where the value came from: the item's namespace, global vars, or neither. */
+  source: 'namespace' | 'global' | 'missing'
+}
+
+/** Extract the distinct `$VAR` names referenced by a pricing expression. */
+function extractVarRefs (expr: string): string[] {
+  const seen = new Set<string>()
+  for (const m of expr.matchAll(/\$([A-Za-z0-9_.]+)/g)) seen.add(m[1])
+  return [...seen]
+}
+
+/**
+ * Resolve each variable referenced by `expr`: prefer the namespace's own vars
+ * (which already include the injected `ART_SIZEX/Y/Z`), then fall back to the
+ * global vars. Order follows first appearance in the expression.
+ */
+function resolveExprVars (
+  expr: string,
+  nsVars: Record<string, string> | undefined,
+  globalVars: Record<string, string>
+): ResolvedVar[] {
+  return extractVarRefs(expr).map(name => {
+    if (nsVars && name in nsVars) {
+      return { name, value: nsVars[name], source: 'namespace' as const }
+    }
+    if (name in globalVars) {
+      return { name, value: globalVars[name], source: 'global' as const }
+    }
+    return { name, value: undefined, source: 'missing' as const }
+  })
+}
+
 /**
  * Detailed price breakdown shown at the bottom of the form (dev only). Groups
  * the pricing response's `breakdown` line items by `namespaceName` (zone) and
- * lists each item's raw `pricingKey`, `amount`, and `expression`.
+ * lists each item's raw `pricingKey`, `amount`, `expression`, and the variables
+ * the expression references — resolved from the namespace's vars (incl.
+ * `ART_SIZE*`) or, failing that, the global vars.
  */
 export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
-  const { data } = pricing
+  const { data, request } = pricing
 
   const zones = useMemo(() => {
     const items = data?.breakdown
     if (!items || items.length === 0) return []
+    const globalVars = request.globalVars
 
     // namespace -> items, preserving first-seen order.
     const byZone = new Map<string, typeof items>()
@@ -232,12 +270,24 @@ export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
       else byZone.set(it.namespaceName, [it])
     }
 
-    return [...byZone].map(([namespace, lines]) => ({
-      namespace,
-      lines,
-      total: lines.reduce((s, it) => s + (it.amount ?? 0), 0)
-    }))
-  }, [data])
+    return [...byZone].map(([namespace, lines]) => {
+      const nsVars = request.namespaces[namespace]
+      return {
+        namespace,
+        total: lines.reduce((s, it) => s + (it.amount ?? 0), 0),
+        // All variables in this namespace (incl. injected ART_SIZE*), sorted.
+        allVars: nsVars
+          ? Object.keys(nsVars)
+              .sort()
+              .map(name => ({ name, value: nsVars[name] }))
+          : [],
+        lines: lines.map(it => ({
+          item: it,
+          vars: resolveExprVars(it.expression, nsVars, globalVars)
+        }))
+      }
+    })
+  }, [data, request])
 
   if (zones.length === 0) return null
 
@@ -253,18 +303,66 @@ export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
               {euro.format(zone.total)}
             </span>
           </div>
+          {zone.allVars.length > 0 && (
+            <details className='mb-2'>
+              <summary className='cursor-pointer text-[11px] font-medium uppercase tracking-wide text-zinc-400 select-none'>
+                Namespace variables ({zone.allVars.length})
+              </summary>
+              <dl className='mt-1 space-y-0.5 border-l border-zinc-200 pl-2 dark:border-zinc-800'>
+                {zone.allVars.map(v => (
+                  <div
+                    key={v.name}
+                    className='flex gap-2 font-mono text-[11px]'
+                  >
+                    <dt className='text-zinc-500 dark:text-zinc-400'>
+                      {v.name}
+                    </dt>
+                    <dd className='ml-auto text-zinc-900 dark:text-zinc-100'>
+                      {v.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          )}
           <div className='space-y-2'>
-            {zone.lines.map((it, i) => (
+            {zone.lines.map(({ item, vars }, i) => (
               <div
-                key={`${it.pricingKey}-${i}`}
+                key={`${item.pricingKey}-${i}`}
                 className='text-xs text-zinc-600 dark:text-zinc-400'
               >
                 <div className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {it.pricingKey}
+                  {item.pricingKey}
                 </div>
-                <div className='tabular-nums'>Amount: {it.amount}</div>
+                <div className='tabular-nums'>Amount: {item.amount}</div>
+                {vars.length > 0 && (
+                  <dl className='mt-1 space-y-0.5 border-l border-zinc-200 pl-2 dark:border-zinc-800'>
+                    {vars.map(v => (
+                      <div
+                        key={v.name}
+                        className='flex gap-2 font-mono text-[11px]'
+                      >
+                        <dt className='text-zinc-500 dark:text-zinc-400'>
+                          {v.name}
+                        </dt>
+                        <dd
+                          className={
+                            v.source === 'missing'
+                              ? 'text-red-500'
+                              : 'text-zinc-900 dark:text-zinc-100'
+                          }
+                        >
+                          {v.source === 'missing' ? '—' : v.value}
+                        </dd>
+                        <dd className='ml-auto text-[10px] uppercase text-zinc-400'>
+                          {v.source}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
                 <div className='break-all font-mono text-[11px]'>
-                  Expression: {it.expression}
+                  Expression: {item.expression}
                 </div>
               </div>
             ))}
