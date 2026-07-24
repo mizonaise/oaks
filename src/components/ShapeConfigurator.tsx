@@ -10,7 +10,12 @@ import type { ShapeData } from '@/lib/shape/schema'
 import { useGetShapeQuery } from '@/lib/store/api/tecniboApi'
 
 import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
-import { PriceDisplay, toPricingRequest } from '@/components/PriceDisplay'
+import {
+  PriceBreakdown,
+  PriceDisplay,
+  toPricingRequest,
+  usePricing
+} from '@/components/PriceDisplay'
 
 /**
  * Inverse of `setNested`: `{ global: { X: 1 }, A: { B: 2 } }` → `{ X: 1, "A.B": 2 }`.
@@ -170,6 +175,7 @@ export function ShapeConfigurator ({
   // canvas so the user sees what's configured.
   const [labels, setLabels] = useState<Record<string, string>>({})
   const [formValues, setFormValues] = useState<Record<string, string>>({})
+  const [showHierarchy, setShowHierarchy] = useState(false)
 
   const handleChangeVariables = useCallback((name: string, value: unknown) => {
     setNestedUpdates(prev => {
@@ -231,6 +237,10 @@ export function ShapeConfigurator ({
     }
     return { globalVars, namespaces }
   }, [mergedView])
+
+  // Fetch pricing once and share it between the top banner and the bottom
+  // per-zone breakdown.
+  const pricing = usePricing(resolvedScopes, shape, pricingName)
 
   // Export the live changes (nestedUpdates) as an OAKSOME ListBuilder XML,
   // with one Set per article zone resolved from the shape tree.
@@ -335,105 +345,146 @@ export function ShapeConfigurator ({
 
   return (
     <div className='flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black min-h-screen'>
-      <main className='flex flex-1 w-full gap-6 p-6 bg-white dark:bg-black lg:flex-row flex-col'>
-        <div className='flex flex-col gap-4 lg:flex-2 min-w-0'>
-          {dev && (
-            <div className='flex items-center gap-3'>
-              <button
-                type='button'
-                onClick={handleDownloadXml}
-                className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
-              >
-                Download XML
-              </button>
-              <button
-                type='button'
-                onClick={handleDownloadScopes}
-                className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
-              >
-                Download JSON
-              </button>
-            </div>
-          )}
-          <ShapeViewer
-            dev={dev}
-            shape={shape}
-            scopes={resolvedScopes}
-            selectedName={selectedZone}
-            onCaptureReady={fn => {
-              captureCanvasRef.current = fn
-            }}
-          />
-          <LabelsSection labels={labels} />
-          {dev && (
-            <>
-              <Panel
-                title='flated variables (seed + form overrides) used in form'
-                data={flatForForm}
-              />
-              <Panel
-                title='variables (seed + form overrides) used in shape resolution'
-                data={resolvedScopes}
-              />
-            </>
-          )}
-        </div>
-        <aside className='lg:flex-1 lg:max-w-md min-w-0 overflow-auto'>
-          <PriceDisplay
-            scopes={resolvedScopes}
-            shape={shape}
-            pricingName={pricingName}
-          />
-          {formExpo ? (
-            <ConfiguratorPreviewDialog
-              initialValues={initialValues}
-              onVariableSetChange={vars => {
-                for (const [name, value] of Object.entries(vars)) {
-                  handleChangeVariables(name, value)
-                }
-              }}
-              onGoToZone={(zoneId: string) => {
-                // Select the box whose zone name matches in the viewer.
-                setSelectedZone(zoneId)
-              }}
-              onNameSetChange={names => {
-                setFormValues(names)
-              }}
-              onLabelSetChange={labelSet => {
-                setLabels(flattenLabels(labelSet as Record<string, unknown>))
-              }}
-              // Auto-switch to the mobile (nested tab-strip) layout below 768px,
-              // desktop above. `layout` is omitted so it doesn't force one mode.
-              responsive
-              // imageSuffix='/public'
-              imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
-              configuratorJson={formExpo}
-            />
-          ) : (
-            <p className='rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-              No configurator form is available for this shape.
-            </p>
-          )}
-
-          <div className='mt-10 flex items-center gap-3'>
+      <main className='flex flex-1 w-full flex-col gap-6 p-6 bg-white dark:bg-black'>
+        {dev && (
+          <div className='flex items-center gap-3'>
             <button
               type='button'
-              onClick={handleAddToCart}
-              className='inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
+              onClick={handleDownloadXml}
+              className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
             >
-              <CartIcon />
-              Add to cart
+              Download XML
             </button>
             <button
               type='button'
-              onClick={handleFavorite}
-              aria-label='Add to favorites'
-              className='inline-flex items-center justify-center rounded-md border border-zinc-300 px-3 py-2.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'
+              onClick={handleDownloadScopes}
+              className='inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
             >
-              <HeartIcon />
+              Download JSON
+            </button>
+            <button
+              type='button'
+              onClick={() => setShowHierarchy(open => !open)}
+              aria-pressed={showHierarchy}
+              className='inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+            >
+              {showHierarchy ? 'Hide hierarchy' : 'Show hierarchy'}
             </button>
           </div>
-        </aside>
+        )}
+
+        {/*
+          Row-major grid. On desktop (lg) two columns place the cells as:
+            canvas          | form
+            description     | pricing details
+            shape-res vars  | flated form vars
+          On small screens a single column stacks them in source order.
+        */}
+        <div className='grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr] min-w-0'>
+          {/* 1: canvas */}
+          <div className='min-w-0'>
+            <ShapeViewer
+              dev={dev}
+              shape={shape}
+              scopes={resolvedScopes}
+              selectedName={selectedZone}
+              showHierarchy={showHierarchy}
+              onCaptureReady={fn => {
+                captureCanvasRef.current = fn
+              }}
+            />
+          </div>
+
+          {/* 2: form */}
+          <div className='min-w-0 overflow-auto'>
+            <PriceDisplay pricing={pricing} />
+            {formExpo ? (
+              <ConfiguratorPreviewDialog
+                initialValues={initialValues}
+                onVariableSetChange={vars => {
+                  for (const [name, value] of Object.entries(vars)) {
+                    handleChangeVariables(name, value)
+                  }
+                }}
+                onGoToZone={(zoneId: string) => {
+                  // Select the box whose zone name matches in the viewer.
+                  setSelectedZone(zoneId)
+                }}
+                onNameSetChange={names => {
+                  setFormValues(names)
+                }}
+                onLabelSetChange={labelSet => {
+                  setLabels(flattenLabels(labelSet as Record<string, unknown>))
+                }}
+                // Auto-switch to the mobile (nested tab-strip) layout below 768px,
+                // desktop above. `layout` is omitted so it doesn't force one mode.
+                responsive
+                // imageSuffix='/public'
+                imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
+                configuratorJson={formExpo}
+              />
+            ) : (
+              <p className='rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+                No configurator form is available for this shape.
+              </p>
+            )}
+
+            <div className='mt-10 flex items-center gap-3'>
+              <button
+                type='button'
+                onClick={handleAddToCart}
+                className='inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
+              >
+                <CartIcon />
+                Add to cart
+              </button>
+              <button
+                type='button'
+                onClick={handleFavorite}
+                aria-label='Add to favorites'
+                className='inline-flex items-center justify-center rounded-md border border-zinc-300 px-3 py-2.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'
+              >
+                <HeartIcon />
+              </button>
+            </div>
+          </div>
+
+          {/* 3: description */}
+          <div className='min-w-0'>
+            {Object.keys(labels).length > 0 && (
+              <CollapsibleSection title='Description'>
+                <LabelsSection labels={labels} />
+              </CollapsibleSection>
+            )}
+          </div>
+
+          {/* 4: pricing details (dev only) */}
+          <div className='min-w-0 overflow-auto'>
+            {dev && (
+              <CollapsibleSection title='Price details'>
+                <PriceBreakdown pricing={pricing} />
+              </CollapsibleSection>
+            )}
+          </div>
+
+          {/* 5: variables (seed + form overrides) used in shape resolution (dev only) */}
+          <div className='min-w-0 overflow-auto'>
+            {dev && (
+              <CollapsibleSection title='variables (seed + form overrides) used in shape resolution'>
+                <Panel data={resolvedScopes} />
+              </CollapsibleSection>
+            )}
+          </div>
+
+          {/* 6: flated variables (seed + form overrides) used in form (dev only) */}
+          <div className='min-w-0 overflow-auto'>
+            {dev && (
+              <CollapsibleSection title='flated variables (seed + form overrides) used in form'>
+                <Panel data={flatForForm} />
+              </CollapsibleSection>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   )
@@ -493,24 +544,19 @@ function LabelsSection ({ labels }: { labels: Record<string, string> }) {
   const entries = Object.entries(labels)
   if (entries.length === 0) return null
   return (
-    <section className='rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950'>
-      <h3 className='mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500'>
-        Description
-      </h3>
-      <dl className='grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2'>
-        {entries.map(([key, value]) => (
-          <div
-            key={key}
-            className='flex items-baseline justify-between gap-3 border-b border-zinc-100 pb-1 dark:border-zinc-800'
-          >
-            <dt className='text-sm text-zinc-500'>{key}</dt>
-            <dd className='text-sm font-medium text-zinc-900 text-right dark:text-zinc-100'>
-              {value}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </section>
+    <dl className='grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2'>
+      {entries.map(([key, value]) => (
+        <div
+          key={key}
+          className='flex items-baseline justify-between gap-3 border-b border-zinc-100 pb-1 dark:border-zinc-800'
+        >
+          <dt className='text-sm text-zinc-500'>{key}</dt>
+          <dd className='text-sm font-medium text-zinc-900 text-right dark:text-zinc-100'>
+            {value}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
@@ -552,15 +598,49 @@ function HeartIcon () {
   )
 }
 
-function Panel ({ title, data }: { title: string; data: unknown }) {
+function Panel ({ data }: { data: unknown }) {
   return (
-    <div>
-      <h3 className='mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500'>
+    <pre className='rounded bg-zinc-100 dark:bg-zinc-900 p-3 text-xs overflow-auto'>
+      {JSON.stringify(data, null, 2)}
+    </pre>
+  )
+}
+
+/**
+ * Generic collapsible section (accordion). Its `title` is the always-visible
+ * summary; `children` show when expanded. Open by default.
+ */
+function CollapsibleSection ({
+  title,
+  defaultOpen = true,
+  children
+}: {
+  title: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className='group rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950'
+    >
+      <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 text-xs font-semibold uppercase tracking-wide text-zinc-500 select-none'>
         {title}
-      </h3>
-      <pre className='rounded bg-zinc-100 dark:bg-zinc-900 p-3 text-xs overflow-auto'>
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
+        <svg
+          width='14'
+          height='14'
+          viewBox='0 0 24 24'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='2'
+          strokeLinecap='round'
+          strokeLinejoin='round'
+          className='shrink-0 transition-transform group-open:rotate-180'
+        >
+          <path d='m6 9 6 6 6-6' />
+        </svg>
+      </summary>
+      <div className='px-4 pb-4'>{children}</div>
+    </details>
   )
 }

@@ -71,13 +71,15 @@ function Row ({
         type='button'
         onClick={() => onSelect(box.index)}
         style={{ paddingLeft: depth * 12 + 4 }}
-        className={`flex w-full items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+        className={`flex w-full min-w-max items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
           isSelected ? 'bg-yellow-200 dark:bg-yellow-900' : ''
         }`}
       >
-        <span className='text-zinc-400'>{box.index || '·'}</span>
-        <span className='truncate'>{box.name ?? (box.isArticle ? 'article' : 'box')}</span>
-        <span className='ml-auto text-zinc-400'>
+        <span className='shrink-0 text-zinc-400'>{box.index || '·'}</span>
+        <span className='whitespace-nowrap'>
+          {box.name ?? (box.isArticle ? 'article' : 'box')}
+        </span>
+        <span className='ml-auto shrink-0 pl-4 text-zinc-400'>
           {box.w.toFixed(2)}×{box.h.toFixed(2)}×{box.d.toFixed(2)}
         </span>
       </button>

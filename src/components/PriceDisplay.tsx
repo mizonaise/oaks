@@ -6,7 +6,8 @@ import type { ShapeData } from '@/lib/shape/schema'
 import { computeZoneSizes } from '@/lib/shape/xmlExport'
 import {
   useGetPricingMutation,
-  type PricingRequest
+  type PricingRequest,
+  type PricingResponse
 } from '@/lib/store/api/tecniboApi'
 
 /** The resolved variable scopes as produced by `ShapeConfigurator`. */
@@ -72,25 +73,27 @@ const euro = new Intl.NumberFormat('fr-FR', {
 })
 
 /**
- * Price banner shown at the top of the form. Recomputes the total via the
- * pricing endpoint whenever the resolved scopes change (debounced), so the
- * displayed price tracks the user's edits.
+ * Result of {@link usePricing}: the latest pricing response plus request
+ * status. `data` is `undefined` until the first successful fetch.
  */
-export function PriceDisplay ({
-  scopes,
-  shape,
-  pricingName
-}: {
-  scopes: Scopes
-  shape: ShapeData
-  /** Pricing router name from the shape (leading `#` already stripped). */
-  pricingName: string
-}) {
-  const [getPricing, { data, isLoading, isError }] = useGetPricingMutation()
+export interface UsePricingResult {
+  data: PricingResponse | undefined
+  isLoading: boolean
+  isError: boolean
+}
 
-  // Keep the last successfully computed total so the price doesn't flash to a
-  // spinner on every recompute.
-  const [lastTotal, setLastTotal] = useState<number | null>(null)
+/**
+ * Fetch the pricing response for the current scopes/shape, debounced so the
+ * form's bursty variable edits collapse into a single request. Shared by the
+ * top price banner ({@link PriceDisplay}) and the bottom breakdown
+ * ({@link PriceBreakdown}) so the page only fetches once.
+ */
+export function usePricing (
+  scopes: Scopes,
+  shape: ShapeData,
+  pricingName: string
+): UsePricingResult {
+  const [getPricing, { data, isLoading, isError }] = useGetPricingMutation()
 
   const request = useMemo(
     () => toPricingRequest(scopes, shape),
@@ -109,13 +112,29 @@ export function PriceDisplay ({
     const t = setTimeout(() => {
       void getPricing({ pricingName, body: latestRequest.current })
         .unwrap()
-        .then(res => setLastTotal(res.totalPrice))
         .catch(() => {
           /* handled via isError below */
         })
     }, 400)
     return () => clearTimeout(t)
   }, [requestKey, getPricing, pricingName])
+
+  return { data, isLoading, isError }
+}
+
+/**
+ * Price banner shown at the top of the form. Consumes a {@link usePricing}
+ * result so the displayed total tracks the user's edits.
+ */
+export function PriceDisplay ({ pricing }: { pricing: UsePricingResult }) {
+  const { data, isLoading, isError } = pricing
+
+  // Keep the last successfully computed total so the price doesn't flash to a
+  // spinner on every recompute.
+  const [lastTotal, setLastTotal] = useState<number | null>(null)
+  useEffect(() => {
+    if (data) setLastTotal(data.totalPrice)
+  }, [data])
 
   const total = data?.totalPrice ?? lastTotal
   const showSpinner = isLoading && total === null
@@ -190,5 +209,59 @@ export function PriceDisplay ({
         )}
       </div>
     </section>
+  )
+}
+
+/**
+ * Detailed price breakdown shown at the bottom of the form (dev only). Groups
+ * the pricing response's `breakdown` line items by `namespaceName` (zone) and
+ * lists each item's raw `pricingKey`, `amount`, and `expression`.
+ */
+export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
+  const { data } = pricing
+
+  const zones = useMemo(() => {
+    const items = data?.breakdown
+    if (!items || items.length === 0) return []
+
+    // namespace -> items, preserving first-seen order.
+    const byZone = new Map<string, typeof items>()
+    for (const it of items) {
+      const lines = byZone.get(it.namespaceName)
+      if (lines) lines.push(it)
+      else byZone.set(it.namespaceName, [it])
+    }
+
+    return [...byZone].map(([namespace, lines]) => ({ namespace, lines }))
+  }, [data])
+
+  if (zones.length === 0) return null
+
+  return (
+    <div className='space-y-4'>
+      {zones.map(zone => (
+        <div key={zone.namespace}>
+          <h4 className='mb-1 border-b border-zinc-100 pb-1 text-sm font-semibold text-zinc-900 dark:border-zinc-800 dark:text-zinc-100'>
+            {zone.namespace}
+          </h4>
+          <div className='space-y-2'>
+            {zone.lines.map((it, i) => (
+              <div
+                key={`${it.pricingKey}-${i}`}
+                className='text-xs text-zinc-600 dark:text-zinc-400'
+              >
+                <div className='font-medium text-zinc-900 dark:text-zinc-100'>
+                  {it.pricingKey}
+                </div>
+                <div className='tabular-nums'>Amount: {it.amount}</div>
+                <div className='break-all font-mono text-[11px]'>
+                  Expression: {it.expression}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

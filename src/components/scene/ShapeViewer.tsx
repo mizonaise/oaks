@@ -22,6 +22,9 @@ type Props = {
   dev?: boolean
   /** When set, selects the box whose zone `name` matches (e.g. from goToZone). */
   selectedName?: string | null
+  /** Controlled visibility of the box Hierarchy panel. When omitted, the
+   *  viewer manages it internally (uncontrolled). */
+  showHierarchy?: boolean
   /** Receives a `() => string | null` that snapshots the canvas as a PNG data
    *  URL, so a parent can capture the current view on demand. */
   onCaptureReady?: (capture: () => string | null) => void
@@ -44,6 +47,7 @@ export function ShapeViewer ({
   scopes,
   dev = false,
   selectedName,
+  showHierarchy: showHierarchyProp,
   onCaptureReady
 }: Props) {
   const { boxes, bounds } = useMemo(() => {
@@ -61,7 +65,9 @@ export function ShapeViewer ({
   }, [shape, scopes])
 
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null)
-  const [showHierarchy, setShowHierarchy] = useState(false)
+  // Visibility of the box Hierarchy panel is controlled by the parent (the
+  // toggle now lives next to the Download buttons); defaults to hidden.
+  const showHierarchy = showHierarchyProp ?? false
 
   // Last requested zone that resolved to a box with a `camera`. An empty
   // goToZone falls back to this so the camera returns to the previous framed
@@ -86,16 +92,6 @@ export function ShapeViewer ({
 
   return (
     <div>
-      {dev && (
-        <button
-          type='button'
-          onClick={() => setShowHierarchy(open => !open)}
-          aria-pressed={showHierarchy}
-          className='mb-2 rounded border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
-        >
-          {showHierarchy ? 'Hide hierarchy' : 'Show hierarchy'}
-        </button>
-      )}
       <div
         className={
           dev && showHierarchy
