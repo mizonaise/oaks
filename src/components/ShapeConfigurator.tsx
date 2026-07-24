@@ -612,7 +612,7 @@ function Panel ({ data }: { data: unknown }) {
  */
 function CollapsibleSection ({
   title,
-  defaultOpen = true,
+  defaultOpen = false,
   children
 }: {
   title: string

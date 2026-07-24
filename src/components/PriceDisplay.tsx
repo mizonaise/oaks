@@ -232,7 +232,11 @@ export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
       else byZone.set(it.namespaceName, [it])
     }
 
-    return [...byZone].map(([namespace, lines]) => ({ namespace, lines }))
+    return [...byZone].map(([namespace, lines]) => ({
+      namespace,
+      lines,
+      total: lines.reduce((s, it) => s + (it.amount ?? 0), 0)
+    }))
   }, [data])
 
   if (zones.length === 0) return null
@@ -241,9 +245,14 @@ export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
     <div className='space-y-4'>
       {zones.map(zone => (
         <div key={zone.namespace}>
-          <h4 className='mb-1 border-b border-zinc-100 pb-1 text-sm font-semibold text-zinc-900 dark:border-zinc-800 dark:text-zinc-100'>
-            {zone.namespace}
-          </h4>
+          <div className='mb-1 flex items-baseline justify-between gap-4 border-b border-zinc-100 pb-1 dark:border-zinc-800'>
+            <h4 className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+              {zone.namespace}
+            </h4>
+            <span className='tabular-nums text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+              {euro.format(zone.total)}
+            </span>
+          </div>
           <div className='space-y-2'>
             {zone.lines.map((it, i) => (
               <div
