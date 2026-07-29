@@ -119,7 +119,7 @@ export const tecniboApi = createApi({
     // Single endpoint returning the shape, its exported configurator form
     // (`{ configurator, sources }` or `null`) and pricing in one payload.
     getShape: builder.query<ShapeResponse, string>({
-      query: (shapeName) => `/api/shape/shape/${shapeName}`,
+      query: (shapeName) => `/api/shape/product/${shapeName}`,
     }),
 
     // → backend.tecnibo.com/api/rp-engine/material-data/<name>
