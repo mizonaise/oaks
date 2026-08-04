@@ -320,7 +320,7 @@ export function Shape3D ({
           // maxDistance={dev ? 500 : 124}
           dampingFactor={0.05}
           enableZoom={dev}
-          // enableRotate={dev}
+          enableRotate={dev}
         />
         {!dev && (
           <CameraHandler
