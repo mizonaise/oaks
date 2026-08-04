@@ -15,7 +15,7 @@ import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import type { FlatVars } from '@/lib/form/expr'
 import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
-import { RoomWalls, isBuiltIn } from './RoomWalls'
+import { RoomWalls } from './RoomWalls'
 import { BoxItem } from './BoxItem'
 
 type Props = {
@@ -306,7 +306,7 @@ export function Shape3D ({
 
           {!dev && (
             <Suspense fallback={null}>
-              <RoomWalls w={w} h={h} d={d} globalVars={globalVars} />
+              <RoomWalls w={w} h={h} d={d} boxes={boxes} scale={SCALE} />
             </Suspense>
           )}
           <GroundShadow w={w} d={d} />
@@ -320,7 +320,7 @@ export function Shape3D ({
           // maxDistance={dev ? 500 : 124}
           dampingFactor={0.05}
           enableZoom={dev}
-          enableRotate={dev}
+          // enableRotate={dev}
         />
         {!dev && (
           <CameraHandler
