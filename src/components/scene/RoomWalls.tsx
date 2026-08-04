@@ -2,13 +2,66 @@
 
 import { memo, useMemo } from 'react'
 import { CanvasTexture, DoubleSide, FrontSide, SRGBColorSpace } from 'three'
-import type { FlatVars } from '@/lib/form/expr'
+import type { Box as ShapeBox } from './shapeTree'
 
-/** `"1"`/`1`/`true` → built-in on that side; anything else → freestanding. */
-export function isBuiltIn (raw: unknown): boolean {
-  if (raw == null) return false
-  const s = String(raw).trim().toLowerCase()
-  return s === '1' || s === 'true'
+/** The cp a zone puts on a face to say "a room wall stands here". */
+export const WALL_CP = 'CP_SPO_WALL'
+
+/**
+ * A room wall derived from a box face carrying {@link WALL_CP}: the axis the
+ * face looks along, which side of the box it is, and the face's extent — all in
+ * *scene units* (mm × scale), since the room renders outside the scaled group
+ * the boxes live in.
+ */
+export type CpWall = {
+  key: string
+  /** Face normal axis. */
+  axis: 'x' | 'z'
+  /** -1 = low side of the box (left / front), +1 = high side (right / back). */
+  sign: -1 | 1
+  /** Plane position along the normal axis. */
+  at: number
+  /** Center of the face along its in-plane horizontal axis. */
+  center: number
+  /** Face size along that in-plane axis. */
+  size: number
+}
+
+/**
+ * One wall per box face referencing {@link WALL_CP}. `left`/`right` are the
+ * x-normal faces, `front`/`back` the z-normal ones; `top`/`bottom` are ignored
+ * since a room wall is vertical (and the floor/ceiling are always drawn).
+ *
+ * Box coords are mm — `scale` converts them to the room's scene units.
+ */
+export function findCpWalls (
+  boxes: Array<Pick<ShapeBox, 'index' | 'x' | 'z' | 'w' | 'd' | 'sides'>>,
+  scale: number
+): CpWall[] {
+  const walls: CpWall[] = []
+  for (const b of boxes) {
+    if (!b.sides) continue
+    // `sides[*].cp` is already resolved from any `#DS_*` descriptor ref by
+    // walkZone, so comparing the concrete name is enough.
+    const faces = [
+      ['left', 'x', -1, b.x, b.z, b.d],
+      ['right', 'x', 1, b.x + b.w, b.z, b.d],
+      ['front', 'z', -1, b.z, b.x, b.w],
+      ['back', 'z', 1, b.z + b.d, b.x, b.w]
+    ] as const
+    for (const [face, axis, sign, at, spanStart, spanSize] of faces) {
+      if (b.sides[face]?.cp !== WALL_CP) continue
+      walls.push({
+        key: `${b.index}:${face}`,
+        axis,
+        sign,
+        at: at * scale,
+        center: (spanStart + spanSize / 2) * scale,
+        size: spanSize * scale
+      })
+    }
+  }
+  return walls
 }
 
 // A linear gradient band on a wall: gray at `at` (0..1 along the axis, where the
@@ -59,37 +112,40 @@ function makeLinearGradient (band: WallBand): CanvasTexture | null {
 /**
  * Decorative white-plane room around the shape. The shape occupies the box
  * x∈[0,w], y∈[0,h], z∈[0,d] (scene units) in the parent group. Back wall, floor
- * and ceiling are always drawn; the left/right walls appear only when the unit
- * is built-in on that side (`IS_BI_L` / `IS_BI_R` = 1) and are hidden when
- * freestanding (0).
+ * and ceiling are always drawn; the side walls come from the shape itself — one
+ * per box face carrying the `CP_SPO_WALL` cp, standing at that face.
  *
- * `w`/`h`/`d` are the shape's scene-unit dimensions; `globalVars` carries the
- * resolved `IS_BI_*` flags.
+ * `w`/`h`/`d` are the shape's scene-unit dimensions; `boxes` is the walked shape
+ * tree (mm), converted to scene units via `scale`. See {@link findCpWalls}.
  */
 export const RoomWalls = memo(function RoomWalls ({
   w,
   h,
   d,
-  globalVars
+  boxes,
+  scale
 }: {
   w: number
   h: number
   d: number
-  globalVars: FlatVars
+  boxes: ShapeBox[]
+  /** mm → scene units, matching the scaled group the boxes render in. */
+  scale: number
 }) {
-  const builtInLeft = isBuiltIn(globalVars.IS_BI_L)
-  const builtInRight = isBuiltIn(globalVars.IS_BI_R)
+  const cpWalls = useMemo(() => findCpWalls(boxes, scale), [boxes, scale])
 
   // Room extends a bit beyond the shape so it doesn't feel cramped.
   const wallH = h
   const margin = Math.max(w, d) * 60
   const roomD = d + margin
 
-  // Horizontal extent of the floor / ceiling / back wall. On a built-in side
-  // the panel stops flush at that wall (x = 0 left, x = w right); on an open
-  // side it overhangs by `margin` so the room doesn't feel cramped.
-  const left = builtInLeft ? 0 : -margin
-  const right = builtInRight ? w : w + margin
+  // Horizontal extent of the floor / ceiling / back wall. A side with a wall on
+  // it stops flush there (x = 0 left, x = w right); an open side overhangs by
+  // `margin` so the room doesn't feel cramped.
+  const hasLeftWall = cpWalls.some(k => k.axis === 'x' && k.sign === -1)
+  const hasRightWall = cpWalls.some(k => k.axis === 'x' && k.sign === 1)
+  const left = hasLeftWall ? 0 : -margin
+  const right = hasRightWall ? w : w + margin
   const roomW = right - left
   const cx = (left + right) / 2
 
@@ -169,35 +225,40 @@ export const RoomWalls = memo(function RoomWalls ({
       />
 
       {/* Back wall (behind the shape, at z = 0) */}
-      <Plane
+      {/* <Plane
         position={[cx, wallH / 2, 0]}
         rotation={[0, 0, 0]}
         args={[roomW, wallH]}
         // map={backTex}
-      />
+      /> */}
 
-      {/* Left wall — only when built-in on the left.
-          Front face points +X (into the room) → visible from inside only. */}
-      {builtInLeft && (
-        <Plane
-          position={[0, wallH / 2, roomD / 2]}
-          rotation={[0, Math.PI / 2, 0]}
-          args={[roomD, wallH]}
-          side={FrontSide}
-          map={leftSideTex}
-        />
-      )}
+      {/* Side walls, one per box face carrying CP_SPO_WALL. Each is rotated so
+          its front face points back into the room (+X for a low/left face, −X
+          for a high/right face), so it's visible from inside only.
 
-      {/* Right wall — only when built-in on the right.
-          Front face points -X (into the room) → visible from inside only. */}
-      {builtInRight && (
-        <Plane
-          position={[w, wallH / 2, roomD / 2]}
-          rotation={[0, -Math.PI / 2, 0]}
-          args={[roomD, wallH]}
-          side={FrontSide}
-          map={rightSideTex}
-        />
+          An x-normal wall spans the room's full depth like the old left/right
+          walls did; a z-normal one spans the face's own width. */}
+      {cpWalls.map(wall =>
+        wall.axis === 'x' ? (
+          <Plane
+            key={wall.key}
+            position={[wall.at - wall.sign * 0.05, wallH / 2, roomD / 2]}
+            rotation={[0, (wall.sign * Math.PI) / 2, 0]}
+            args={[roomD, wallH]}
+            side={FrontSide}
+            // The two orientations mirror their local U axis (world z), so flip
+            // the band's position to keep the gray at the front on both.
+            map={wall.sign === 1 ? leftSideTex : rightSideTex}
+          />
+        ) : (
+          <Plane
+            key={wall.key}
+            position={[wall.center, wallH / 2, wall.at]}
+            rotation={[0, wall.sign === -1 ? Math.PI : 0, 0]}
+            args={[wall.size, wallH]}
+            side={FrontSide}
+          />
+        )
       )}
     </group>
   )
