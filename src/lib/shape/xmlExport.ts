@@ -224,10 +224,16 @@ export function buildShapeXml(
   shapeName: string,
   shape: ShapeData,
   scopes: Scopes,
+  /**
+   * Epoch ms stamped into the order number and display date. Pass the same value
+   * used for the export's filename so the two identify one export; defaults to
+   * now when omitted.
+   */
+  now: number = Date.now(),
 ): string {
   const basket = "3938";
-  const orderN = `SO_OS_${new Date().getTime()}`;
-  const dispDate = new Date().toLocaleDateString("fr-FR");
+  const orderN = `SO_OS_${now}`;
+  const dispDate = new Date(now).toLocaleDateString("fr-FR");
   // const commandN = "O_TL_24_0623";
 
   const bounds = {
