@@ -65,6 +65,8 @@ export type DescriptorBranch = {
 }
 
 export type ShapeData = {
+  /** The shape's own declared name, e.g. `OAKSOME_SHAPE_FR`. */
+  name?: string
   width?: unknown
   depth?: unknown
   height?: unknown

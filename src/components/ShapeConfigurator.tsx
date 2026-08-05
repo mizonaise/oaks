@@ -243,16 +243,26 @@ export function ShapeConfigurator ({
   // per-zone breakdown.
   const pricing = usePricing(resolvedScopes, shape, pricingName)
 
+  // The main Set's model name (`Pname` / `___MODEL_NAME`) comes from the shape's
+  // own declared `name` (e.g. OAKSOME_SHAPE_FR), not the `shapeName` lookup key
+  // the configurator was mounted with — those can differ. Falls back to the key.
+  const modelName = shape.name || shapeName || 'SHAPE'
+
   // Export the live changes (nestedUpdates) as an OAKSOME ListBuilder XML,
   // with one Set per article zone resolved from the shape tree.
   const handleDownloadXml = useCallback(() => {
-    const name = shapeName || 'SHAPE'
     // One timestamp for the whole export, so the filename and the XML's own
     // order number / display date all refer to the same instant.
     const now = Date.now()
-    const xml = buildShapeXml(nestedUpdates, name, shape, resolvedScopes, now)
-    downloadXml(`${name}_${now}.xml`, xml)
-  }, [nestedUpdates, shapeName, shape, resolvedScopes])
+    const xml = buildShapeXml(
+      nestedUpdates,
+      modelName,
+      shape,
+      resolvedScopes,
+      now
+    )
+    downloadXml(`${modelName}_${now}.xml`, xml)
+  }, [nestedUpdates, modelName, shape, resolvedScopes])
 
   // Export the resolved variable scopes (globalVars + namespaces) as JSON.
   const handleDownloadScopes = useCallback(() => {
@@ -296,7 +306,7 @@ export function ShapeConfigurator ({
       const now = Date.now()
       const xmlContent = buildShapeXml(
         nestedUpdates,
-        name,
+        modelName,
         shape,
         resolvedScopes,
         now
@@ -315,7 +325,8 @@ export function ShapeConfigurator ({
         // Same body the pricing endpoint receives (globalVars + namespaces).
         shape: toPricingRequest(resolvedScopes, shape),
         xmlFile: {
-          filename: `${name}_${now}.xml`,
+          // Named for the model inside it, matching the standalone XML download.
+          filename: `${modelName}_${now}.xml`,
           content: xmlContent
         },
         // PNG snapshot of the current 3D view, as a data URL.
@@ -323,7 +334,7 @@ export function ShapeConfigurator ({
       }
       return res
     },
-    [nestedUpdates, shapeName, shape, resolvedScopes, pricingName]
+    [nestedUpdates, shapeName, modelName, shape, resolvedScopes, pricingName]
   )
 
   const handleAddToCart = useCallback(() => {
