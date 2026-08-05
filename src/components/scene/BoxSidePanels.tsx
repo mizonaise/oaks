@@ -46,6 +46,7 @@ const FacePanel = memo(function FacePanel ({
   if (!face.cpRef || !cp) return null
   // A cp of "empty" (any case) is a placeholder for "no panel here" — skip it.
   if (face.cpRef.toLowerCase().includes('empty')) return null
+  if (face.cpRef.toLowerCase().includes('spo_wall')) return null
   // Each enabled dimension becomes an arrowed measurement along its axis.
   // w/h/d map to x/y/z; whichever axis is the panel's thickness uses the
   // cp thickness (with CpPanel's 2mm floor), the others use the box span.
