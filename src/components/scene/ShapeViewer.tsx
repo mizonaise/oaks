@@ -113,6 +113,7 @@ export function ShapeViewer ({
           globalVars={scopes.globalVars}
           selectedIndex={selectedIndex}
           onSelect={() => {}}
+          selectedZone={selectedName}
           onCaptureReady={onCaptureReady}
         />
       </div>

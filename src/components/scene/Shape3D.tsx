@@ -1,6 +1,13 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import * as THREE from 'three'
 import {
   OrbitControls,
@@ -15,7 +22,7 @@ import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import type { FlatVars } from '@/lib/form/expr'
 import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
-import { RoomWalls } from './RoomWalls'
+import { RoomWalls, findCpWalls } from './RoomWalls'
 import { BoxItem } from './BoxItem'
 
 type Props = {
@@ -29,6 +36,9 @@ type Props = {
    *  in-scene label, with the `w`/`h`/`d` flags selecting which of the box's
    *  dimensions to include. */
   dimCpConfig?: DimCpConfig
+  /** The zone name the form is currently requesting (`goToZone`). While one is
+   *  active the free-look toggle is disabled, since that zone owns the camera. */
+  selectedZone?: string | null
   /** Receives a `() => string | null` that snapshots the WebGL canvas as a PNG
    *  data URL (null if the canvas isn't ready). Called on mount so a parent can
    *  capture the current view on demand (e.g. for add-to-cart). */
@@ -158,6 +168,7 @@ export function Shape3D ({
   selectedIndex,
   onSelect,
   dimCpConfig = DEFAULT_DIM_CP_CONFIG,
+  selectedZone,
   onCaptureReady
 }: Props) {
   const w = bounds.w * MM * SCALE
@@ -193,6 +204,46 @@ export function Shape3D ({
   // wall and see the unit from outside. A built-in side limits the camera to
   // the corridor between the walls; open sides allow free rotation.
   const controlsRef = useRef<OrbitControlsImpl>(null)
+
+  // Free-look: when on, the user drives the camera (clamped by the walls) and
+  // zone-camera framing is ignored. Off by default so the configurator keeps
+  // its current behaviour of framing whatever zone the form points at.
+  const [freeLook, setFreeLook] = useState(false)
+
+  // A zone is actively requested while `selectedZone` is a non-empty name other
+  // than "0" (the form's "nothing selected" sentinel). That zone owns the
+  // camera, so free-look can't be toggled until it's cleared.
+  const zoneActive =
+    selectedZone != null &&
+    selectedZone !== '' &&
+    selectedZone.includes('OV') === false
+
+  // Holding the toggle off while a zone is active would strand the camera in
+  // free-look; turn it off as soon as a zone takes over.
+  useEffect(() => {
+    if (zoneActive) setFreeLook(false)
+  }, [zoneActive])
+
+  // How far the camera may swing off the shape's centerline before a room wall
+  // cuts in front of the unit — one distance per side, null when that side is
+  // open. `findCpWalls` reports `at` in the scaled group's local space (0..w)
+  // while the orbit target sits at the world origin, so shift by `ox` first.
+  // A wall's `sign` is the face it looks along, so it picks the side; the
+  // *nearest* wall on each side binds, since that's what blocks the view first.
+  const { wallLeft, wallRight } = useMemo(() => {
+    const xWalls = findCpWalls(boxes, SCALE).filter(k => k.axis === 'x')
+    let wallLeft: number | null = null
+    let wallRight: number | null = null
+    for (const k of xWalls) {
+      const dist = Math.abs(k.at + ox)
+      if (k.sign === -1) {
+        wallLeft = wallLeft === null ? dist : Math.min(wallLeft, dist)
+      } else {
+        wallRight = wallRight === null ? dist : Math.min(wallRight, dist)
+      }
+    }
+    return { wallLeft, wallRight }
+  }, [boxes, ox])
 
   // When a zone with a `camera` side is selected, hide anything sitting between
   // it and the camera so the framed zone is never occluded. Computed in mm box
@@ -241,13 +292,35 @@ export function Shape3D ({
       >
         <ContrastIcon />
       </button>
+      <button
+        type='button'
+        onClick={() => setFreeLook(open => !open)}
+        disabled={zoneActive}
+        title={
+          zoneActive
+            ? 'Rotation unavailable while a zone is selected'
+            : freeLook
+            ? 'Disable rotation'
+            : 'Enable rotation'
+        }
+        aria-pressed={freeLook}
+        className={`absolute right-3 top-39 z-10 flex h-10 w-10 items-center justify-center rounded-full border shadow-md backdrop-blur transition ${
+          zoneActive
+            ? 'cursor-not-allowed border-zinc-200 bg-white/60 text-zinc-300 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-600'
+            : freeLook
+            ? 'border-zinc-800 bg-zinc-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
+            : 'border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+        }`}
+      >
+        <OrbitIcon />
+      </button>
       {dev && (
         <button
           type='button'
           onClick={() => setHideArticle(open => !open)}
           title={hideArticle ? 'Show article' : 'Hide article'}
           aria-pressed={hideArticle}
-          className='absolute right-3 top-39 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+          className='absolute right-3 top-51 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
         >
           <EyeIcon off={hideArticle} />
         </button>
@@ -320,9 +393,13 @@ export function Shape3D ({
           // maxDistance={dev ? 500 : 124}
           dampingFactor={0.05}
           enableZoom={dev}
-          enableRotate={dev}
+          // Dev keeps its free camera; outside dev, rotation is what the
+          // free-look toggle grants (WallClamp below bounds it).
+          enableRotate={dev || freeLook}
         />
-        {!dev && (
+        {/* Free-look hands the camera to the user, so the zone framing stands
+            down entirely — unmounting it also drops its per-frame lerp. */}
+        {!dev && !freeLook && (
           <CameraHandler
             controlsRef={controlsRef}
             boxes={boxes}
@@ -332,15 +409,14 @@ export function Shape3D ({
             scale={SCALE}
           />
         )}
-        {/* {!dev && (
+        {!dev && freeLook && (
           <WallClamp
             controlsRef={controlsRef}
-            halfWidth={w / 2.1}
+            wallLeft={wallLeft}
+            wallRight={wallRight}
             halfHeight={h / 2.4}
-            limitLeft={builtInLeft}
-            limitRight={builtInRight}
           />
-        )} */}
+        )}
       </Canvas>
     </div>
   )
@@ -355,52 +431,72 @@ export function Shape3D ({
  * `≤ e`, giving the angle bound `asin(e / radius)`. We recompute each frame
  * because `radius` changes with zoom.
  *
- * - Azimuth: offset is `distXZ · sin(azimuth)`, bound by the side walls
- *   (left = -x bounds negative azimuth, right = +x bounds positive). Applied
- *   only on built-in sides; open sides rotate freely.
+ * - Azimuth: offset is `distXZ · sin(azimuth)`, bound per side by that side's
+ *   wall distance (`wallLeft` bounds negative azimuth, `wallRight` positive).
+ *   A side with no wall gets the full quarter turn, past which the camera would
+ *   be looking at the unit edge-on.
  * - Polar: offset from the equator is `radius · cos(polar)`, bound by the
  *   floor and ceiling. These are always drawn, so the polar clamp always
  *   applies. `polar = π/2 ± asin(halfHeight / radius)`.
  */
 function WallClamp ({
   controlsRef,
-  halfWidth,
-  halfHeight,
-  limitLeft,
-  limitRight
+  wallLeft,
+  wallRight,
+  halfHeight
 }: {
   controlsRef: React.RefObject<OrbitControlsImpl | null>
-  halfWidth: number
+  /** Centerline→left-wall distance, or null when that side is open. */
+  wallLeft: number | null
+  /** Centerline→right-wall distance, or null when open. */
+  wallRight: number | null
   halfHeight: number
-  limitLeft: boolean
-  limitRight: boolean
 }) {
-  useFrame(() => {
+  // Writes the current angle limits onto the controls. Returns false when there
+  // is nothing to clamp against yet.
+  const applyLimits = useCallback(() => {
     const controls = controlsRef.current
-    if (!controls) return
+    if (!controls) return false
 
-    const cam = controls.object
-    const t = controls.target
-    const dx = cam.position.x - t.x
-    const dy = cam.position.y - t.y
-    const dz = cam.position.z - t.z
+    // Derive the limits from the orbit *radius*, not from the camera's current
+    // x/z offsets. Rotation preserves the radius, so the bounds hold still while
+    // dragging. Measuring the in-plane distance instead feeds back on itself —
+    // OrbitControls pushes the camera to satisfy the limit, which changes the
+    // distance, which moves the limit — and the view judders at the stops. Only
+    // zoom changes the radius, and there a re-derived limit is what we want.
+    const radius = controls.object.position.distanceTo(controls.target)
+    if (radius <= 0) return false
 
-    // Azimuth limit from the horizontal distance to the target.
-    const distXZ = Math.hypot(dx, dz)
-    if (distXZ > 0) {
-      const azLimit = Math.asin(Math.min(1, halfWidth / distXZ))
-      controls.minAzimuthAngle = limitLeft ? -azLimit : -Math.PI / 4
-      controls.maxAzimuthAngle = limitRight ? azLimit : Math.PI / 4
-    }
+    // A wall `e` from the centerline is cleared once the camera's x-offset
+    // reaches `e`; that offset is `radius · sin(azimuth)`, so the bound is
+    // `asin(e / radius)`. Quarter turn on an open side, past which the unit is
+    // edge-on. Close in the wall subtends a wider angle, so the range opens up.
+    const limit = (wall: number | null) =>
+      wall === null
+        ? Math.PI / 2
+        : Math.min(Math.PI / 2, Math.asin(Math.min(1, wall / radius)))
+    controls.minAzimuthAngle = -limit(wallLeft)
+    controls.maxAzimuthAngle = limit(wallRight)
 
-    // Polar limit from the full 3D radius, centered on the horizontal equator
-    // (π/2). Keeps the camera between the floor and ceiling at every zoom.
-    const radius = Math.hypot(distXZ, dy)
-    if (radius > 0) {
-      const polarHalf = Math.asin(Math.min(1, halfHeight / radius))
-      controls.minPolarAngle = Math.PI / 2 - polarHalf
-      controls.maxPolarAngle = Math.PI / 2 + polarHalf
-    }
+    // Polar bound off the same radius, centered on the horizontal equator
+    // (π/2), keeping the camera between the floor and ceiling at every zoom.
+    const polarHalf = Math.asin(Math.min(1, halfHeight / radius))
+    controls.minPolarAngle = Math.PI / 2 - polarHalf
+    controls.maxPolarAngle = Math.PI / 2 + polarHalf
+    return true
+  }, [controlsRef, wallLeft, wallRight, halfHeight])
+
+  // Free-look was just switched on, so the camera sits wherever the last zone
+  // framing left it — possibly outside the walls. Set the limits and apply them
+  // once, since OrbitControls only enforces them inside `update()`. The frame
+  // loop below deliberately does *not* call `update()`, so this is the only
+  // place the camera is moved to satisfy the clamp.
+  useEffect(() => {
+    if (applyLimits()) controlsRef.current?.update()
+  }, [applyLimits, controlsRef])
+
+  useFrame(() => {
+    applyLimits()
   })
 
   return null
@@ -580,6 +676,25 @@ function ContrastIcon () {
     >
       <circle cx='12' cy='12' r='9' />
       <path d='M12 3a9 9 0 0 1 0 18z' fill='currentColor' stroke='none' />
+    </svg>
+  )
+}
+
+// Orbit glyph for the rotation toggle: a body with a ring swung around it.
+function OrbitIcon () {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <circle cx='12' cy='12' r='3.2' />
+      <ellipse cx='12' cy='12' rx='10' ry='4.6' transform='rotate(-30 12 12)' />
     </svg>
   )
 }
