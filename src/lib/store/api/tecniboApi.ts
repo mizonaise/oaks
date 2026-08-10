@@ -12,6 +12,19 @@ import type { ShapeData } from "@/lib/shape/schema";
  * `form` is the exported configurator (`{ configurator, sources }`) or `null`
  * when the article has no attached form.
  */
+/**
+ * Item of the product listing: `GET /api/shape/product` →
+ * `[{ id, articleId, configuratorId, pricing }]`. `id` is the product/shape
+ * name used by `getShape` (`/api/shape/product/<id>`); `pricing` is the pricing
+ * router name (with a leading `#`) or `null` when the product has none.
+ */
+export interface ProductListItem {
+  id: string;
+  articleId: string;
+  configuratorId: string;
+  pricing: string | null;
+}
+
 export interface ShapeResponse {
   form: ExportedConfigurator | null;
   pricing: string;
@@ -115,6 +128,12 @@ export const tecniboApi = createApi({
       }),
     }),
 
+    // → api.tecnibo.com/product
+    // Lists every available product/shape (id, article, configurator, pricing).
+    getProducts: builder.query<ProductListItem[], void>({
+      query: () => `/api/shape/product`,
+    }),
+
     // → api.tecnibo.com/shape/<SHAPE_NAME>
     // Single endpoint returning the shape, its exported configurator form
     // (`{ configurator, sources }` or `null`) and pricing in one payload.
@@ -161,6 +180,7 @@ export const tecniboApi = createApi({
 
 export const {
   useGetArticleQuery,
+  useGetProductsQuery,
   useGetShapeQuery,
   useGetMaterialQuery,
   useGetSurfaceQuery,
