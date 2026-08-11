@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@oak-some/configurator-previewer": "^1.19.0",
-    "@processandtools/rp-article-designer": "^1.0.94",
+    "@processandtools/rp-article-designer": "^1.0.95",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@reduxjs/toolkit": "^2.12.0",
