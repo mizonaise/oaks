@@ -7,7 +7,10 @@ import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
 import { buildShapeXml, downloadXml, downloadJson } from '@/lib/shape/xmlExport'
 import type { ShapeData } from '@/lib/shape/schema'
-import { useGetShapeQuery } from '@/lib/store/api/tecniboApi'
+import {
+  useGetProductsConfigQuery,
+  useGetShapeQuery
+} from '@/lib/store/api/tecniboApi'
 
 import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
 import {
@@ -109,10 +112,15 @@ function setNested (
 
 export function ShapeConfigurator ({
   dev = false,
-  shapeName
+  shapeName,
+  templateId
 }: {
   dev?: boolean
   shapeName: string
+  /** `?id=` from the shape URL. When set, the saved form values for that
+   *  template seed `initialValues`. Omitted on `/shape/dev`, which keeps its
+   *  URL-query-only seeding. */
+  templateId?: string
 }) {
   // Fetch the shape from the remote shape endpoint by its declared name
   // (e.g. OAKSOME_SHAPE_FR). A single endpoint returns the shape, its exported
@@ -148,17 +156,32 @@ export function ShapeConfigurator ({
   // the registry pointed at the previous shape.
   setShapeData(shape)
 
+  // Saved form values for the `?id=` template, fetched from the products-config
+  // endpoint. Skipped when there's no id (e.g. `/shape/dev`, which never passes
+  // one), so that route keeps seeding from the URL query alone.
+  const { data: savedConfig } = useGetProductsConfigQuery(templateId ?? '', {
+    skip: !templateId
+  })
+
   // Seed the form from the URL query string: every `?FIELD=value` pair becomes
   // an `initialValues` entry (`{ FIELD: 'value' }`). Read from
   // `window.location.search` (client-only) once on mount — SSR has no URL, so
   // it starts empty and fills in after hydration.
-  const [initialValues, setInitialValues] = useState<Record<string, string>>({})
+  const [urlValues, setUrlValues] = useState<Record<string, string>>({})
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const values: Record<string, string> = {}
     for (const [key, value] of params.entries()) values[key] = value
-    setInitialValues(values)
+    setUrlValues(values)
   }, [])
+
+  // Saved template config first, URL query on top: an explicit `?FIELD=value`
+  // in the address bar stays an override of what was saved. `id` is the template
+  // selector, not a form field, so it never seeds a value.
+  const initialValues = useMemo(() => {
+    const { id: _id, ...rest } = urlValues
+    return { ...(savedConfig ?? {}), ...rest }
+  }, [savedConfig, urlValues])
 
   // Nested-by-dots updates emitted by the form (bare names → under "global",
   // dotted names → nested objects).

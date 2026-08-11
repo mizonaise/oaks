@@ -32,6 +32,21 @@ export interface ShapeResponse {
 }
 
 /**
+ * Response envelope of the products-config endpoint:
+ * `GET /api/oaksome/products-config?template_id=<id>` →
+ * `{ success, data: { id, form } }`. `data.form` holds the saved field values
+ * for that template (e.g. `{ ZF_WIDTH: "3000", ZF_CNT: "5" }`), used to seed
+ * the configurator's initial values.
+ */
+export interface ProductsConfigResponse {
+  success: boolean;
+  data: {
+    id: number;
+    form: Record<string, string | number>;
+  } | null;
+}
+
+/**
  * Request/response for the pricing endpoint:
  * `POST /api/shape/pricing/<PRICING_NAME>` → `api.tecnibo.com/pricing/<PRICING_NAME>`.
  * The body mirrors the resolved variable scopes ({ globalVars, namespaces }),
@@ -164,6 +179,26 @@ export const tecniboApi = createApi({
       query: (name) => `/api/rp-engine/surface-data/${name}`,
     }),
 
+    // → www.tecnibo.com/api/oaksome/products-config?template_id=<id>
+    // Saved form values for a template, used to seed the configurator's initial
+    // values. Returns them flattened to strings (the endpoint mixes strings and
+    // numbers, e.g. `ZF_MODULE: 1`, while the form seed expects strings) and
+    // `{}` when the template has no saved config.
+    getProductsConfig: builder.query<Record<string, string>, string>({
+      query: (templateId) =>
+        `/api/oaksome/products-config?template_id=${templateId}`,
+      transformResponse: (r: ProductsConfigResponse) => {
+        const form = r?.data?.form;
+        if (!form) return {};
+        const out: Record<string, string> = {};
+        for (const [k, v] of Object.entries(form)) {
+          if (v === null || v === undefined) continue;
+          out[k] = String(v);
+        }
+        return out;
+      },
+    }),
+
     // → api.tecnibo.com/pricing/<PRICING_NAME>
     // Computes the total price from the resolved variable scopes. The pricing
     // router name comes from the shape's `pricing` field (leading `#` stripped).
@@ -181,6 +216,7 @@ export const tecniboApi = createApi({
 export const {
   useGetArticleQuery,
   useGetProductsQuery,
+  useGetProductsConfigQuery,
   useGetShapeQuery,
   useGetMaterialQuery,
   useGetSurfaceQuery,

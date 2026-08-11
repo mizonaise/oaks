@@ -24,6 +24,12 @@ const nextConfig: NextConfig = {
         source: "/api/rp-engine/:path*",
         destination: `${process.env.NEXT_PUBLIC_RPENGINE_API}/:path*`,
       },
+      // Proxy the oaksome products-config API (www.tecnibo.com) — serves the
+      // saved form values for a template id, used to seed the configurator.
+      {
+        source: "/api/oaksome/:path*",
+        destination: `${process.env.NEXT_PUBLIC_OAKSOME_API}/:path*`,
+      },
     ];
   },
 };
