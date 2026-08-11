@@ -7,7 +7,7 @@ import {
 import { skipToken } from "@reduxjs/toolkit/query/react";
 
 const TEXTURE_BASE =
-  "https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/copy_2%2F";
+  "https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/IVIS%2F";
 
 export type ResolvedCp = {
   matName: string | null;
