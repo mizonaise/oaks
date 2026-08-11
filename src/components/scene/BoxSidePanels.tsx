@@ -43,6 +43,7 @@ const FacePanel = memo(function FacePanel ({
   sz: number
 }) {
   const cp = useResolveCp(face.cpRef ?? '', vars)
+  console.log('FacePanel', face.cpRef, cp, vars)
   if (!face.cpRef || !cp) return null
   // A cp of "empty" (any case) is a placeholder for "no panel here" — skip it.
   if (face.cpRef.toLowerCase().includes('empty')) return null
@@ -130,19 +131,17 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
   return (
     <>
       {faces.map((f, i) =>
-        f.cpRef
-          ? (
-            <FacePanel
-              key={i}
-              face={f}
-              vars={vars}
-              dimCpConfig={dimCpConfig}
-              sx={sx}
-              sy={sy}
-              sz={sz}
-            />
-            )
-          : null
+        f.cpRef ? (
+          <FacePanel
+            key={i}
+            face={f}
+            vars={vars}
+            dimCpConfig={dimCpConfig}
+            sx={sx}
+            sy={sy}
+            sz={sz}
+          />
+        ) : null
       )}
     </>
   )

@@ -58,10 +58,21 @@ export function useResolveCp(
 ): ResolvedCp | null {
   const keys = resolveCpKeys(cpName, vars);
 
-  const { data: mat } = useGetMaterialQuery(keys?.matKey ?? skipToken);
-  const { data: surf } = useGetSurfaceQuery(keys?.surfKey ?? skipToken);
+  const { data: matData, originalArgs: matArgs } = useGetMaterialQuery(
+    keys?.matKey ?? skipToken,
+  );
+  const { data: surfData, originalArgs: surfArgs } = useGetSurfaceQuery(
+    keys?.surfKey ?? skipToken,
+  );
 
   if (!keys) return null;
+
+  // RTK Query keeps serving the previous key's data while the new key is in
+  // flight (and after a switch to `skipToken`). Only trust data whose
+  // `originalArgs` match the key we asked for, so a CP with `NO_SURF` never
+  // inherits another CP's surface.
+  const mat = keys.matKey && matArgs === keys.matKey ? matData : undefined;
+  const surf = keys.surfKey && surfArgs === keys.surfKey ? surfData : undefined;
 
   const thickness = (mat?.thickness ?? 0) + (surf?.thickness ?? 0);
   // Prefer surface render when present, else material render.

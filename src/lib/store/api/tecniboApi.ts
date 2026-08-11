@@ -91,28 +91,40 @@ export interface PricingResponse {
  * Raw rp-engine material/surface record, e.g.
  * `GET /api/rp-engine/material-data/<NAME>` →
  * `{ NAME, TEXT, THK, MATCAT | SURFCAT, GRAIN, RENDER }`.
+ *
+ * The endpoint answers an unknown name with a `200` carrying `null` rather than
+ * a 404, and individual fields may be absent, so treat everything as optional
+ * and normalize in `toMatSurf`.
  */
 interface RpEngineMatSurf {
-  NAME: string;
-  TEXT: string;
-  THK: number;
-  GRAIN: number;
-  RENDER: string;
+  NAME?: string | null;
+  TEXT?: string | null;
+  THK?: number | null;
+  GRAIN?: number | null;
+  RENDER?: string | null;
   MATCAT?: string;
   SURFCAT?: string;
 }
 
-/** Normalized material/surface shape consumed by `resolveCp`. */
+/**
+ * Normalized material/surface shape consumed by `resolveCp`. Every field is
+ * nullable: the rp-engine returns `null` (not a 404) for a name it doesn't know,
+ * and known records can still omit `RENDER` (no texture) or `THK`. `resolveCp`
+ * already falls back per field, so a partial record degrades to "no texture" /
+ * "zero thickness" rather than failing the whole render.
+ */
 export interface MatSurfData {
-  name: string;
-  render: string;
+  name: string | null;
+  render: string | null;
   thickness: number;
 }
 
-const toMatSurf = (r: RpEngineMatSurf): MatSurfData => ({
-  name: r?.NAME ?? "",
-  render: r.RENDER,
-  thickness: r.THK,
+const toMatSurf = (r: RpEngineMatSurf | null): MatSurfData => ({
+  name: r?.NAME ?? null,
+  render: r?.RENDER ?? null,
+  // Guard against a non-numeric/absent THK so the sum in `resolveCp` can't
+  // become NaN and poison the panel geometry.
+  thickness: typeof r?.THK === "number" && Number.isFinite(r.THK) ? r.THK : 0,
 });
 
 /**
