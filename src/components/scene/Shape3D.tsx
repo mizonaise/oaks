@@ -18,7 +18,7 @@ import {
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
+import { type Axis, type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import type { FlatVars } from '@/lib/form/expr'
 import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
@@ -53,26 +53,27 @@ const SCALE = 0.001
 const EPS = 1
 
 /**
- * The `camera` side that governs a box index, found by walking up its ancestors
- * (the box itself, then each shorter dotted-index prefix). `camera` lives only
- * on the declaring node, so a selected descendant inherits it via this lookup.
- * Returns undefined when no ancestor declares `camera` — i.e. not a camera zone.
+ * The index of the `camera`-declaring zone that governs a box index, found by
+ * walking up its ancestors (the box itself, then each shorter dotted-index
+ * prefix). `camera` lives only on the declaring node, so a selected descendant
+ * resolves to its enclosing camera zone via this lookup.
+ *
+ * Returns the *zone's* index rather than its `camera` side so callers can frame
+ * and cull against the zone itself — the camera stays on the camera zone even
+ * when the selection moves to a box inside it.
+ * Returns null when no ancestor declares `camera` — i.e. not a camera zone.
  */
-function cameraSideFor (
-  boxes: ShapeBox[],
-  index: string | null
-): string | undefined {
-  if (!index) return undefined
+function cameraZoneFor (boxes: ShapeBox[], index: string | null): string | null {
+  if (!index) return null
   const byIndex = new Map(boxes.map(b => [b.index, b]))
   for (
     let key: string | undefined = index;
     key;
     key = key.includes('.') ? key.slice(0, key.lastIndexOf('.')) : undefined
   ) {
-    const camera = byIndex.get(key)?.camera
-    if (camera) return camera
+    if (byIndex.get(key)?.camera) return key
   }
-  return undefined
+  return null
 }
 
 /**
@@ -90,8 +91,14 @@ function occludingIndexes (
 ): Set<string> {
   const empty = new Set<string>()
   if (!selectedIndex) return empty
-  const sel = boxes.find(b => b.index === selectedIndex)
-  const camSide = cameraSideFor(boxes, selectedIndex)
+  // Anchor the cull on the governing camera zone, not on the selection. Selecting
+  // a zone *inside* a camera zone must not re-cull against the inner zone's own
+  // face: that would hide the camera zone's other contents (everything between it
+  // and the inner zone) even though the camera hasn't moved — it still frames the
+  // camera zone. Only what stands in front of the camera zone should be hidden.
+  const camZone = cameraZoneFor(boxes, selectedIndex)
+  const sel = camZone ? boxes.find(b => b.index === camZone) : undefined
+  const camSide = sel?.camera
   if (!sel || !camSide) return empty
 
   const side = camSide.toUpperCase()
@@ -137,17 +144,37 @@ function occludingIndexes (
     b.index.startsWith(`${sel.index}.`) ||
     sel.index.startsWith(`${b.index}.`)
 
+  const sizeOn = (b: ShapeBox, a: Axis) =>
+    a === 'x' ? b.w : a === 'y' ? b.h : b.d
+
+  // The two axes perpendicular to the viewing axis — the zone's footprint as the
+  // camera sees it. A box only occludes the zone if it covers part of that
+  // footprint; one merely deeper along the viewing axis sits beside the zone, not
+  // in front of it.
+  const perp = (['x', 'y', 'z'] as const).filter(a => a !== axis)
+  const overlapsFootprint = (b: ShapeBox) =>
+    perp.every(a => {
+      const sMin = sel[a]
+      const sMax = sMin + sizeOn(sel, a)
+      const bMin = b[a]
+      const bMax = bMin + sizeOn(b, a)
+      // Touching edges (a shared panel) don't count as overlapping.
+      return bMax > sMin + EPS && bMin < sMax - EPS
+    })
+
   const hidden = new Set<string>()
   for (const b of boxes) {
     if (inSubtree(b)) continue
 
-    // Hide everything on the camera side of the zone's near face, regardless of
-    // whether it overlaps the zone's footprint — clears the whole space between
-    // the camera and the framed zone, not just what directly occludes it.
+    // Hide a box only when it is both on the camera side of the zone's near face
+    // AND covers part of the zone's footprint. Without the footprint test, any
+    // box deeper along the viewing axis is culled even when it stands in a
+    // different column entirely — e.g. framing 0.0.1 (x 0..3000) wiped out 0.1
+    // and 0.2 (x 3000..8000), which cannot occlude it.
     const bMin = b[axis]
-    const bMax = bMin + (axis === 'x' ? b.w : axis === 'y' ? b.h : b.d)
+    const bMax = bMin + sizeOn(b, axis)
     const onCameraSide = front ? bMax > selFace + EPS : bMin < selFace - EPS
-    if (onCameraSide) hidden.add(b.index)
+    if (onCameraSide && overlapsFootprint(b)) hidden.add(b.index)
   }
   return hidden
 }
