@@ -110,7 +110,7 @@ export interface MatSurfData {
 }
 
 const toMatSurf = (r: RpEngineMatSurf): MatSurfData => ({
-  name: r.NAME,
+  name: r?.NAME ?? "",
   render: r.RENDER,
   thickness: r.THK,
 });

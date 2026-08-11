@@ -117,9 +117,8 @@ export function ShapeConfigurator ({
 }: {
   dev?: boolean
   shapeName: string
-  /** `?id=` from the shape URL. When set, the saved form values for that
-   *  template seed `initialValues`. Omitted on `/shape/dev`, which keeps its
-   *  URL-query-only seeding. */
+  /** `?id=` from the shape URL. When set, that template's saved `data.form`
+   *  values seed `initialValues`. */
   templateId?: string
 }) {
   // Fetch the shape from the remote shape endpoint by its declared name
@@ -157,26 +156,32 @@ export function ShapeConfigurator ({
   setShapeData(shape)
 
   // Saved form values for the `?id=` template, fetched from the products-config
-  // endpoint. Skipped when there's no id (e.g. `/shape/dev`, which never passes
-  // one), so that route keeps seeding from the URL query alone.
+  // endpoint. Skipped when there's no id, so a plain `/shape/<NAME>` starts from
+  // the shape's own defaults.
   const { data: savedConfig } = useGetProductsConfigQuery(templateId ?? '', {
     skip: !templateId
   })
 
-  // Seed the form from the URL query string: every `?FIELD=value` pair becomes
-  // an `initialValues` entry (`{ FIELD: 'value' }`). Read from
-  // `window.location.search` (client-only) once on mount — SSR has no URL, so
-  // it starts empty and fills in after hydration.
+  // Dev-only: seed the form from the URL query string, every `?FIELD=value` pair
+  // becoming an `initialValues` entry. This is the other half of the dev-only
+  // "Copy link" button, which encodes the current values into such a URL. Read
+  // from `window.location.search` (client-only) once on mount — SSR has no URL,
+  // so it starts empty and fills in after hydration.
+  //
+  // Outside dev the query string is NOT a value source: `/shape/<NAME>` seeds
+  // only from `data.form` of the products-config endpoint (when `?id=` is given),
+  // so a link can't silently pin a configuration.
   const [urlValues, setUrlValues] = useState<Record<string, string>>({})
   useEffect(() => {
+    if (!dev) return
     const params = new URLSearchParams(window.location.search)
     const values: Record<string, string> = {}
     for (const [key, value] of params.entries()) values[key] = value
     setUrlValues(values)
-  }, [])
+  }, [dev])
 
-  // Saved template config first, URL query on top: an explicit `?FIELD=value`
-  // in the address bar stays an override of what was saved. `id` is the template
+  // Non-dev: the template's saved `data.form` is the only seed. Dev: the URL
+  // query wins on top, so "Copy link" round-trips exactly. `id` is the template
   // selector, not a form field, so it never seeds a value.
   const initialValues = useMemo(() => {
     const { id: _id, ...rest } = urlValues
