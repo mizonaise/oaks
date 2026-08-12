@@ -25,12 +25,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Mohamed */
 /* ─────────────────────────────────────────────────────────────────
-@oak-some/configurator-previewer — standalone stylesheet
-No framework required. Re-map the tokens below to your brand.
-Theme: GREEN (#c1fd48). Requires previewer ≥ 1.10.0 for the slider stepper,
-≥ 1.13.2 for the field/tab info affordance (tap-to-open on mobile).
+   @oak-some/configurator-previewer — standalone stylesheet
+   No framework required. Re-map the tokens below to your brand.
+   Theme: GREEN (#c1fd48). Requires previewer ≥ 1.10.0 for the slider stepper,
+   ≥ 1.13.2 for the field/tab info affordance (tap-to-open on mobile).
 ───────────────────────────────────────────────────────────────── */
 
 /* ── Tokens ───────────────────────────────────────────────────── */
@@ -72,7 +71,7 @@ Theme: GREEN (#c1fd48). Requires previewer ≥ 1.10.0 for the slider stepper,
   margin-top: 8px;
 }
 /* Accordion cards own their padding (see below) — a nested one must not inherit
-the generic section's inner padding-top, which would push the header off edge. */
+   the generic section's inner padding-top, which would push the header off edge. */
 [data-previewer] [data-type="SECTION"] [data-section-type="ACCORDION"] {
   padding-top: 0;
 }
@@ -86,8 +85,8 @@ the generic section's inner padding-top, which would push the header off edge. *
   overflow: hidden;
 }
 /* Breathing room between an accordion and any adjacent section, at every nesting
-level. The previewer wraps sections in a plain <div>, so the root's flex gap never
-reaches them — margin is what actually spaces the cards. */
+   level. The previewer wraps sections in a plain <div>, so the root's flex gap never
+   reaches them — margin is what actually spaces the cards. */
 [data-previewer] [data-section-type="ACCORDION"] + [data-type="SECTION"],
 [data-previewer] [data-type="SECTION"] + [data-section-type="ACCORDION"] {
   margin-top: 16px;
@@ -117,7 +116,7 @@ reaches them — margin is what actually spaces the cards. */
 }
 
 /* Chevron rendered from the header (no markup needed). Points DOWN when closed
-(expand), UP when open (collapse), and eases between the two. */
+   (expand), UP when open (collapse), and eases between the two. */
 [data-previewer] [data-section-header]::after {
   content: "";
   flex: 0 0 auto;
@@ -145,11 +144,90 @@ reaches them — margin is what actually spaces the cards. */
   flex-direction: column;
   gap: 12px;
 }
-/* Padding + divider are for the ACCORDION card body only — a plain (NONE) or tab
-section body must stay flush with no separator line. */
-[data-previewer] [data-section-type="ACCORDION"] [data-section-body] {
+/* Padding + divider are for the ACCORDION card's OWN body only (direct child) — a
+   plain (NONE), row or tab section body must stay flush with no separator line,
+   even when nested inside an accordion. */
+[data-previewer] [data-section-type="ACCORDION"] > [data-section-body] {
   padding: 4px 16px 16px;
   border-top: 1px solid var(--p-divider);
+}
+
+/* ── ROW section ──────────────────────────────────────────────────
+   Lays its child fields out horizontally: each takes an equal share of the row
+   with equal gaps, wrapping when the row gets too narrow. The previewer wraps the
+   fields in a plain <div>, so the flex row lives on that wrapper. Fields use the
+   notched-outline "input top-left label" look (below). */
+[data-previewer] [data-section-type="ROW"] > [data-section-body] > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: start;
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  > [data-section-body]
+  > div
+  > [data-type="FIELD"] {
+  flex: 1 1 0;
+  min-width: 140px;
+  margin-top: 0; /* cancel the vertical +FIELD stacking margin inside a row */
+}
+
+/* Notched-outline label: the label floats into the input's top border, top-left,
+   with a paper-colored backdrop that "cuts" the border like an outlined field. */
+[data-previewer] [data-section-type="ROW"] [data-type="FIELD"] {
+  position: relative;
+  gap: 0;
+  padding-top: 6px; /* room for the label to sit on the border line */
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-label] {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  z-index: 1;
+  padding: 0 5px;
+  background: var(--p-bg);
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--p-text-sec);
+  pointer-events: none;
+  max-width: calc(100% - 24px);
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-label]
+  [data-field-label-text] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+}
+/* Controls fill the field cell; a consistent radius so the notch reads correctly. */
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-control] {
+  width: 100%;
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-control]
+  > * {
+  width: 100%;
+  border-radius: 8px;
+}
+/* When the field holds focus, tint the floating label to primary. */
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]:focus-within
+  [data-field-label] {
+  color: var(--p-primary);
 }
 
 /* ── Tab bar (scrollable square tabs with arrows — desktop & mobile) ── */
@@ -200,7 +278,7 @@ section body must stay flush with no separator line. */
   font-weight: 600;
 }
 /* Info icon on a tab: inherit the tab's text color so it reads on idle and
-active tabs alike; undo the tab's uppercase so the italic "i" isn't "I" */
+   active tabs alike; undo the tab's uppercase so the italic "i" isn't "I" */
 [data-previewer] [data-tab] [data-field-info-icon] {
   color: currentColor;
   border-color: currentColor;
@@ -219,7 +297,7 @@ active tabs alike; undo the tab's uppercase so the italic "i" isn't "I" */
 }
 
 /* Tab panel side padding; nested TAB sections bleed back to the edge
-so their tab strips stay aligned at every nesting level */
+   so their tab strips stay aligned at every nesting level */
 [data-previewer] [data-tab-panel] {
   padding-left: 16px;
   padding-right: 16px;
@@ -365,7 +443,7 @@ so their tab strips stay aligned at every nesting level */
   border-color: #000000;
 }
 /* Tooltip is rendered position: fixed by the package (top/left set inline);
-these are cosmetics only. Not scoped under [data-previewer] on purpose. */
+   these are cosmetics only. Not scoped under [data-previewer] on purpose. */
 [data-field-info-tooltip] {
   z-index: 2147483647;
   /* Never exceed the viewport on narrow (mobile) screens */
@@ -397,7 +475,7 @@ these are cosmetics only. Not scoped under [data-previewer] on purpose. */
 }
 
 /* Stepper row (− value +) floats above the track, centered on the thumb,
-tracking it. --_pct (0–1) is set inline by the package. */
+   tracking it. --_pct (0–1) is set inline by the package. */
 [data-previewer] [data-slider-stepper] {
   position: absolute;
   top: 4px;
@@ -635,8 +713,50 @@ tracking it. --_pct (0–1) is set inline by the package. */
   border-radius: var(--p-radius);
 }
 
+/* ── "Show more" toggle (fields with a `visibleOptions` cap) ─────
+   Requires previewer ≥ 1.20.0. Rendered as the last child of the option
+   row, so it shares the option buttons' box metrics and sits beside them;
+   the row is flex-wrap, so it drops to the next line by itself when there
+   is no room. Deliberately quieter than an option — dashed, unfilled,
+   secondary text — because it is a control rather than a choice and must
+   not read as a selectable value.
+   No `margin-left: auto` on purpose: it would apply on a wrapped line too
+   and strand the toggle at the far right, away from the last option. */
+[data-previewer] [data-show-more] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-family: var(--p-font);
+  font-size: 0.8125rem;
+  color: var(--p-text-sec);
+  background: transparent;
+  border: 1px dashed var(--p-divider);
+  border-radius: var(--p-radius);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 150ms,
+    border-color 150ms,
+    color 150ms;
+  margin: 2px;
+}
+[data-previewer] [data-show-more]:hover {
+  color: var(--p-text);
+  background: var(--p-hover);
+  border-color: var(--p-text-sec);
+}
+[data-previewer] [data-show-more]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--p-primary) 40%, transparent);
+}
+/* Expanded: solid border, since "Show less" collapses rather than reveals */
+[data-previewer] [data-show-more][data-expanded="true"] {
+  border-style: solid;
+}
+
 /* ── Column selector (ZF_MODULE field): selected = expanded "COLUMN n" bar,
-unselected = small round number chip — all on one aligned baseline ──── */
+   unselected = small round number chip — all on one aligned baseline ──── */
 [data-previewer] [data-name="ZF_MODULE"] [data-field-control] > div {
   align-items: center;
   gap: 6px;
@@ -700,6 +820,13 @@ unselected = small round number chip — all on one aligned baseline ───�
   transform: scale(1.08);
 }
 
+/* Match the column chips' fixed box so a capped ZF_MODULE keeps one baseline */
+[data-previewer] [data-name="ZF_MODULE"] [data-show-more] {
+  height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
 @keyframes columnLabelIn {
   from {
     opacity: 0;
@@ -736,10 +863,20 @@ unselected = small round number chip — all on one aligned baseline ───�
   object-fit: cover;
   /* border-radius: var(--p-radius); */
 }
+/* CIRCLE options are tall image cards, so a default-height toggle beside them
+   would float against their top edge. Match the card box and center the label. */
+[data-previewer] [data-combo-type="circle"] ~ [data-show-more] {
+  width: 64px;
+  aspect-ratio: 3 / 4;
+  padding: 6px;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+}
 
 /* ── Mobile (layout="mobile" or below the responsive breakpoint) ── */
 /* Tab strip, pills, scroll and arrows are shared with desktop above;
-mobile only adds nested-panel spacing and full-width controls. */
+   mobile only adds nested-panel spacing and full-width controls. */
 [data-previewer][data-layout="mobile"] {
   gap: 12px;
 }
@@ -783,15 +920,15 @@ mobile only adds nested-panel spacing and full-width controls. */
   width: 100%;
 }
 /* Slider label stacks on its own row on mobile — keep the icon inline with the
-text (the desktop grid alignment no longer applies) */
+   text (the desktop grid alignment no longer applies) */
 [data-previewer][data-layout="mobile"]
   [data-type="FIELD"]:has([data-slider-wrapper])
   [data-field-label] {
   justify-content: flex-start;
 }
 /* Info icon on a mobile tab: the tab strip scrolls horizontally, so keep the
-icon from being squeezed. On mobile the tooltip is tap-only (the package
-disables hover in mobile layout). */
+   icon from being squeezed. On mobile the tooltip is tap-only (the package
+   disables hover in mobile layout). */
 [data-previewer][data-layout="mobile"] [data-tab] [data-field-info-icon] {
   flex: none;
 }
