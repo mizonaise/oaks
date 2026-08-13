@@ -18,7 +18,7 @@ import {
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-import { type Axis, type Box as ShapeBox, type DimCpConfig } from './shapeTree'
+import { type Box as ShapeBox, type DimCpConfig } from './shapeTree'
 import type { FlatVars } from '@/lib/form/expr'
 import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
@@ -48,10 +48,6 @@ type Props = {
 const MM = 1
 const SCALE = 0.001
 
-// Small epsilon (mm) so a box merely touching the zone's near face (a shared
-// panel) isn't treated as being in front of it.
-const EPS = 1
-
 /**
  * The index of the `camera`-declaring zone that governs a box index, found by
  * walking up its ancestors (the box itself, then each shorter dotted-index
@@ -77,65 +73,27 @@ function cameraZoneFor (boxes: ShapeBox[], index: string | null): string | null 
 }
 
 /**
- * Indexes of boxes that sit between the selected camera zone and the camera and
- * would occlude it. Empty unless the selection resolves to a camera zone.
+ * Indexes of boxes to hide so the selected camera zone is seen in isolation:
+ * everything outside that zone's subtree. Empty unless the selection resolves
+ * to a camera zone.
  *
- * Works in mm box space: pick the viewing axis from the `camera` side, keep
- * boxes that overlap the zone on the two perpendicular axes, then keep those
- * lying on the camera's side of the zone. The selected zone's own subtree (its
- * ancestors and descendants share its volume) is never hidden.
+ * The zone's own subtree stays visible — its ancestors and descendants share
+ * its volume, so hiding them would hide the zone itself.
  */
-function occludingIndexes (
+function hiddenForCameraZone (
   boxes: ShapeBox[],
   selectedIndex: string | null
 ): Set<string> {
   const empty = new Set<string>()
   if (!selectedIndex) return empty
-  // Anchor the cull on the governing camera zone, not on the selection. Selecting
-  // a zone *inside* a camera zone must not re-cull against the inner zone's own
-  // face: that would hide the camera zone's other contents (everything between it
-  // and the inner zone) even though the camera hasn't moved — it still frames the
-  // camera zone. Only what stands in front of the camera zone should be hidden.
+  // Anchor on the governing camera zone, not on the selection. Selecting a zone
+  // *inside* a camera zone must not narrow the cull to that inner zone: the
+  // camera still frames the whole camera zone, so the zone's other contents stay
+  // visible.
   const camZone = cameraZoneFor(boxes, selectedIndex)
   const sel = camZone ? boxes.find(b => b.index === camZone) : undefined
   const camSide = sel?.camera
   if (!sel || !camSide) return empty
-
-  const side = camSide.toUpperCase()
-  // axis = the viewing axis; `front` is true when the camera looks from the
-  // axis-max side toward the min (so occluders are at greater coords).
-  let axis: 'x' | 'y' | 'z'
-  let front: boolean
-  switch (side) {
-    case 'BACK':
-      axis = 'z'
-      front = false
-      break
-    case 'LEFT':
-      axis = 'x'
-      front = false
-      break
-    case 'RIGHT':
-      axis = 'x'
-      front = true
-      break
-    case 'TOP':
-      axis = 'y'
-      front = true
-      break
-    case 'BOTTOM':
-      axis = 'y'
-      front = false
-      break
-    case 'FRONT':
-    default:
-      axis = 'z'
-      front = true
-  }
-
-  const selMax =
-    sel[axis] + (axis === 'x' ? sel.w : axis === 'y' ? sel.h : sel.d)
-  const selFace = front ? selMax : sel[axis]
 
   // Is `b` part of the selected zone's own subtree (itself, an ancestor, or a
   // descendant)? Those share the zone's volume and must stay visible.
@@ -144,39 +102,9 @@ function occludingIndexes (
     b.index.startsWith(`${sel.index}.`) ||
     sel.index.startsWith(`${b.index}.`)
 
-  const sizeOn = (b: ShapeBox, a: Axis) =>
-    a === 'x' ? b.w : a === 'y' ? b.h : b.d
-
-  // The two axes perpendicular to the viewing axis — the zone's footprint as the
-  // camera sees it. A box only occludes the zone if it covers part of that
-  // footprint; one merely deeper along the viewing axis sits beside the zone, not
-  // in front of it.
-  const perp = (['x', 'y', 'z'] as const).filter(a => a !== axis)
-  const overlapsFootprint = (b: ShapeBox) =>
-    perp.every(a => {
-      const sMin = sel[a]
-      const sMax = sMin + sizeOn(sel, a)
-      const bMin = b[a]
-      const bMax = bMin + sizeOn(b, a)
-      // Touching edges (a shared panel) don't count as overlapping.
-      return bMax > sMin + EPS && bMin < sMax - EPS
-    })
-
-  const hidden = new Set<string>()
-  for (const b of boxes) {
-    if (inSubtree(b)) continue
-
-    // Hide a box only when it is both on the camera side of the zone's near face
-    // AND covers part of the zone's footprint. Without the footprint test, any
-    // box deeper along the viewing axis is culled even when it stands in a
-    // different column entirely — e.g. framing 0.0.1 (x 0..3000) wiped out 0.1
-    // and 0.2 (x 3000..8000), which cannot occlude it.
-    const bMin = b[axis]
-    const bMax = bMin + sizeOn(b, axis)
-    const onCameraSide = front ? bMax > selFace + EPS : bMin < selFace - EPS
-    if (onCameraSide && overlapsFootprint(b)) hidden.add(b.index)
-  }
-  return hidden
+  // Framing a camera zone isolates it: everything outside its subtree is hidden,
+  // so the zone is seen alone regardless of where the camera looks from.
+  return new Set(boxes.filter(b => !inSubtree(b)).map(b => b.index))
 }
 
 const DEFAULT_DIM_CP_CONFIG: DimCpConfig = {
@@ -272,11 +200,10 @@ export function Shape3D ({
     return { wallLeft, wallRight }
   }, [boxes, ox])
 
-  // When a zone with a `camera` side is selected, hide anything sitting between
-  // it and the camera so the framed zone is never occluded. Computed in mm box
-  // space (shared by every box).
+  // When a zone with a `camera` side is selected, hide every box outside that
+  // zone so it is shown on its own.
   const hiddenIndexes = useMemo(
-    () => occludingIndexes(boxes, selectedIndex),
+    () => hiddenForCameraZone(boxes, selectedIndex),
     [boxes, selectedIndex]
   )
 
