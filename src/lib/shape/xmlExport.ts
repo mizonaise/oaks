@@ -163,6 +163,9 @@ function collectZoneSets(
   const sets: SetEntry[] = [];
   for (const box of boxes) {
     if (!box.isArticle || !box.node || !box.vars) continue;
+    // Skip degenerate articles: any axis under 10mm isn't a real part (matches
+    // the render-side guard in BoxItem).
+    if (box.w <= 10 || box.h <= 10 || box.d <= 10) continue;
     const model = resolveArticleName(box.node, box.vars);
     if (!model) continue;
     const zoneName = box.node.name;

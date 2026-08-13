@@ -114,7 +114,7 @@ export const BoxItem = memo(function BoxItem ({
           dimCpConfig={dimCpConfig}
         />
       )}
-      {box.isArticle && articleName && box.vars && (
+      {box.isArticle && articleName && box.vars && box.w > 10 && box.h > 10 && box.d > 10 && (
         <ArticleInBox
           box={box}
           articleName={articleName}
