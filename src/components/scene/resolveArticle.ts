@@ -81,6 +81,7 @@ function resolveDescriptorWithGrtx(
  *   may itself be "#DS_WACA_U_ART_01" → descriptor lookup using node.grtx
  *   any other → returned as-is.
  */
+
 export function resolveArticleName(
   node: ZoneNode,
   vars: FlatVars,
@@ -97,4 +98,16 @@ export function resolveArticleName(
     return resolveDescriptorWithGrtx(value.slice(1), node.grtx ?? {}, vars);
   }
   return value;
+}
+
+export function resolveArticleNameXML(
+  node: ZoneNode,
+  vars: FlatVars,
+): string | null {
+  const divider = node.divider;
+  if (!divider || !divider.startsWith("$")) return null;
+
+  const v = vars[divider.slice(1)];
+  if (v === undefined) return null;
+  return String(v);
 }

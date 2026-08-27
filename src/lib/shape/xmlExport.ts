@@ -1,7 +1,7 @@
 import type { FlatVars } from "@/lib/form/expr";
 import { walkZone } from "@/components/scene/shapeTree";
 import { readDim } from "@/components/scene/ShapeViewer";
-import { resolveArticleName } from "@/components/scene/resolveArticle";
+import { resolveArticleNameXML } from "@/components/scene/resolveArticle";
 import type { ShapeData } from "./schema";
 
 /**
@@ -166,7 +166,7 @@ function collectZoneSets(
     // Skip degenerate articles: any axis under 10mm isn't a real part (matches
     // the render-side guard in BoxItem).
     if (box.w <= 10 || box.h <= 10 || box.d <= 10) continue;
-    const model = resolveArticleName(box.node, box.vars);
+    const model = resolveArticleNameXML(box.node, box.vars);
     if (!model) continue;
     const zoneName = box.node.name;
     const facing = box.clickable;
