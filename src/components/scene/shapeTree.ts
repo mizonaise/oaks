@@ -252,6 +252,12 @@ function lookupSideToken(
     const v = vars[t.slice(1)];
     return v == null ? "" : String(v);
   }
+  // A bare token may also name a variable directly (e.g. the injected
+  // "AD zone specification width"/"height"), which has no `$` and no grtx entry.
+  if (t in vars) {
+    const v = vars[t];
+    return v == null ? "" : String(v);
+  }
   return t;
 }
 
@@ -472,7 +478,16 @@ export function walkZone(
     // If this node's name matches a namespace, layer those vars on top of
     // the inherited scope for this node and its descendants.
     const ns = node.name ? namespaces[node.name] : undefined;
-    const vars: FlatVars = ns ? { ...scope, ...ns } : scope;
+    // Expose this zone's own footprint under the names the descriptor rules and
+    // article data use. Injected before `extractSides` so side-cp descriptors
+    // (`#DS_...`) can compare against them, and inherited by descendants until
+    // a deeper zone overwrites them with its own box.
+    const vars: FlatVars = {
+      ...scope,
+      ...(ns ?? {}),
+      "AD zone specification width": String(box.w),
+      "AD zone specification height": String(box.h),
+    };
     const isArticle = node.divDir === "A";
     // A `clickable` node sets the facing direction for all articles below it.
     const facing = node.clickable ?? clickable;
