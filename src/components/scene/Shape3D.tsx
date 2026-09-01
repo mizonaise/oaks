@@ -218,7 +218,11 @@ export function Shape3D ({
   )
 
   return (
-    <div className='relative h-175 w-full overflow-hidden rounded border border-zinc-200 dark:border-zinc-800'>
+    <div
+      className={`relative h-175 w-full overflow-hidden rounded${
+        dev ? ' border border-zinc-200 dark:border-zinc-800' : ''
+      }`}
+    >
       <button
         type='button'
         onClick={() => setDoorsOpen(open => !open)}

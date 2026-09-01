@@ -20,7 +20,10 @@
 }
 
 body {
-  background: var(--background);
+  /* Transparent so the configurator can be embedded and show whatever sits
+     behind it (host page, iframe parent). Set `--background` to a color to
+     paint a solid page again. */
+  background: transparent;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }

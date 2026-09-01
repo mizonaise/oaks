@@ -151,8 +151,10 @@ export function PriceDisplay ({ pricing }: { pricing: UsePricingResult }) {
     return [...byComment].map(([comment, price]) => ({ comment, price }))
   }, [data])
 
+  // Mobile: no card chrome — it sits over the canvas, so border/background
+  // would box it in. From `lg` up it's a normal card in the form column.
   return (
-    <section className='mb-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950'>
+    <section className='mb-4 rounded-lg p-4 lg:border lg:border-zinc-200 lg:bg-white lg:dark:border-zinc-800 lg:dark:bg-zinc-950'>
       <div className='flex items-baseline justify-between gap-3'>
         <div>
           <div className='flex items-center gap-1'>

@@ -416,8 +416,18 @@ export function ShapeConfigurator ({
   }
 
   return (
-    <div className='flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black min-h-screen'>
-      <main className='flex flex-1 w-full flex-col gap-6 p-6 bg-white dark:bg-black'>
+    <div
+      className={`flex flex-col flex-1 font-sans min-h-screen${
+        dev ? ' bg-zinc-50 dark:bg-black' : ''
+      }`}
+    >
+      {/* Dev keeps breathing room around the debug toolbar and panels; production
+          renders the configurator flush to the viewport edges. */}
+      <main
+        className={`flex flex-1 w-full flex-col${
+          dev ? ' gap-6 p-6 bg-white dark:bg-black' : ''
+        }`}
+      >
         {dev && (
           <div className='flex items-center gap-3'>
             <button
@@ -461,7 +471,16 @@ export function ShapeConfigurator ({
         */}
         <div className='grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr] min-w-0'>
           {/* 1: canvas */}
-          <div className='min-w-0'>
+          <div className='relative min-w-0'>
+            {/* Price, mobile only: floats over the top of the canvas. Hidden
+                from `lg` up, where the copy in the form column takes over.
+                The wrapper is `pointer-events-none` so the empty space beside
+                the price doesn't swallow canvas drags; `[&>section]:` turns
+                events back on for the price card itself, keeping its details
+                button tappable. */}
+            <div className='pointer-events-none absolute inset-x-0 top-0 z-10 lg:hidden [&>section]:pointer-events-auto'>
+              <PriceDisplay pricing={pricing} />
+            </div>
             <ShapeViewer
               dev={dev}
               shape={shape}
@@ -476,7 +495,10 @@ export function ShapeConfigurator ({
 
           {/* 2: form */}
           <div className='min-w-0 overflow-auto'>
-            <PriceDisplay pricing={pricing} />
+            {/* Desktop copy — the mobile one above the grid covers small screens. */}
+            <div className='hidden lg:block'>
+              <PriceDisplay pricing={pricing} />
+            </div>
             {formExpo ? (
               <ConfiguratorPreviewDialog
                 initialValues={initialValues}
@@ -529,8 +551,8 @@ export function ShapeConfigurator ({
           </div>
 
           {/* 3: description */}
-          <div className='min-w-0'>
-            {Object.keys(labels).length > 0 && (
+          <div className='min-w-0  overflow-auto'>
+            {dev &&Object.keys(labels).length > 0 && (
               <CollapsibleSection title='Description'>
                 <LabelsSection labels={labels} />
               </CollapsibleSection>
