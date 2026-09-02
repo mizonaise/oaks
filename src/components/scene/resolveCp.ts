@@ -6,8 +6,7 @@ import {
 } from "@/lib/store/api/tecniboApi";
 import { skipToken } from "@reduxjs/toolkit/query/react";
 
-const TEXTURE_BASE =
-  "https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/IVIS%2F";
+const TEXTURE_BASE = "https://media.tecnibo.com/aYYmWUcv7lRhpLdU4ojPsA/IVIS%2F";
 
 export type ResolvedCp = {
   matName: string | null;

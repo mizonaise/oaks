@@ -521,7 +521,7 @@ export function ShapeConfigurator ({
                 // desktop above. `layout` is omitted so it doesn't force one mode.
                 responsive
                 // imageSuffix='/public'
-                imagePrefix='https://imagedelivery.net/aYYmWUcv7lRhpLdU4ojPsA/'
+                imagePrefix='https://media.tecnibo.com/aYYmWUcv7lRhpLdU4ojPsA/'
                 configuratorJson={formExpo}
               />
             ) : (
