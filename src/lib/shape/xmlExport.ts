@@ -104,8 +104,8 @@ function pOrientation(facing?: string): string {
 }
 
 /**
- * Box → `PInsertion` string in the XML's centered frame (shape centered on width
- * X and height Z, floored on depth Y, matching the renderer's `-w/2 … -h/2`).
+ * Box → `PInsertion` string in the XML's frame (shape centered on width X,
+ * floored on depth Y and on height Z — Z runs 0…shapeH from the floor up).
  *
  * The depth axis (XML Y) is inverted vs the tree's `box.z` — ListBuilder runs
  * depth the opposite way — so Y = `-box.z`. The back run sits at `box.z = 0`,
@@ -133,7 +133,9 @@ function pInsertion(
   // the far edge of its run slice, so shift it back by the slice extent
   // (`box.d`, the run-direction size that becomes SIZEX).
   const y = facing === "RIGHT" ? -box.z - box.d : -box.z;
-  const z = box.y - shape.h / 2;
+  // Z starts at the shape's floor (0), not its centre: add back half the global
+  // height that the centred renderer frame subtracts.
+  const z = box.y;
   return `${round2(x)},${round2(y)},${round2(z)}`;
 }
 
