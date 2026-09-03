@@ -292,6 +292,21 @@ ${sets}
  * facing-based axis swap as `sizeVars`, so the sizes match what the XML export
  * emits — just under the `ART_SIZE*` names the pricing engine expects.
  */
+/**
+ * The shape's overall bounds (mm), resolved from its `width`/`depth`/`height`
+ * expressions against `globalVars` with the same defaults the XML export uses.
+ */
+export function computeShapeBounds(
+  shape: ShapeData,
+  scopes: Scopes,
+): { w: number; d: number; h: number } {
+  return {
+    w: readDim(shape.width, scopes.globalVars, 6000),
+    d: readDim(shape.depth, scopes.globalVars, 500),
+    h: readDim(shape.height, scopes.globalVars, 3000),
+  };
+}
+
 export function computeZoneSizes(
   shape: ShapeData,
   scopes: Scopes,

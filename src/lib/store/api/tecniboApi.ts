@@ -52,9 +52,15 @@ export interface ProductsConfigResponse {
  * The body mirrors the resolved variable scopes ({ globalVars, namespaces }),
  * with all values sent as strings (the pricing engine expects strings).
  */
+export interface PricingNamespace {
+  /** Article name (the zone's `GECA_ART_MAIN`), not the zone name. */
+  name: string;
+  vars: Record<string, string>;
+}
+
 export interface PricingRequest {
   globalVars: Record<string, string>;
-  namespaces: Record<string, Record<string, string>>;
+  namespaces: PricingNamespace[];
 }
 
 /**

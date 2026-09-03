@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FlatVars } from '@/lib/form/expr'
 import type { ShapeData } from '@/lib/shape/schema'
-import { computeZoneSizes } from '@/lib/shape/xmlExport'
+import { computeShapeBounds, computeZoneSizes } from '@/lib/shape/xmlExport'
 import {
   useGetPricingMutation,
+  type PricingNamespace,
   type PricingRequest,
   type PricingResponse
 } from '@/lib/store/api/tecniboApi'
@@ -42,23 +43,48 @@ export function toPricingRequest (
   //   console.log('[pricing] zoneSizes', zoneSizes)
   // }
 
-  const namespaces: Record<string, Record<string, string>> = {}
-  for (const name in scopes.namespaces) {
-    const size = zoneSizes[name]
+  // The shape itself is priced as an article too: named by the shape's own
+  // name, sized from its overall bounds, carrying the global vars.
+  const bounds = computeShapeBounds(shape, scopes)
+  // One entry per zone, but named by the zone's article (`GECA_ART_MAIN`)
+  // rather than the zone name — the pricing engine keys on articles.
+  const namespaces: PricingNamespace[] = []
+  for (const zone in scopes.namespaces) {
+    const size = zoneSizes[zone]
     // Skip zones without valid dimensions: no computed size, or any of
     // width/depth/height missing or zero. Those can't be priced.
     if (!size || !size.ART_SIZEX || !size.ART_SIZEY || !size.ART_SIZEZ) {
       continue
     }
-    namespaces[name] = {
-      ...stringifyVars(scopes.namespaces[name]),
-      // Inject the computed ART_SIZEX/Y/Z (overriding any stale values).
-      ART_SIZEX: String(size.ART_SIZEX),
-      ART_SIZEY: String(size.ART_SIZEY),
-      ART_SIZEZ: String(size.ART_SIZEZ)
-    }
+    const vars = stringifyVars(scopes.namespaces[zone])
+    const name = vars.GECA_ART_MAIN
+    // No article on this zone: nothing to price.
+    if (!name) continue
+    namespaces.push({
+      name,
+      vars: {
+        ...vars,
+        // Inject the computed ART_SIZEX/Y/Z (overriding any stale values).
+        ART_SIZEX: String(size.ART_SIZEX),
+        ART_SIZEY: String(size.ART_SIZEY),
+        ART_SIZEZ: String(size.ART_SIZEZ)
+      }
+    })
   }
-  return { globalVars: stringifyVars(scopes.globalVars), namespaces }
+  const globalVars = stringifyVars(scopes.globalVars)
+  const shapeName = shape.name
+  if (shapeName) {
+    namespaces.unshift({
+      name: shapeName,
+      vars: {
+        ...globalVars,
+        ART_SIZEX: String(bounds.w),
+        ART_SIZEY: String(bounds.h),
+        ART_SIZEZ: String(bounds.d)
+      }
+    })
+  }
+  return { globalVars, namespaces }
 }
 
 const euro = new Intl.NumberFormat('fr-FR', {
@@ -273,7 +299,7 @@ export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
     }
 
     return [...byZone].map(([namespace, lines]) => {
-      const nsVars = request.namespaces[namespace]
+      const nsVars = request.namespaces.find(ns => ns.name === namespace)?.vars
       return {
         namespace,
         total: lines.reduce((s, it) => s + (it.amount ?? 0), 0),
