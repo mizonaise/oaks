@@ -111,9 +111,10 @@ function makeLinearGradient (band: WallBand): CanvasTexture | null {
 
 /**
  * Decorative white-plane room around the shape. The shape occupies the box
- * x∈[0,w], y∈[0,h], z∈[0,d] (scene units) in the parent group. Back wall, floor
- * and ceiling are always drawn; the side walls come from the shape itself — one
- * per box face carrying the `CP_SPO_WALL` cp, standing at that face.
+ * x∈[0,w], y∈[0,h], z∈[0,d] (scene units) in the parent group. Floor and
+ * ceiling are always drawn (the back wall is currently disabled); the side
+ * walls come from the shape itself — one per box face carrying the
+ * `CP_SPO_WALL` cp, standing at that face.
  *
  * `w`/`h`/`d` are the shape's scene-unit dimensions; `boxes` is the walked shape
  * tree (mm), converted to scene units via `scale`. See {@link findCpWalls}.
@@ -214,6 +215,15 @@ export const RoomWalls = memo(function RoomWalls ({
     [sideAt, sideReach]
   )
 
+  // Floor: the ceiling's band mirrored. The floor is rotated −π/2 about X to
+  // the ceiling's +π/2, which flips its local V axis (world z), so the band
+  // position flips with it to keep the gray under the unit and the fade
+  // running out into the open room.
+  const floorTex = useMemo(
+    () => makeLinearGradient({ axis: 'v', at: 1 - sideAt, reach: sideReach }),
+    [sideAt, sideReach]
+  )
+
   const Plane = ({
     position,
     rotation,
@@ -245,12 +255,21 @@ export const RoomWalls = memo(function RoomWalls ({
 
   return (
     <group>
-      {/* Floor */}
-      {/* <Plane
-        position={[cx, 0, roomD / 2]}
+      {/* Floor — the banded gradient of the ceiling, mirrored (see `floorTex`):
+          gray where the unit stands, fading to nothing across the open room.
+          `cx`/`roomW` already carry the WALL_GAP shift on each walled side, so
+          it meets the walls without a seam or an overhang.
+
+          `FrontSide` like the walls and ceiling: its front face points up (+Y)
+          into the room, so it's culled when the camera orbits underneath,
+          where an opaque floor would otherwise hide the unit. */}
+      <Plane
+        position={[cx, 0.01, roomD / 2]}
         rotation={[-Math.PI / 2, 0, 0]}
         args={[roomW, roomD]}
-      /> */}
+        side={FrontSide}
+        map={floorTex}
+      />
 
       {/* Ceiling — back→front linear gradient (gray at back fading to white).
           `cx`/`roomW` already carry the WALL_GAP shift on each walled side, so

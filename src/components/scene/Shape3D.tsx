@@ -301,6 +301,12 @@ export function Shape3D ({
         // frame so `canvas.toDataURL()` can snapshot the current view.
         gl={{ toneMapping: THREE.NoToneMapping, preserveDrawingBuffer: true }}
       >
+        {/* The canvas is transparent by default, so the page shows through.
+            Paint it with the kit's BACKGROUND token (Light Beige `--fond`,
+            #F6F5F0) so the viewer reads as its own surface. `attach` sets
+            `scene.background`, which also lands in `toDataURL()` snapshots —
+            a CSS background would be missing from those. */}
+        <color attach='background' args={['#f6f5f0']} />
         <SceneLights radius={Math.hypot(w, h, d) / 2} />
         {/* <OrthographicCamera makeDefault zoom={100} position={[0, h / 2, 100]} /> */}
         {dev ? (

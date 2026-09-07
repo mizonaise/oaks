@@ -508,8 +508,12 @@ export function ShapeConfigurator ({
             its content — without it a flex child refuses to overflow.
             `self-start` opts out of the grid's default `stretch`, so the
             explicit height is honoured instead of being grown to the row.
+
+            White on the whole column, as in the kit (`.cfg-panneau`), so the
+            price bar, the scrolling form and the buy row read as one panel
+            against the beige canvas beside it.
           */}
-          <div className='flex min-w-0 flex-col lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)] lg:min-h-[32rem] lg:self-start'>
+          <div className='flex min-w-0 flex-col bg-white lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)] lg:min-h-[32rem] lg:self-start'>
             {/* Desktop copy — the mobile one above the grid covers small screens. */}
             <div className='hidden shrink-0 lg:block'>
               <PriceDisplay pricing={pricing} />
