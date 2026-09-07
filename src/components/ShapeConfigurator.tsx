@@ -558,7 +558,7 @@ export function ShapeConfigurator ({
             {/* The kit's buy row (`.cfg-achat-row`, 4346:20937/20938): the Buy
                 CTA in fill beside the 62px round favourite, gap 8. `shrink-0`
                 pins it at full height to the foot of the column. */}
-            <div className='k-achat-row mt-6 shrink-0'>
+            <div className='k-achat-row mt-6 px-8 shrink-0'>
               <button
                 type='button'
                 onClick={handleAddToCart}

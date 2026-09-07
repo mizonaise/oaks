@@ -95,6 +95,13 @@ body {
 [data-previewer] {
   display: flex;
   flex-direction: column;
+  /* Keeps the configurator off the panel's edges — the kit's own panel pads its
+     scrolling body (`.cfg-scroll`) rather than letting controls run to the
+     border. Horizontal only: vertical rhythm is the blocks' own margins.
+     Wider on the left, matching the kit's own asymmetric panel padding
+     (`.cfg-scroll` is 24 on the left against 32 on the right). */
+  padding-left: 48px;
+  padding-right: 24px;
   gap: 16px;
 
   /* ── Stoëmp tokens (kit-configurateur/css/tokens.css) ──────────
@@ -158,6 +165,16 @@ body {
   max-width: 62.5%;
 }
 [data-previewer] [data-section-type="ACCORDION"][data-size="large"] {
+  max-width: none;
+}
+
+/* On MOBILE an accordion is always FULL WIDTH, whatever its `size` says. The
+   size register is a desktop measure — narrowing a block to 62.5% of a phone
+   panel would leave the controls inside it unusably cramped — so the wrapper
+   the renderer puts around the mobile strip simply spans its container.
+   (The wrapper still carries `data-size`, so a consumer that wants the desktop
+   behaviour on mobile can opt back in.) */
+[data-previewer] [data-mobile-section="ACCORDION"] {
   max-width: none;
 }
 
@@ -593,6 +610,26 @@ body {
   cursor: default;
 }
 
+/* The scroll arrows sit OUTSIDE the strip in the renderer's markup, so their
+   width (28) plus margin (4) pushed the first tab 32px right of every field
+   below it. The arrow row is pulled back by that much, which puts the tabs on
+   the same left edge as everything else and lets the arrows hang in the root's
+   own padding instead of displacing the content. */
+[data-previewer] [data-tab-group] > div:has(> [data-tab-arrow]) {
+  margin-left: -32px;
+  margin-right: -32px;
+}
+
+/* The slider track's start is the reading edge everything lines up on: a field
+   label, a slider's rail and a section title all begin there. A tab pill has
+   10px of inner padding, so its BOX on that edge put its text 10px right of
+   every label. The strip is pulled back by that padding, which lands the pill's
+   text on the same edge — the fill and hairline then start 10px earlier, which
+   is the trade for aligning what you actually read. */
+[data-previewer] [data-tab-bar] {
+  margin-left: -10px;
+}
+
 /* ── Field wrapper ───────────────────────────────────────────── */
 [data-previewer] [data-type="FIELD"] {
   display: flex;
@@ -616,15 +653,12 @@ body {
 }
 /* `.k-titre-xs`: Yet Grotesk 500 14/18 in black, with 8px before the info icon
    and a 21px minimum box so a label with no icon still holds the same height. */
+/* The slider's label keeps the shared type above; these are its layout
+   extras: no wrap, and shrinkable so the text can ellipsize. */
 [data-previewer]
   [data-type="FIELD"]:has([data-slider-wrapper])
   [data-field-label] {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 21px;
-  font: 500 14px/18px var(--font-titre);
-  color: var(--noir);
   white-space: nowrap;
   min-width: 0;
 }
@@ -702,14 +736,17 @@ body {
   margin-top: 28px;
 }
 
+/* `.k-titre-xs`, the kit's group title — the label for EVERY field, not
+   just sliders. It used to be 12px de-emphasised here while the slider
+   rule set 14px black, so a switch's title read a size smaller and
+   lighter than the slider's above it. */
 [data-previewer] [data-field-label] {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--beige-fonce);
-  line-height: 1.4;
+  min-height: 21px;
+  font: 500 14px/18px var(--font-titre);
+  color: var(--noir);
 }
 /* labelTop fields: label sits on its own line above the control */
 [data-previewer] [data-field-label][data-label-top="true"] {
@@ -1012,7 +1049,12 @@ body {
      thumb's circle stays on the rail, but a notched slider hides that thumb —
      the dots are the marks, and they line up with where the track starts and
      stops. */
-  left: calc(var(--_at, 0) * 100%);
+  /* Inset by half a dot at each end so the MARKS sit inside the track's span:
+     each dot is centred on its position, so without this the first one's left
+     half (and the last one's right half) hangs outside the track — the step
+     slider started 4px left of every other field. `--_dot` is the dot's
+     measured diameter, so the inset follows it at any density. */
+  left: calc(var(--_dot, 8px) / 2 + var(--_at, 0) * (100% - var(--_dot, 8px)));
   transform: translate(-50%, -50%);
   width: 14px;
   height: 14px;
@@ -1066,10 +1108,15 @@ body {
 [data-previewer]
   [data-slider-wrapper]:has([data-slider-notches])
   input[type="range"] {
+  /* Ends exactly on the current dot: the dots are inset by half a dot at each
+     end, so the fill travels that same reduced span rather than the full
+     track. */
   background: linear-gradient(
     to right,
-    var(--noir) calc(var(--_pct, 0) * 100%),
-    var(--beige) calc(var(--_pct, 0) * 100%)
+    var(--noir)
+      calc(var(--_dot, 8px) / 2 + var(--_pct, 0) * (100% - var(--_dot, 8px))),
+    var(--beige)
+      calc(var(--_dot, 8px) / 2 + var(--_pct, 0) * (100% - var(--_dot, 8px)))
   );
 }
 
@@ -1091,7 +1138,13 @@ body {
 [data-previewer]
   [data-slider-wrapper]:has([data-slider-notches])
   [data-slider-stepper] {
-  left: calc(var(--_pct, 0) * var(--_track-w));
+  /* The dots are inset by half a dot at each end, so the tag travels the same
+     reduced span to stay centred on the current one. `--_track-w` is the track
+     as a percentage of the wrapper, and the stepper is positioned against the
+     wrapper — so the dot inset is expressed as a fraction of that track. */
+  left: calc(
+    var(--_dot, 8px) / 2 + var(--_pct, 0) * (var(--_track-w) - var(--_dot, 8px))
+  );
 }
 
 /* `.k-slider--crante .k-slider-curseur { display: none }` — the current notch
@@ -1898,27 +1951,42 @@ body {
 }
 
 /* Tab panel: give content breathing room on the sides */
+/* No horizontal inset: the previewer root already pads, and adding 16 here
+   put every field inside a tab panel 16px right of the fields outside one. */
 [data-previewer] [data-tab-panel] {
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: 0;
+  padding-right: 0;
 }
 
-/* Nested TAB sections bleed back to the edge so their tab strips stay aligned */
+/* The tab panel no longer insets its content, so a nested TAB section
+   needs no bleed to stay aligned with it. */
 [data-previewer] [data-tab-panel] > [data-section-type="TAB"] {
-  margin-left: -16px;
-  margin-right: -16px;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 [data-previewer][data-layout="mobile"] [data-tab-panel] {
-  padding: 14px 16px;
+  padding: 14px 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* Leading above the previewer's FIRST row, on both layouts. Without it the
+   content sat flush against the top of its container — in the preview popup
+   that meant the first tab strip touching the header's hairline.
+
+   Put on the root's first child rather than as root padding, so it cannot
+   double up with the padding a host already applies, and it is right wherever
+   the previewer is embedded rather than only in this popup. */
+[data-previewer] > *:first-child {
+  margin-top: 20px;
+}
+
 [data-previewer][data-layout="mobile"] [data-tab-panel] > [data-tab-group] {
-  margin-left: -16px;
-  margin-right: -16px;
+  /* No bleed: the panel it sits in has no inset to cancel. */
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* Nested tab group (a child section's tab strip) spacing on mobile */
@@ -2485,7 +2553,9 @@ body {
 }
 .k-rond-62--blanc {
   background: var(--blanc);
-  box-shadow: inset 0 0 0 1px var(--beige), var(--ombre-mobile);
+  box-shadow:
+    inset 0 0 0 1px var(--beige),
+    var(--ombre-mobile);
 }
 .k-rond-62.is-actif {
   background: var(--vert-fonce);
