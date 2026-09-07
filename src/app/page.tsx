@@ -7,7 +7,7 @@ export default function Home () {
   const { data: products, isLoading, error } = useGetProductsQuery()
 
   return (
-    <main className='mx-auto w-full max-w-2xl flex-1 px-6 py-16'>
+    <main className='mx-auto w-full max-w-2xl flex-1 px-6 py-16 bg-white'>
       <h1 className='text-2xl font-semibold tracking-tight'>Shapes</h1>
       <p className='mt-1 text-sm text-gray-500'>
         Select a shape to open its configurator.
