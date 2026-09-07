@@ -469,7 +469,7 @@ export function ShapeConfigurator ({
             shape-res vars  | flated form vars
           On small screens a single column stacks them in source order.
         */}
-        <div className='grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr] min-w-0'>
+        <div className='grid grid-cols-1 gap-x-0 lg:grid-cols-[2fr_1fr] min-w-0'>
           {/* 1: canvas */}
           <div className='relative min-w-0'>
             {/* Price, mobile only: floats over the top of the canvas. Hidden
@@ -493,48 +493,72 @@ export function ShapeConfigurator ({
             />
           </div>
 
-          {/* 2: form */}
-          <div className='min-w-0 overflow-auto'>
+          {/*
+            2: form. A fixed-height flex column so the price bar pins to the
+            top and the buy row to the bottom, with only the form scrolling
+            between them — the kit's panel (`.cfg-panneau`: `.cfg-prix` as a
+            `flex: 0 0 auto` header, `.cfg-scroll` in fill, `.cfg-achat`
+            pinned at the foot).
+
+            Height: the full window minus the dev gutters, but never below
+            `min-h` — on a short window it stops shrinking and the page
+            scrolls instead, so the buy row can't crush the form. `dvh` (not
+            `vh`) so collapsing mobile browser chrome doesn't clip the row.
+            `min-h-0` on the scroller is what actually lets it shrink below
+            its content — without it a flex child refuses to overflow.
+            `self-start` opts out of the grid's default `stretch`, so the
+            explicit height is honoured instead of being grown to the row.
+          */}
+          <div className='flex min-w-0 flex-col lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)] lg:min-h-[32rem] lg:self-start'>
             {/* Desktop copy — the mobile one above the grid covers small screens. */}
-            <div className='hidden lg:block'>
+            <div className='hidden shrink-0 lg:block'>
               <PriceDisplay pricing={pricing} />
             </div>
-            {formExpo ? (
-              <ConfiguratorPreviewDialog
-                initialValues={initialValues}
-                onVariableSetChange={vars => {
-                  for (const [name, value] of Object.entries(vars)) {
-                    handleChangeVariables(name, value)
-                  }
-                }}
-                onGoToZone={(zoneId: string) => {
-                  // Select the box whose zone name matches in the viewer.
-                  setSelectedZone(zoneId)
-                }}
-                onNameSetChange={names => {
-                  setFormValues(names)
-                }}
-                onLabelSetChange={labelSet => {
-                  setLabels(flattenLabels(labelSet as Record<string, unknown>))
-                }}
-                // Auto-switch to the mobile (nested tab-strip) layout below 768px,
-                // desktop above. `layout` is omitted so it doesn't force one mode.
-                responsive
-                // imageSuffix='/public'
-                imagePrefix='https://media.tecnibo.com/aYYmWUcv7lRhpLdU4ojPsA/'
-                configuratorJson={formExpo}
-              />
-            ) : (
-              <p className='rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-                No configurator form is available for this shape.
-              </p>
-            )}
 
-            <div className='mt-10 flex items-center gap-3'>
+            {/* The scroller: takes the leftover height, scrolls its own overflow. */}
+            <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden'>
+              {formExpo ? (
+                <ConfiguratorPreviewDialog
+                  initialValues={initialValues}
+                  onVariableSetChange={vars => {
+                    for (const [name, value] of Object.entries(vars)) {
+                      handleChangeVariables(name, value)
+                    }
+                  }}
+                  onGoToZone={(zoneId: string) => {
+                    // Select the box whose zone name matches in the viewer.
+                    setSelectedZone(zoneId)
+                  }}
+                  onNameSetChange={names => {
+                    setFormValues(names)
+                  }}
+                  onLabelSetChange={labelSet => {
+                    setLabels(
+                      flattenLabels(labelSet as Record<string, unknown>)
+                    )
+                  }}
+                  // Auto-switch to the mobile (nested tab-strip) layout below 768px,
+                  // desktop above. `layout` is omitted so it doesn't force one mode.
+                  responsive
+                  // imageSuffix='/public'
+                  imagePrefix='https://media.tecnibo.com/aYYmWUcv7lRhpLdU4ojPsA/'
+                  configuratorJson={formExpo}
+                />
+              ) : (
+                <p className='rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+                  No configurator form is available for this shape.
+                </p>
+              )}
+            </div>
+
+            {/* The kit's buy row (`.cfg-achat-row`, 4346:20937/20938): the Buy
+                CTA in fill beside the 62px round favourite, gap 8. `shrink-0`
+                pins it at full height to the foot of the column. */}
+            <div className='k-achat-row mt-6 shrink-0'>
               <button
                 type='button'
                 onClick={handleAddToCart}
-                className='inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300'
+                className='k-cta-achat'
               >
                 <CartIcon />
                 Add to cart
@@ -543,7 +567,7 @@ export function ShapeConfigurator ({
                 type='button'
                 onClick={handleFavorite}
                 aria-label='Add to favorites'
-                className='inline-flex items-center justify-center rounded-md border border-zinc-300 px-3 py-2.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                className='k-rond-62'
               >
                 <HeartIcon />
               </button>
@@ -662,39 +686,37 @@ function LabelsSection ({ labels }: { labels: Record<string, string> }) {
 }
 
 // Shopping-cart glyph for the add-to-cart button.
+/** Bag (kit `#i-sac`, Tracé_17 16 × 19) — the Buy CTA's icon. */
 function CartIcon () {
   return (
     <svg
-      width='18'
-      height='18'
-      viewBox='0 0 24 24'
+      className='k-ico-sac'
+      viewBox='0 0 16 19'
       fill='none'
       stroke='currentColor'
-      strokeWidth='1.8'
-      strokeLinecap='round'
+      strokeWidth='1.3'
       strokeLinejoin='round'
+      aria-hidden='true'
     >
-      <circle cx='9' cy='20' r='1' />
-      <circle cx='18' cy='20' r='1' />
-      <path d='M2 3h2l2.4 12.4a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 7H5' />
+      <path d='M1.6 5.6h12.8l-1 12.4H2.6zM5 5.6V4.2a3 3 0 0 1 6 0v1.4' />
     </svg>
   )
 }
 
-// Heart glyph for the favorites button.
+/** Heart-plus (kit `#i-coeur-plus`, heart_plus 19,7 × 15,9) — favourite. */
 function HeartIcon () {
   return (
     <svg
-      width='18'
-      height='18'
-      viewBox='0 0 24 24'
+      className='k-ico-coeur'
+      viewBox='0 0 22 18'
       fill='none'
       stroke='currentColor'
-      strokeWidth='1.8'
+      strokeWidth='1.4'
       strokeLinecap='round'
       strokeLinejoin='round'
+      aria-hidden='true'
     >
-      <path d='M12 21C12 21 4 13.7 4 8.5A4.5 4.5 0 0 1 12 5.5 4.5 4.5 0 0 1 20 8.5C20 13.7 12 21 12 21z' />
+      <path d='M11 16.4S2 11.3 2 5.9C2 3.2 4.1 1.4 6.4 1.4c1.8 0 3.4 1 4.6 2.6 1.2-1.6 2.8-2.6 4.6-2.6 2.3 0 4.4 1.8 4.4 4.5 0 1.1-.3 2.1-.8 3.1M17.8 11.2v5.6M15 14h5.6' />
     </svg>
   )
 }

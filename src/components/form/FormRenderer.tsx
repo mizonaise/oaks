@@ -180,10 +180,9 @@ export function FormRenderer ({
         vars={vars}
         set={set}
       />
-      <button
-        type='submit'
-        className='self-start rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black'
-      >
+      {/* The kit's Buy CTA (4346:20937): h 60, radius 25, padding 25, Flash
+          Green on black in Yet Grotesk 500 14/18. */}
+      <button type='submit' className='k-cta-achat self-start'>
         Submit
       </button>
     </form>

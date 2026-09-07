@@ -219,7 +219,14 @@ export function Shape3D ({
 
   return (
     <div
-      className={`relative h-175 w-full overflow-hidden rounded${
+      /*
+        Below `lg` the canvas is portrait-capped: `aspect-[1/1.4]` makes the
+        height track the width at 1.4×, and `max-h-[calc(100dvh-3rem)]` stops
+        a wide phone from pushing it past the window. From `lg` up it takes
+        the full window height (minus the dev gutters), matching the form
+        column beside it, so `aspect` is released.
+      */
+      className={`relative aspect-[1/1.1] max-h-[calc(100dvh-3rem)] w-full overflow-hidden rounded lg:aspect-auto lg:h-[calc(100dvh-3rem)] lg:max-h-none${
         dev ? ' border border-zinc-200 dark:border-zinc-800' : ''
       }`}
     >

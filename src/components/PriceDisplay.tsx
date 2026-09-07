@@ -177,65 +177,75 @@ export function PriceDisplay ({ pricing }: { pricing: UsePricingResult }) {
     return [...byComment].map(([comment, price]) => ({ comment, price }))
   }, [data])
 
-  // Mobile: no card chrome — it sits over the canvas, so border/background
-  // would box it in. From `lg` up it's a normal card in the form column.
+  // Styling follows the Stoëmp kit's Price bar (`.cfg-prix`, 4346:20901):
+  // the amount in Yet Grotesk 700 30/32 Dark Green, a Question Box beside it
+  // for the breakdown, and the struck-through/promo Tag XXS row underneath.
+  // On mobile the bar goes translucent + blurred over the viewer; from `lg`
+  // up it's the white, drop-shadowed bar of the desktop panel.
   return (
-    <section className='mb-4 rounded-lg p-4 lg:border lg:border-zinc-200 lg:bg-white lg:dark:border-zinc-800 lg:dark:bg-zinc-950'>
-      <div className='flex items-baseline justify-between gap-3'>
-        <div>
-          <div className='flex items-center gap-1'>
-            <h3 className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
-              Total price
-            </h3>
-            {details.length > 0 && (
-              <span className='group relative inline-flex'>
-                <button
-                  type='button'
-                  aria-label='Price details'
-                  className='flex h-4 w-4 items-center justify-center rounded-full border border-zinc-300 text-[10px] font-semibold text-zinc-400 hover:border-zinc-400 hover:text-zinc-600 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-500 dark:hover:text-zinc-300'
-                >
-                  i
-                </button>
-                <div className='pointer-events-none absolute left-0 top-full z-10 mt-1 w-max min-w-40 rounded-md border border-zinc-200 bg-white p-2 text-xs opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 dark:border-zinc-800 dark:bg-zinc-900'>
-                  <dl className='space-y-1'>
-                    {details.map(d => (
-                      <div
-                        key={d.comment}
-                        className='flex justify-between gap-4'
-                      >
-                        <dt className='text-zinc-500 dark:text-zinc-400'>
-                          {d.comment}
-                        </dt>
-                        <dd className='tabular-nums font-medium text-zinc-900 dark:text-zinc-100'>
-                          {euro.format(d.price)}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              </span>
-            )}
-          </div>
+    <header className='k-prix mb-4'>
+      <div className='flex flex-col gap-2'>
+        <div className='k-prix-val'>
           {isError && total === null ? (
-            <p className='mt-1 text-sm text-red-600 dark:text-red-400'>
+            <span className='k-cap' style={{ color: 'var(--beige-fonce)' }}>
               Price unavailable
-            </p>
+            </span>
           ) : showSpinner ? (
-            <p className='mt-1 text-sm text-zinc-400'>Calculating…</p>
+            <span className='k-cap' style={{ color: 'var(--beige-fonce)' }}>
+              Calculating…
+            </span>
           ) : (
-            <p className='mt-0.5 text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100'>
+            <span className='k-cap tabular-nums'>
               {total === null ? '—' : euro.format(total)}
-            </p>
+            </span>
+          )}
+          {details.length > 0 && (
+            <span className='group k-qbox'>
+              <QBoxIcon />
+              {/* Tooltip: not drawn in the Figma — the kit's own `.k-qbox`
+                  proposal (black bubble, Yet Grotesk 500 14/18 white). */}
+              <span
+                className='pointer-events-none absolute bottom-[calc(100%+8px)] left-0 z-20 w-max max-w-[260px] rounded-[5px] px-3 py-2.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100'
+                style={{
+                  background: 'var(--noir)',
+                  color: 'var(--blanc)',
+                  font: '500 14px/18px var(--font-titre)'
+                }}
+              >
+                <span className='k-lignes'>
+                  {details.map(d => (
+                    <span key={d.comment} className='k-ligne-tete'>
+                      <span style={{ color: 'var(--blanc)' }}>{d.comment}</span>
+                      <span className='tabular-nums' style={{ color: 'var(--vert-flash)' }}>
+                        {euro.format(d.price)}
+                      </span>
+                    </span>
+                  ))}
+                </span>
+              </span>
+            </span>
           )}
         </div>
-        {isLoading && total !== null && (
-          <span
-            className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-zinc-300 border-t-transparent dark:border-zinc-600'
-            aria-label='Updating price'
-          />
-        )}
+        <div className='flex items-center gap-2'>
+          {isLoading && total !== null && (
+            <span
+              className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-t-transparent'
+              style={{ borderColor: 'var(--beige)', borderTopColor: 'transparent' }}
+              aria-label='Updating price'
+            />
+          )}
+        </div>
       </div>
-    </section>
+    </header>
+  )
+}
+
+/** Question Box (kit `#i-qbox`, 4346:20867) — exported from the Figma file. */
+function QBoxIcon () {
+  return (
+    <svg viewBox='0 0 16 16' aria-hidden='true'>
+      <path d='M1.6155 16C1.15517 16 0.770833 15.8458 0.4625 15.5375C0.154167 15.2292 0 14.8448 0 14.3845V11H1V14.3845C1 14.5385 1.06408 14.6796 1.19225 14.8077C1.32042 14.9359 1.4615 15 1.6155 15H5V16H1.6155ZM14.3845 16H11V15H14.3845C14.5385 15 14.6796 14.9359 14.8077 14.8077C14.9359 14.6796 15 14.5385 15 14.3845V11H16V14.3845C16 14.8448 15.8458 15.2292 15.5375 15.5375C15.2292 15.8458 14.8448 16 14.3845 16ZM0 1.6155C0 1.15517 0.154167 0.770833 0.4625 0.4625C0.770833 0.154167 1.15517 0 1.6155 0H5V1H1.6155C1.4615 1 1.32042 1.06408 1.19225 1.19225C1.06408 1.32042 1 1.4615 1 1.6155V5H0V1.6155ZM16 1.6155V5H15V1.6155C15 1.4615 14.9359 1.32042 14.8077 1.19225C14.6796 1.06408 14.5385 1 14.3845 1H11V0H14.3845C14.8448 0 15.2292 0.154167 15.5375 0.4625C15.8458 0.770833 16 1.15517 16 1.6155ZM8.0385 13.2115C8.26033 13.2115 8.44717 13.1356 8.599 12.9837C8.751 12.8317 8.827 12.6448 8.827 12.423C8.827 12.2013 8.751 12.0145 8.599 11.8625C8.44717 11.7105 8.26033 11.6345 8.0385 11.6345C7.81667 11.6345 7.62983 11.7105 7.478 11.8625C7.326 12.0145 7.25 12.2013 7.25 12.423C7.25 12.6448 7.326 12.8317 7.478 12.9837C7.62983 13.1356 7.81667 13.2115 8.0385 13.2115ZM7.523 9.90575H8.48275C8.50842 9.48008 8.59108 9.13008 8.73075 8.85575C8.87058 8.58142 9.13983 8.24492 9.5385 7.84625C10.0448 7.33975 10.3938 6.91375 10.5855 6.56825C10.7772 6.22275 10.873 5.8385 10.873 5.4155C10.873 4.64367 10.6122 4.01283 10.0905 3.523C9.56867 3.03333 8.8975 2.7885 8.077 2.7885C7.42317 2.7885 6.84433 2.95383 6.3405 3.2845C5.8365 3.61533 5.44483 4.091 5.1655 4.7115L6.0845 5.098C6.26533 4.6775 6.52783 4.34258 6.872 4.09325C7.21633 3.84392 7.60517 3.71925 8.0385 3.71925C8.58583 3.71925 9.03425 3.87725 9.38375 4.19325C9.73308 4.50925 9.90775 4.92242 9.90775 5.43275C9.90775 5.74042 9.83175 6.0305 9.67975 6.303C9.52792 6.57533 9.26675 6.87625 8.89625 7.20575C8.39742 7.67625 8.04383 8.11083 7.8355 8.5095C7.62717 8.90833 7.523 9.37375 7.523 9.90575Z' />
+    </svg>
   )
 }
 
@@ -323,14 +333,15 @@ export function PriceBreakdown ({ pricing }: { pricing: UsePricingResult }) {
     <div className='space-y-4'>
       {zones.map(zone => (
         <div key={zone.namespace}>
-          <div className='mb-1 flex items-baseline justify-between gap-4 border-b border-zinc-100 pb-1 dark:border-zinc-800'>
-            <h4 className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-              {zone.namespace}
-            </h4>
-            <span className='tabular-nums text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+          {/* Kit's price-detail line (`.k-ligne`, 4346:24887): label in Dark
+              Beige, amount in Dark Green, separated by the 1px hairline. */}
+          <div className='k-ligne-tete mb-1 pb-1'>
+            <h4 className='k-ligne-nom'>{zone.namespace}</h4>
+            <span className='k-ligne-prix tabular-nums'>
               {euro.format(zone.total)}
             </span>
           </div>
+          <hr className='k-filet mb-2' />
           {zone.allVars.length > 0 && (
             <details className='mb-2'>
               <summary className='cursor-pointer text-[11px] font-medium uppercase tracking-wide text-zinc-400 select-none'>
