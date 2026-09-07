@@ -15,6 +15,7 @@ import {
 import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
 import {
   PriceBreakdown,
+  PriceDetails,
   PriceDisplay,
   toPricingRequest,
   usePricing
@@ -204,6 +205,10 @@ export function ShapeConfigurator ({
   const [labels, setLabels] = useState<Record<string, string>>({})
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [showHierarchy, setShowHierarchy] = useState(false)
+
+  // Which screen the form panel shows, mirroring the kit's `etat.ecran`
+  // (`options` | `prix`): the price bar's Question Box toggles between them.
+  const [showPriceDetails, setShowPriceDetails] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
 
   const handleChangeVariables = useCallback((name: string, value: unknown) => {
@@ -478,8 +483,12 @@ export function ShapeConfigurator ({
                 the price doesn't swallow canvas drags; `[&>section]:` turns
                 events back on for the price card itself, keeping its details
                 button tappable. */}
-            <div className='pointer-events-none absolute inset-x-0 top-0 z-10 lg:hidden [&>section]:pointer-events-auto'>
-              <PriceDisplay pricing={pricing} />
+            <div className='pointer-events-none absolute inset-x-0 top-0 z-10 lg:hidden [&>header]:pointer-events-auto'>
+              <PriceDisplay
+                pricing={pricing}
+                detailsOpen={showPriceDetails}
+                onToggleDetails={() => setShowPriceDetails(open => !open)}
+              />
             </div>
             <ShapeViewer
               dev={dev}
@@ -516,42 +525,61 @@ export function ShapeConfigurator ({
           <div className='flex min-w-0 flex-col bg-white lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)] lg:min-h-[32rem] lg:self-start'>
             {/* Desktop copy — the mobile one above the grid covers small screens. */}
             <div className='hidden shrink-0 lg:block'>
-              <PriceDisplay pricing={pricing} />
+              <PriceDisplay
+                pricing={pricing}
+                detailsOpen={showPriceDetails}
+                onToggleDetails={() => setShowPriceDetails(open => !open)}
+              />
             </div>
 
-            {/* The scroller: takes the leftover height, scrolls its own overflow. */}
-            <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden'>
-              {formExpo ? (
-                <ConfiguratorPreviewDialog
-                  initialValues={initialValues}
-                  onVariableSetChange={vars => {
-                    for (const [name, value] of Object.entries(vars)) {
-                      handleChangeVariables(name, value)
-                    }
-                  }}
-                  onGoToZone={(zoneId: string) => {
-                    // Select the box whose zone name matches in the viewer.
-                    setSelectedZone(zoneId)
-                  }}
-                  onNameSetChange={names => {
-                    setFormValues(names)
-                  }}
-                  onLabelSetChange={labelSet => {
-                    setLabels(
-                      flattenLabels(labelSet as Record<string, unknown>)
-                    )
-                  }}
-                  // Auto-switch to the mobile (nested tab-strip) layout below 768px,
-                  // desktop above. `layout` is omitted so it doesn't force one mode.
-                  responsive
-                  // imageSuffix='/public'
-                  imagePrefix='https://media.tecnibo.com/aYYmWUcv7lRhpLdU4ojPsA/'
-                  configuratorJson={formExpo}
+            {/* The scroller: takes the leftover height, scrolls its own
+                overflow. It holds whichever screen is showing — the kit swaps
+                the panel body the same way (`.cfg-ecran`, configurateur.css:53).
+                The form is kept mounted and hidden rather than unmounted, so
+                switching screens doesn't reset its state. */}
+            <div className='k-scroll--flash flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden'>
+              <div className={showPriceDetails ? 'hidden' : 'contents'}>
+                {formExpo ? (
+                  <ConfiguratorPreviewDialog
+                    initialValues={initialValues}
+                    onVariableSetChange={vars => {
+                      for (const [name, value] of Object.entries(vars)) {
+                        handleChangeVariables(name, value)
+                      }
+                    }}
+                    onGoToZone={(zoneId: string) => {
+                      // Select the box whose zone name matches in the viewer.
+                      setSelectedZone(zoneId)
+                    }}
+                    onNameSetChange={names => {
+                      setFormValues(names)
+                    }}
+                    onLabelSetChange={labelSet => {
+                      setLabels(
+                        flattenLabels(labelSet as Record<string, unknown>)
+                      )
+                    }}
+                    // Auto-switch to the mobile (nested tab-strip) layout below 768px,
+                    // desktop above. `layout` is omitted so it doesn't force one mode.
+                    responsive
+                    // imageSuffix='/public'
+                    imagePrefix='https://media.tecnibo.com/aYYmWUcv7lRhpLdU4ojPsA/'
+                    configuratorJson={formExpo}
+                  />
+                ) : (
+                  <p className='rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+                    No configurator form is available for this shape.
+                  </p>
+                )}
+              </div>
+
+              {/* The kit's price-detail screen (4346:24887): it replaces the
+                  panel body while open, with the back arrow returning here. */}
+              {showPriceDetails && (
+                <PriceDetails
+                  pricing={pricing}
+                  onBack={() => setShowPriceDetails(false)}
                 />
-              ) : (
-                <p className='rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-                  No configurator form is available for this shape.
-                </p>
               )}
             </div>
 

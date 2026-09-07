@@ -2615,3 +2615,78 @@ body {
   height: 1px;
   background: var(--beige);
 }
+
+/* ── Price detail screen (`.cfg-ecran--prix`, 4346:24887) ────── */
+
+/* Title M (`.k-titre-m`, composants.css:293): the screen's heading, sitting
+   under a 1px black rule. */
+.k-titre-m {
+  margin: 0;
+  border-top: 1px solid var(--noir);
+  padding-top: 25px;
+  font: 700 30px/32px var(--font-titre);
+  color: var(--noir);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* One detail line (`.k-ligne`, composants.css:277) — the head is already
+   styled above; this is the row wrapper and its 48px stack gap. */
+.k-ligne {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.k-lignes--detail {
+  gap: 48px;
+}
+.k-ligne--total {
+  gap: 8px;
+}
+
+/* Scrollbar (`.k-scroll--flash`, composants.css:253): Flash Green thumb on
+   the Light Beige track, as the detail screen uses. */
+.k-scroll--flash {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vert-flash) var(--fond);
+}
+.k-scroll--flash::-webkit-scrollbar {
+  width: 8px;
+}
+.k-scroll--flash::-webkit-scrollbar-track {
+  background: var(--fond);
+}
+.k-scroll--flash::-webkit-scrollbar-thumb {
+  background: var(--vert-flash);
+  border-radius: 8px;
+}
+
+/* Back arrow (`.cfg-retour`, configurateur.css:59) — the round button in the
+   detail screen's heading that returns to the form. */
+.cfg-retour {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* The kit's ring is 1px Beige — nearly invisible on the white panel, so the
+     arrow is the only cue. Fill the disc with Beige instead, matching the
+     kit's other round buttons (`.k-rond-62`), which reads at a glance. */
+  background: var(--beige);
+  color: var(--noir);
+  /* Cancel the 30/32 the `.k-titre-m` `font` shorthand pushes onto children,
+     which would otherwise offset the glyph inside the 43px disc. */
+  line-height: 1;
+}
+.cfg-retour > svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+.cfg-retour:hover {
+  filter: brightness(0.96);
+}
