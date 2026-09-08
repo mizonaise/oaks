@@ -1514,7 +1514,7 @@ body {
 [data-previewer]
   [data-combo-options][data-combo-type="iconselect"]
   [data-option][data-selected="true"] {
-  background: var(--fond);
+  background: var(--background);
   box-shadow: inset 0 0 0 1px var(--beige-fonce-15);
 }
 
@@ -1572,7 +1572,7 @@ body {
   border-radius: 5px;
   overflow: hidden;
   /* Beige shows through while the image loads, and behind a transparent one. */
-  background: var(--beige);
+  background: var(--background);
   box-shadow: inset 0 0 0 1px var(--beige);
 }
 
