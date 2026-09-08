@@ -205,6 +205,9 @@ export function ShapeConfigurator ({
   const [labels, setLabels] = useState<Record<string, string>>({})
   const [formValues, setFormValues] = useState<Record<string, string>>({})
   const [showHierarchy, setShowHierarchy] = useState(false)
+  // Dev-only: the room walls, which dev hides by default so the camera can
+  // move freely around the shape.
+  const [showWalls, setShowWalls] = useState(false)
 
   // Which screen the form panel shows, mirroring the kit's `etat.ecran`
   // (`options` | `prix`): the price bar's Question Box toggles between them.
@@ -464,6 +467,14 @@ export function ShapeConfigurator ({
             >
               {showHierarchy ? 'Hide hierarchy' : 'Show hierarchy'}
             </button>
+            <button
+              type='button'
+              onClick={() => setShowWalls(open => !open)}
+              aria-pressed={showWalls}
+              className='inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+            >
+              {showWalls ? 'Hide walls' : 'Show walls'}
+            </button>
           </div>
         )}
 
@@ -492,6 +503,7 @@ export function ShapeConfigurator ({
             </div>
             <ShapeViewer
               dev={dev}
+              showWalls={showWalls}
               shape={shape}
               scopes={resolvedScopes}
               selectedName={selectedZone}

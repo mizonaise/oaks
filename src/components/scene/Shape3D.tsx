@@ -27,6 +27,8 @@ import { BoxItem } from './BoxItem'
 
 type Props = {
   dev?: boolean
+  /** Dev-only override of the room walls, which are always on outside dev. */
+  showWalls?: boolean
   boxes: ShapeBox[]
   bounds: { w: number; h: number; d: number }
   globalVars: FlatVars
@@ -117,6 +119,7 @@ const DEFAULT_DIM_CP_CONFIG: DimCpConfig = {
 
 export function Shape3D ({
   dev = false,
+  showWalls = false,
   boxes,
   bounds,
   globalVars,
@@ -348,7 +351,7 @@ export function Shape3D ({
             })}
           </group>
 
-          {!dev && (
+          {(!dev || showWalls) && (
             <Suspense fallback={null}>
               <RoomWalls w={w} h={h} d={d} boxes={boxes} scale={SCALE} />
             </Suspense>
