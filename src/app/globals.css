@@ -1514,8 +1514,14 @@ body {
 [data-previewer]
   [data-combo-options][data-combo-type="iconselect"]
   [data-option][data-selected="true"] {
-  background: var(--background);
-  box-shadow: inset 0 0 0 1px var(--beige-fonce-15);
+  /* Stays WHITE when selected — the kit lightens to `--fond` here, but on a
+     white panel that reads as a faint grey wash rather than a selection.
+     With the fill gone the hairline is the ONLY marker, so it takes the full
+     `--beige-fonce` at 2px rather than the kit's 15%-opacity 1px: at that
+     weight on white the selected tile was indistinguishable from its
+     neighbours. */
+  background: var(--blanc);
+  box-shadow: inset 0 0 0 2px var(--beige-fonce);
 }
 
 /* The icon inside the tile: 24px, per the kit. */
@@ -1571,8 +1577,9 @@ body {
   padding: 0;
   border-radius: 5px;
   overflow: hidden;
-  /* Beige shows through while the image loads, and behind a transparent one. */
-  background: var(--background);
+  /* White behind the image — it shows while the image loads and through a
+     transparent one, so it should read as the panel rather than as a fill. */
+  background: var(--blanc);
   box-shadow: inset 0 0 0 1px var(--beige);
 }
 
@@ -1854,11 +1861,18 @@ body {
   background: var(--noir);
   border-color: var(--noir);
 }
-/* "COLUMN " prefix fades + slides in as the bar expands */
+/* No "COLUMN " prefix here any more.
+   It was written when the option's label was just the number, so CSS supplied
+   the word. The source now sends the full text in `label` ("Column 1") and the
+   digit alone in `data.short`, which the previewer shows on the unselected
+   circles — so a CSS prefix would render "COLUMN Column 1". Dropping it also
+   removes an English string hardcoded into a stylesheet and keyed to a field
+   NAME, which said "COLUMN" on any ZF_MODULE field whatever it contained.
+   The label still fades/slides in as the bar expands. */
 [data-previewer]
   [data-name="ZF_MODULE"]
-  [data-option][data-selected="true"]::before {
-  content: "COLUMN ";
+  [data-option][data-selected="true"]
+  [data-option-label] {
   display: inline-block;
   animation: columnLabelIn 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
