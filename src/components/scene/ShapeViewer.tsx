@@ -25,8 +25,6 @@ type Props = {
   /** Controlled visibility of the box Hierarchy panel. When omitted, the
    *  viewer manages it internally (uncontrolled). */
   showHierarchy?: boolean
-  /** Dev-only: render the room walls, which dev otherwise hides. */
-  showWalls?: boolean
   /** Receives a `() => string | null` that snapshots the canvas as a PNG data
    *  URL, so a parent can capture the current view on demand. */
   onCaptureReady?: (capture: () => string | null) => void
@@ -50,7 +48,6 @@ export function ShapeViewer ({
   dev = false,
   selectedName,
   showHierarchy: showHierarchyProp,
-  showWalls = false,
   onCaptureReady
 }: Props) {
   const { boxes, bounds } = useMemo(() => {
@@ -111,7 +108,6 @@ export function ShapeViewer ({
         )}
         <Shape3D
           dev={dev}
-          showWalls={showWalls}
           boxes={boxes}
           bounds={bounds}
           globalVars={scopes.globalVars}

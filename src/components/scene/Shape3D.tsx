@@ -27,8 +27,6 @@ import { BoxItem } from './BoxItem'
 
 type Props = {
   dev?: boolean
-  /** Dev-only override of the room walls, which are always on outside dev. */
-  showWalls?: boolean
   boxes: ShapeBox[]
   bounds: { w: number; h: number; d: number }
   globalVars: FlatVars
@@ -110,16 +108,14 @@ function hiddenForCameraZone (
 }
 
 const DEFAULT_DIM_CP_CONFIG: DimCpConfig = {
-  CP_1_FI_1000: { w: false, h: true, d: false },
-  CP_1_FI_1111: { w: false, h: true, d: false },
-  CP_1_BA_1000: { w: false, h: true, d: false },
-  CP_1_CM_0000: { w: false, h: true, d: false },
-  CP_1_TSI_1000_C1: { w: false, h: true, d: false }
+
+  "CP_1_FI_*": { w: false, h: true, d: false },
+  "CP_1_BA_*": { w: false, h: true, d: false },
+  "CP_1_CM_*": { w: false, h: true, d: false }
 }
 
 export function Shape3D ({
   dev = false,
-  showWalls = false,
   boxes,
   bounds,
   globalVars,
@@ -154,9 +150,15 @@ export function Shape3D ({
 
   const [showDims, setShowDims] = useState(false)
   const [doorsOpen, setDoorsOpen] = useState(false)
+  // Whether the article designer builds doors at all (`hasDoor`), distinct
+  // from `doorsOpen`, which only swings the doors it has built.
+  const [hasDoor, setHasDoor] = useState(true)
   const [contrasted, setContrasted] = useState(false)
   // Dev-only: hide the article designer so only the box shell/panels show.
   const [hideArticle, setHideArticle] = useState(false)
+  // Dev-only walls toggle, driven by the in-canvas button below. Outside dev
+  // the walls are always on, so this only gates the dev view.
+  const [wallsShown, setWallsShown] = useState(false)
 
   // Constrain the horizontal orbit so the camera can't swing past a built-in
   // wall and see the unit from outside. A built-in side limits the camera to
@@ -293,6 +295,28 @@ export function Shape3D ({
           <EyeIcon off={hideArticle} />
         </button>
       )}
+      {dev && (
+        <button
+          type='button'
+          onClick={() => setWallsShown(open => !open)}
+          title={wallsShown ? 'Hide walls' : 'Show walls'}
+          aria-pressed={wallsShown}
+          className='absolute right-3 top-63 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+        >
+          <WallIcon off={!wallsShown} />
+        </button>
+      )}
+      {dev && (
+        <button
+          type='button'
+          onClick={() => setHasDoor(open => !open)}
+          title={hasDoor ? 'Remove doors' : 'Add doors'}
+          aria-pressed={hasDoor}
+          className='absolute right-3 top-75 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+        >
+          <DoorPanelIcon off={!hasDoor} />
+        </button>
+      )}
       <Canvas
         ref={canvasRef}
         shadows='soft'
@@ -309,7 +333,7 @@ export function Shape3D ({
             #F6F5F0) so the viewer reads as its own surface. `attach` sets
             `scene.background`, which also lands in `toDataURL()` snapshots —
             a CSS background would be missing from those. */}
-        <color attach='background' args={['#f6f5f0']} />
+        <color attach='background' args={['#ffffff']} />
         <SceneLights radius={Math.hypot(w, h, d) / 2} />
         {/* <OrthographicCamera makeDefault zoom={100} position={[0, h / 2, 100]} /> */}
         {dev ? (
@@ -319,7 +343,15 @@ export function Shape3D ({
             position={[0, h / 2, 100]}
           />
         ) : (
-          <PerspectiveCamera makeDefault position={[0, h / 2, 100]} zoom={20} />
+          // A wider-than-default FOV (drei's default is 50) takes in more of
+          // the room around the shape. `CameraHandler` reads `fov` off the
+          // camera, so zone framing follows it.
+          <PerspectiveCamera
+            makeDefault
+            position={[0, h / 2, 100]}
+            fov={65}
+            zoom={20}
+          />
         )}
         {/* <OrthographicCamera makeDefault position={[0, 0, 100]} zoom={100} /> */}
         <group position={[ox, 0, oz]}>
@@ -341,6 +373,7 @@ export function Shape3D ({
                   onSelect={onSelect}
                   globalVars={globalVars}
                   hidden={hiddenIndexes.has(b.index)}
+                  hasDoor={hasDoor}
                   doorOpen={doorsOpen}
                   dimCpConfig={showDims ? dimCpConfig : null}
                   showDims={showDims}
@@ -351,9 +384,16 @@ export function Shape3D ({
             })}
           </group>
 
-          {(!dev || showWalls) && (
+          {(!dev || wallsShown) && (
             <Suspense fallback={null}>
-              <RoomWalls w={w} h={h} d={d} boxes={boxes} scale={SCALE} />
+              <RoomWalls
+                dev={dev}
+                w={w}
+                h={h}
+                d={d}
+                boxes={boxes}
+                scale={SCALE}
+              />
             </Suspense>
           )}
           <GroundShadow w={w} d={d} />
@@ -688,6 +728,46 @@ function EyeIcon ({ off }: { off: boolean }) {
     >
       <path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z' />
       <circle cx='12' cy='12' r='3' />
+      {off && <path d='M3 3l18 18' />}
+    </svg>
+  )
+}
+
+// Door-panel glyph; a slash crosses it out when `off` (article has no door).
+function DoorPanelIcon ({ off }: { off: boolean }) {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <rect x='5' y='3' width='14' height='18' rx='1' />
+      <circle cx='15.5' cy='12' r='1' />
+      {off && <path d='M3 3l18 18' />}
+    </svg>
+  )
+}
+
+// Brick-wall glyph; a slash crosses it out when `off` (walls hidden).
+function WallIcon ({ off }: { off: boolean }) {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <rect x='3' y='5' width='18' height='14' rx='1' />
+      <path d='M3 9.7h18M3 14.3h18M9 5v4.7M15 9.7v4.6M9 14.3V19' />
       {off && <path d='M3 3l18 18' />}
     </svg>
   )

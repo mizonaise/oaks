@@ -16,10 +16,10 @@ export const SceneLights = memo(function SceneLights ({
   const far = radius * 6
   return (
     <>
-      <ambientLight intensity={0.5} />
+      <ambientLight intensity={1.5} />
       <directionalLight
         position={[radius, radius * 1.6, radius]}
-        intensity={1.2}
+        intensity={1.5}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={0.1}

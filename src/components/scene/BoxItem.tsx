@@ -28,6 +28,7 @@ export const BoxItem = memo(function BoxItem ({
   onSelect,
   globalVars,
   hidden = false,
+  hasDoor = true,
   doorOpen,
   dimCpConfig,
   showDims = false,
@@ -46,6 +47,8 @@ export const BoxItem = memo(function BoxItem ({
   globalVars: FlatVars
   /** When true, the box is between the framed zone and the camera; render nothing. */
   hidden?: boolean
+  /** Whether articles are built with doors at all. */
+  hasDoor?: boolean
   doorOpen: boolean
   /** Per-CP dimension config; `null` hides all labels. */
   dimCpConfig?: DimCpConfig | null
@@ -118,6 +121,7 @@ export const BoxItem = memo(function BoxItem ({
         <ArticleInBox
           box={box}
           articleName={articleName}
+          hasDoor={hasDoor}
           doorOpen={doorOpenForBox}
           showDims={showDims}
           contrasted={contrasted}

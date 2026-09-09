@@ -26,8 +26,38 @@ export type Axis = "x" | "y" | "z";
 /** Which of the box's three dimensions to include in a CP's label. */
 export type DimFlags = { w?: boolean; h?: boolean; d?: boolean };
 
-/** Map of CP name → which dimensions to show on panels using that CP. */
+/**
+ * Map of CP name → which dimensions to show on panels using that CP. A key may
+ * end in `*` to match a family by prefix (`CP_1_FI_*` covers `CP_1_FI_1001`,
+ * `CP_1_FI_1111`, …). See {@link matchDimFlags}.
+ */
 export type DimCpConfig = Record<string, DimFlags>;
+
+/**
+ * The dim flags configured for a CP: an exact key wins, otherwise the longest
+ * matching `PREFIX*` wildcard, so a specific entry can override its family.
+ * Returns undefined when nothing matches (no labels on that panel).
+ */
+export function matchDimFlags(
+  config: DimCpConfig | null | undefined,
+  cpName: string,
+): DimFlags | undefined {
+  if (!config) return undefined;
+  const exact = config[cpName];
+  if (exact) return exact;
+  let best: DimFlags | undefined;
+  let bestLen = -1;
+  for (const key in config) {
+    if (!key.endsWith("*")) continue;
+    const prefix = key.slice(0, -1);
+    if (!cpName.startsWith(prefix)) continue;
+    if (prefix.length > bestLen) {
+      bestLen = prefix.length;
+      best = config[key];
+    }
+  }
+  return best;
+}
 
 /**
  * A resolved face panel: its cp ref plus the inward offset (mm) from `inSet`,

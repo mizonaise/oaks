@@ -2,7 +2,11 @@
 
 import { memo, useMemo } from 'react'
 import type { FlatVars } from '@/lib/form/expr'
-import { type BoxSides as ShapeBoxSides, type DimCpConfig } from './shapeTree'
+import {
+  matchDimFlags,
+  type BoxSides as ShapeBoxSides,
+  type DimCpConfig
+} from './shapeTree'
 import { useResolveCp } from './resolveCp'
 import { CpPanel, type FaceAxis, type DimMeasure } from './CpPanel'
 
@@ -51,7 +55,8 @@ const FacePanel = memo(function FacePanel ({
   // Each enabled dimension becomes an arrowed measurement along its axis.
   // w/h/d map to x/y/z; whichever axis is the panel's thickness uses the
   // cp thickness (with CpPanel's 2mm floor), the others use the box span.
-  const cfg = dimCpConfig?.[face.cpRef]
+  // Exact CP name first, then any `CP_FAMILY_*` wildcard entry.
+  const cfg = matchDimFlags(dimCpConfig, face.cpRef)
   const t = Math.max(cp.thickness, 2)
   const dims: DimMeasure[] = cfg
     ? (

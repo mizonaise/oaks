@@ -70,6 +70,8 @@ export function findCpWalls (
 type WallBand = { axis: 'u' | 'v'; at: number; reach: number }
 
 const GRAY = 'rgba(196, 199, 204, 1)'
+/** Ceiling band: darker than the walls', so the room reads as lit from below. */
+const GRAY_TOP = 'rgba(150, 154, 161, 1)'
 const GRAY_TRANSPARENT = 'rgba(255, 255, 255, 1)'
 
 /**
@@ -77,8 +79,14 @@ const GRAY_TRANSPARENT = 'rgba(255, 255, 255, 1)'
  * to fully transparent over `band.reach` to either side, like a soft shadow
  * line where the unit meets the wall. Mapped onto a transparent plane (which
  * still receives the unit's cast shadow).
+ *
+ * `gray` overrides the band colour, so a surface can sit darker than the rest
+ * (the ceiling does).
  */
-function makeLinearGradient (band: WallBand): CanvasTexture | null {
+function makeLinearGradient (
+  band: WallBand,
+  gray: string = GRAY
+): CanvasTexture | null {
   if (typeof document === 'undefined') return null
   const N = 256
   const horizontal = band.axis === 'u'
@@ -98,7 +106,7 @@ function makeLinearGradient (band: WallBand): CanvasTexture | null {
   const hi = Math.min(1, pos + band.reach)
   grad.addColorStop(0, GRAY_TRANSPARENT)
   if (lo > 0) grad.addColorStop(lo, GRAY_TRANSPARENT)
-  grad.addColorStop(pos, GRAY)
+  grad.addColorStop(pos, gray)
   if (hi < 1) grad.addColorStop(hi, GRAY_TRANSPARENT)
   grad.addColorStop(1, GRAY_TRANSPARENT)
   ctx.fillStyle = grad
@@ -123,12 +131,14 @@ export const RoomWalls = memo(function RoomWalls ({
   w,
   h,
   d,
+  dev = false,
   boxes,
   scale
 }: {
   w: number
   h: number
   d: number
+  dev: boolean
   boxes: ShapeBox[]
   /** mm → scene units, matching the scaled group the boxes render in. */
   scale: number
@@ -137,7 +147,7 @@ export const RoomWalls = memo(function RoomWalls ({
 
   // Room extends a bit beyond the shape so it doesn't feel cramped.
   const wallH = h
-  const margin = Math.max(w, d) * 60
+  const margin = Math.max(w, d) * (dev ? 6 : 60)
   const roomD = d + margin
 
   // Horizontal extent of the floor / ceiling / back wall: it must reach exactly
@@ -173,11 +183,11 @@ export const RoomWalls = memo(function RoomWalls ({
 
   // A straight gray band per wall where the unit meets it, fading to nothing.
   // Back wall: a vertical band centered on the unit's mid-height (V axis).
-  const backTex = useMemo(() => {
-    const at = wallH > 0 ? h / 2 / wallH : 0.5
-    const reach = wallH > 0 ? Math.max(h / wallH, 0.15) * 0.6 : 0.5
-    return makeLinearGradient({ axis: 'v', at, reach })
-  }, [h, wallH])
+  // const backTex = useMemo(() => {
+  //   const at = wallH > 0 ? h / 2 / wallH : 0.5
+  //   const reach = wallH > 0 ? Math.max(h / wallH, 0.15) * 0.6 : 0.5
+  //   return makeLinearGradient({ axis: 'v', at, reach })
+  // }, [h, wallH])
 
   // The two side walls are rotated oppositely about Y (+π/2 vs −π/2), so their
   // local U axis (world z) points opposite ways on screen. Mirror the band's
@@ -209,9 +219,11 @@ export const RoomWalls = memo(function RoomWalls ({
   )
 
   // Ceiling: same banded gradient as the side walls, along its V axis (world z),
-  // so the gray band has the same width and sits at the front (by the unit).
+  // so the gray band has the same width and sits at the front (by the unit) —
+  // but a darker gray (`GRAY_TOP`) than the walls carry.
   const topTex = useMemo(
-    () => makeLinearGradient({ axis: 'v', at: sideAt, reach: sideReach }),
+    () =>
+      makeLinearGradient({ axis: 'v', at: sideAt, reach: sideReach }, GRAY_TOP),
     [sideAt, sideReach]
   )
 

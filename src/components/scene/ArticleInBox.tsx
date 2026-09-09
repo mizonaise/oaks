@@ -25,6 +25,7 @@ const FACING_YAW: Record<string, number> = {
 export const ArticleInBox = memo(function ArticleInBox ({
   box,
   articleName,
+  hasDoor = true,
   doorOpen,
   showDims = false,
   contrasted = false,
@@ -32,6 +33,8 @@ export const ArticleInBox = memo(function ArticleInBox ({
 }: {
   box: ShapeBox
   articleName: string
+  /** Whether the designer builds the article with a door at all. */
+  hasDoor?: boolean
   doorOpen: boolean
   /** Toggles the article designer's dimension labels. */
   showDims?: boolean
@@ -94,6 +97,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
                 name: articleName,
                 visibility: true,
                 isShadowed: true,
+                hasDoor,
                 isContrasted: contrasted,
                 isDimensioned: showDims,
                 isDoorOpen: doorOpen,
