@@ -59,6 +59,8 @@ export interface PricingNamespace {
 }
 
 export interface PricingRequest {
+  /** ISO country code (lowercase, e.g. `be`) selecting the price list. */
+  country: string;
   globalVars: Record<string, string>;
   namespaces: PricingNamespace[];
 }

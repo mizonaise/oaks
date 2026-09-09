@@ -17,6 +17,7 @@ import {
   PriceBreakdown,
   PriceDetails,
   PriceDisplay,
+  DEFAULT_COUNTRY,
   toPricingRequest,
   usePricing
 } from '@/components/PriceDisplay'
@@ -114,10 +115,14 @@ function setNested (
 export function ShapeConfigurator ({
   dev = false,
   shapeName,
-  templateId
+  templateId,
+  country
 }: {
   dev?: boolean
   shapeName: string
+  /** `?country=` from the shape URL, selecting the price list. Defaults to
+   *  `DEFAULT_COUNTRY` (BE) when absent. */
+  country?: string | null
   /** `?id=` from the shape URL. When set, that template's saved `data.form`
    *  values seed `initialValues`. */
   templateId?: string
@@ -277,7 +282,7 @@ export function ShapeConfigurator ({
 
   // Fetch pricing once and share it between the top banner and the bottom
   // per-zone breakdown.
-  const pricing = usePricing(resolvedScopes, shape, pricingName)
+  const pricing = usePricing(resolvedScopes, shape, pricingName, country)
 
   // The main Set's model name (`Pname` / `___MODEL_NAME`) comes from the shape's
   // own declared `name` (e.g. OAKSOME_SHAPE_FR), not the `shapeName` lookup key
@@ -359,7 +364,11 @@ export function ShapeConfigurator ({
         description: labels,
         // Resolved variable scopes driving the shape.
         // Same body the pricing endpoint receives (globalVars + namespaces).
-        shape: toPricingRequest(resolvedScopes, shape),
+        shape: toPricingRequest(
+          resolvedScopes,
+          shape,
+          country ?? DEFAULT_COUNTRY
+        ),
         xmlFile: {
           // Named for the model inside it, matching the standalone XML download.
           filename: `${modelName}_${now}.xml`,

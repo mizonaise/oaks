@@ -31,9 +31,13 @@ function stringifyVars (vars: FlatVars): Record<string, string> {
   return out
 }
 
+/** Country used when the URL carries no `?country=`. */
+export const DEFAULT_COUNTRY = 'BE'
+
 export function toPricingRequest (
   scopes: Scopes,
-  shape: ShapeData
+  shape: ShapeData,
+  country: string = DEFAULT_COUNTRY
 ): PricingRequest {
   // Article dimensions per zone, derived from the shape tree the same way the
   // XML export does (width/depth/height, with the facing-based axis swap).
@@ -84,7 +88,7 @@ export function toPricingRequest (
       }
     })
   }
-  return { globalVars, namespaces }
+  return { country, globalVars, namespaces }
 }
 
 const euro = new Intl.NumberFormat('fr-FR', {
@@ -116,13 +120,15 @@ export interface UsePricingResult {
 export function usePricing (
   scopes: Scopes,
   shape: ShapeData,
-  pricingName: string
+  pricingName: string,
+  /** Country from the URL's `?country=`. Null/omitted uses the default. */
+  country?: string | null
 ): UsePricingResult {
   const [getPricing, { data, isLoading, isError }] = useGetPricingMutation()
 
   const request = useMemo(
-    () => toPricingRequest(scopes, shape),
-    [scopes, shape]
+    () => toPricingRequest(scopes, shape, country ?? DEFAULT_COUNTRY),
+    [scopes, shape, country]
   )
 
   // Serialize the body so we only refetch when it actually changes (the memo

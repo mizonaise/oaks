@@ -15,8 +15,18 @@ export default async function ShapePage ({
   // `?id=` is the products-config template id (e.g. `?id=1269085`), whose saved
   // form values seed the configurator. Distinct from the route's `id` param,
   // which is the shape name.
-  const { id: templateId } = await searchParams
+  const { id: templateId, country: countryParam } = await searchParams
   const template = Array.isArray(templateId) ? templateId[0] : templateId
 
-  return <ShapeConfigurator shapeName={id} templateId={template} />
+  // `?country=` selects the price list (e.g. `?country=ma`). Defaults to BE
+  // downstream when absent.
+  const country = Array.isArray(countryParam) ? countryParam[0] : countryParam
+
+  return (
+    <ShapeConfigurator
+      shapeName={id}
+      templateId={template}
+      country={country}
+    />
+  )
 }
