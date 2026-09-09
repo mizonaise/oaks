@@ -219,10 +219,10 @@ export const RoomWalls = memo(function RoomWalls ({
   // the ceiling's +π/2, which flips its local V axis (world z), so the band
   // position flips with it to keep the gray under the unit and the fade
   // running out into the open room.
-  const floorTex = useMemo(
-    () => makeLinearGradient({ axis: 'v', at: 1 - sideAt, reach: sideReach }),
-    [sideAt, sideReach]
-  )
+  // const floorTex = useMemo(
+  //   () => makeLinearGradient({ axis: 'v', at: 1 - sideAt, reach: sideReach }),
+  //   [sideAt, sideReach]
+  // )
 
   const Plane = ({
     position,
@@ -268,7 +268,7 @@ export const RoomWalls = memo(function RoomWalls ({
         rotation={[-Math.PI / 2, 0, 0]}
         args={[roomW, roomD]}
         side={FrontSide}
-        map={floorTex}
+        // map={floorTex}
       />
 
       {/* Ceiling — back→front linear gradient (gray at back fading to white).
