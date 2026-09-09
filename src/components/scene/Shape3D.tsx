@@ -334,7 +334,10 @@ export function Shape3D ({
             `scene.background`, which also lands in `toDataURL()` snapshots —
             a CSS background would be missing from those. */}
         <color attach='background' args={['#ffffff']} />
-        <SceneLights radius={Math.hypot(w, h, d) / 2} />
+        <SceneLights
+          radius={Math.hypot(w, h, d) / 2}
+          contrasted={contrasted}
+        />
         {/* <OrthographicCamera makeDefault zoom={100} position={[0, h / 2, 100]} /> */}
         {dev ? (
           <OrthographicCamera
