@@ -20,7 +20,15 @@ function resolveDescriptorWithGrtx(
 
   const lookupGrtx = (key: string): string => {
     const raw = grtx[key];
-    if (raw === undefined) return "";
+    if (raw === undefined) {
+      // Not a grtx key: the token may name a variable directly, as the
+      // walker-injected "AD zone specification width"/"height" do. Side
+      // descriptors already resolve these via `lookupSideToken`; without the
+      // same fallback here, such a rule reads as "" and every branch using it
+      // fails, leaving the article unresolved (and so unrendered).
+      const v = vars[key];
+      return v === undefined || v === null ? "" : String(v);
+    }
     if (typeof raw === "string" && raw.startsWith("$")) {
       const v = vars[raw.slice(1)];
       return v === undefined ? "" : String(v);

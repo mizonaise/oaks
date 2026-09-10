@@ -518,6 +518,15 @@ export function walkZone(
       "AD zone specification width": String(box.w),
       "AD zone specification height": String(box.h),
     };
+    // The same footprint, exposed on the node's own `grtx` so descriptor rules
+    // can name it as a `leftValue` the way they name `AD zone info0X`. The
+    // node's own entries win, so a shape that already defines these keeps them.
+    const grtx: Record<string, string> = {
+      "AD zone specification width": String(box.w),
+      "AD zone specification height": String(box.h),
+      ...(node.grtx ?? {}),
+    };
+    const nodeWithDims: Node = { ...node, grtx };
     const isArticle = node.divDir === "A";
     // A `clickable` node sets the facing direction for all articles below it.
     const facing = node.clickable ?? clickable;
@@ -529,9 +538,9 @@ export function walkZone(
       index: node.index ?? "",
       name: node.name,
       nameChain: chain,
-      node: isArticle ? node : undefined,
+      node: isArticle ? nodeWithDims : undefined,
       vars: isArticle ? vars : undefined,
-      sides: extractSides(node, vars),
+      sides: extractSides(nodeWithDims, vars),
       clickable: isArticle ? facing : undefined,
       camera: node.camera ?? undefined,
     });
