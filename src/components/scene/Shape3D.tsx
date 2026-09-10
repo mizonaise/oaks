@@ -413,6 +413,9 @@ export function Shape3D ({
           // Dev keeps its free camera; outside dev, rotation is what the
           // free-look toggle grants (WallClamp below bounds it).
           enableRotate={dev || freeLook}
+          // Panning is never offered outside dev: it slides the unit off
+          // centre, which free-look's rotation clamp can't pull back.
+          enablePan={dev}
         />
         {/* Free-look hands the camera to the user, so the zone framing stands
             down entirely — unmounting it also drops its per-frame lerp. */}
