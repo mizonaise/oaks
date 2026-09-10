@@ -483,7 +483,14 @@ export function ShapeConfigurator ({
             shape-res vars  | flated form vars
           On small screens a single column stacks them in source order.
         */}
-        <div className='grid grid-cols-1 gap-x-0 lg:grid-cols-[2fr_1fr] min-w-0'>
+        {/* `minmax(0,…)` on both tracks, not a bare `2fr_1fr`: an `fr` track's
+            default minimum is `auto`, so a track grows to fit its widest
+            content instead of holding its share. The form column holds the
+            previewer, whose option rows and tab bar are wide, which stretched
+            the track past the viewport and gave the page a horizontal
+            scrollbar — `minmax(0,2fr)`/`minmax(0,1fr)` lets the tracks shrink
+            and the content wrap or scroll inside them instead. */}
+        <div className='grid grid-cols-1 gap-x-0 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] min-w-0'>
           {/* 1: canvas */}
           <div className='relative min-w-0'>
             {/* Price, mobile only: floats over the top of the canvas. Hidden

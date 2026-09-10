@@ -97,6 +97,51 @@ const euro = new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 2
 })
 
+/** A price-details line: a category from the response's `details` map. */
+interface DetailLine {
+  comment: string
+  price: number
+}
+
+/**
+ * The promotion in force, preferring the top-level one and falling back to the
+ * country's. `null` when the configuration carries no promotion.
+ */
+function activePromo (data: PricingResponse | undefined) {
+  return data?.promotion ?? data?.country?.promotion ?? null
+}
+
+/**
+ * The pre-promotion price shown struck through beside the promo tag
+ * (`.k-tag-xxs--barre`). `totalPrice` already has the discount applied, so the
+ * original is recovered from the discount percentage. `null` when there is no
+ * promotion, or when the percentage can't yield a sane figure.
+ */
+function strikePrice (data: PricingResponse | undefined): number | null {
+  const promo = activePromo(data)
+  if (!promo || data == null) return null
+  const pct = promo.discount_pct
+  if (!(pct > 0) || pct >= 100) return null
+  return data.totalPrice / (1 - pct / 100)
+}
+
+/**
+ * The response's `details` map (`{ 'Carcase & Fittings': 2444.97, … }`) as
+ * display lines, dropping null/zero categories. Insertion order is the
+ * engine's, which groups carcase/fittings before options and installation.
+ */
+function detailLines (data: PricingResponse | undefined): DetailLine[] {
+  const details = data?.details
+  if (!details) return []
+  const out: DetailLine[] = []
+  for (const comment in details) {
+    const price = details[comment]
+    if (price == null || price === 0) continue
+    out.push({ comment, price })
+  }
+  return out
+}
+
 /**
  * Result of {@link usePricing}: the latest pricing response plus request
  * status. `data` is `undefined` until the first successful fetch. `request` is
@@ -180,18 +225,12 @@ export function PriceDisplay ({
   const total = data?.totalPrice ?? lastTotal
   const showSpinner = isLoading && total === null
 
-  // Non-null, non-zero descriptor totals shown in the price-details tooltip,
-  // grouped by comment (prices summed) so a comment appears once.
-  const details = useMemo(() => {
-    const totals = data?.descriptorTotals
-    if (!totals) return []
-    const byComment = new Map<string, number>()
-    for (const d of Object.values(totals)) {
-      if (d.price == null || d.price === 0) continue
-      byComment.set(d.comment, (byComment.get(d.comment) ?? 0) + d.price)
-    }
-    return [...byComment].map(([comment, price]) => ({ comment, price }))
-  }, [data])
+  // Non-null, non-zero category totals from the response's `details` map —
+  // these are the lines the detail screen shows, so the Question Box only
+  // appears when there is something to show.
+  const details = useMemo(() => detailLines(data), [data])
+  const promo = activePromo(data)
+  const strike = strikePrice(data)
 
   // Styling follows the Stoëmp kit's Price bar (`.cfg-prix`, 4346:20901):
   // the amount in Yet Grotesk 700 30/32 Dark Green, a Question Box beside it
@@ -244,6 +283,22 @@ export function PriceDisplay ({
           />
         )}
       </div>
+      {/* Tags row (`.cfg-prix-tags`, configurateur.css:36): the
+          pre-promotion price struck through, then the promotion itself on
+          the Flash Green tag — sat on the amount's row, at its right end.
+          Only rendered while a promotion is running. */}
+      {promo && total !== null && (
+        <div className='k-prix-tags'>
+          {strike !== null && (
+            <span className='k-tag-xxs k-tag-xxs--barre tabular-nums'>
+              {euro.format(strike)}
+            </span>
+          )}
+          <span className='k-tag-xxs k-tag-xxs--flash'>
+            −{promo.discount_pct}%
+          </span>
+        </div>
+      )}
     </header>
   )
 }
@@ -279,10 +334,10 @@ function BackIcon () {
  * prix" heading over one `.k-ligne` per priced item — label in Dark Beige,
  * amount in Dark Green — closed by a Total line in the 30/32 title style.
  *
- * The lines come from the response's `descriptorTotals`, grouped by `comment`
- * the same way the price bar's tooltip groups them, so a comment appears once
- * with its prices summed. Zero/null-priced descriptors are dropped, except
- * that a zero total still renders (the kit shows "Livraison — 0 €").
+ * The lines come from the response's `details` map — one per priced category
+ * (`Carcase & Fittings`, `Handle`, `Door`, `Pose`) — with zero/null categories
+ * dropped. An active promotion is named above the Total, and the VAT rate the
+ * total carries is noted beneath it.
  */
 export function PriceDetails ({
   pricing,
@@ -294,22 +349,16 @@ export function PriceDetails ({
 }) {
   const { data } = pricing
 
-  const lines = useMemo(() => {
-    const totals = data?.descriptorTotals
-    if (!totals) return []
-    const byComment = new Map<string, number>()
-    for (const d of Object.values(totals)) {
-      if (d.price == null || d.price === 0) continue
-      byComment.set(d.comment, (byComment.get(d.comment) ?? 0) + d.price)
-    }
-    return [...byComment].map(([comment, price]) => ({ comment, price }))
-  }, [data])
+  const lines = useMemo(() => detailLines(data), [data])
+  const promo = activePromo(data)
+  const strike = strikePrice(data)
 
   if (lines.length === 0) return null
 
   // `totalPrice` is the engine's own figure, not the sum of the lines above:
-  // the two can differ (rounding, descriptors excluded from the breakdown), and
-  // the bar shows the engine's — so the Total line must agree with the bar.
+  // the two can differ (rounding, promotions applied on the total, categories
+  // excluded from `details`), and the bar shows the engine's — so the Total
+  // line must agree with the bar.
   const total = data?.totalPrice ?? 0
 
   return (
@@ -345,6 +394,28 @@ export function PriceDetails ({
               </div>
             </div>
           ))}
+          {/* Active promotion, between the category lines and the total —
+              the discount is already baked into `totalPrice`, so this line
+              explains the figure rather than adding to it. Named in the line
+              label, with the kit's price tags (struck-through original +
+              Flash Green discount) standing in for the amount. */}
+          {promo && (
+            <div className='k-ligne'>
+              <div className='k-ligne-tete'>
+                <span className='k-ligne-nom'>{promo.name}</span>
+                <span className='k-prix-tags'>
+                  {strike !== null && (
+                    <span className='k-tag-xxs k-tag-xxs--barre tabular-nums'>
+                      {euro.format(strike)}
+                    </span>
+                  )}
+                  <span className='k-tag-xxs k-tag-xxs--flash'>
+                    −{promo.discount_pct}%
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
           <div className='k-ligne k-ligne--total'>
             <div className='k-ligne-tete'>
               <span>Total</span>
@@ -353,6 +424,13 @@ export function PriceDetails ({
               </span>
             </div>
           </div>
+          {/* Which VAT rate the total carries, plus the excl.-VAT figure. */}
+          {data && (
+            <p className='mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
+              Incl. {data.tva.reduced_rate}% VAT —{' '}
+              {euro.format(data.prices.price_ht)} excl. VAT
+            </p>
+          )}
         </div>
       </div>
     </section>

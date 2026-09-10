@@ -83,15 +83,54 @@ export interface PricingBreakdownItem {
   amount: number;
 }
 
-/** Per-descriptor total, keyed by descriptor id (e.g. `DS_PRICING_MAT_CC`). */
-export interface DescriptorTotal {
-  comment: string;
-  price: number;
+/** VAT rates (percent) applying to the priced configuration. */
+export interface PricingTva {
+  default_rate: number;
+  reduced_rate: number;
+}
+
+/**
+ * Active promotion. The top-level `promotion` carries the merged discount; the
+ * one nested under `country` additionally lists the promotion `id`s that were
+ * combined into it. Absent (or `null`) when no promotion applies.
+ */
+export interface PricingPromotion {
+  /** Promotion ids merged into this discount (country-level only). */
+  id?: number[];
+  name: string;
+  discount_pct: number;
+  /** ISO dates (`YYYY-MM-DD`) bounding the promotion. */
+  date_from: string;
+  date_to: string;
+}
+
+/** The three headline figures: excl. VAT, and incl. VAT at either rate. */
+export interface PricingPrices {
+  price_ht: number;
+  price_ttc_default: number;
+  price_ttc_reduced: number;
+}
+
+/** Country-level pricing: the promotion/promo code applied and the resulting prices. */
+export interface PricingCountry {
+  promotion: PricingPromotion | null;
+  code_promo: string | null;
+  prices: PricingPrices;
 }
 
 export interface PricingResponse {
+  /** The price to display — TTC at the reduced rate, promotions applied. */
   totalPrice: number;
-  descriptorTotals: Record<string, DescriptorTotal>;
+  tva: PricingTva;
+  promotion: PricingPromotion | null;
+  prices: PricingPrices;
+  country: PricingCountry;
+  /**
+   * Totals per human-readable category (e.g. `Carcase & Fittings`, `Handle`,
+   * `Door`, `Pose`) — the price-details lines. Replaces the former
+   * `descriptorTotals` map.
+   */
+  details: Record<string, number>;
   breakdown: PricingBreakdownItem[];
 }
 
