@@ -531,7 +531,16 @@ export function ShapeConfigurator ({
             price bar, the scrolling form and the buy row read as one panel
             against the beige canvas beside it.
           */}
-          <div className='flex min-w-0 flex-col bg-white lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)] lg:min-h-[32rem] lg:self-start'>
+          <div
+            className={`flex min-w-0 flex-col bg-white${
+              // Dev lets the column flow with the page instead of pinning to a
+              // viewport-height panel, so the debug sections below it stay
+              // reachable and the form isn't trapped in its own scroller.
+              dev
+                ? ''
+                : ' lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)] lg:min-h-[32rem] lg:self-start'
+            }`}
+          >
             {/* Desktop copy — the mobile one above the grid covers small screens. */}
             <div className='hidden shrink-0 lg:block'>
               <PriceDisplay
@@ -546,7 +555,13 @@ export function ShapeConfigurator ({
                 the panel body the same way (`.cfg-ecran`, configurateur.css:53).
                 The form is kept mounted and hidden rather than unmounted, so
                 switching screens doesn't reset its state. */}
-            <div className='k-scroll--flash flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden'>
+            <div
+              className={`k-scroll--flash flex flex-1 flex-col overflow-x-hidden${
+                // Without the column's fixed height (dev), an inner scroller
+                // has nothing to scroll against — let it grow with the page.
+                dev ? '' : ' min-h-0 overflow-y-auto'
+              }`}
+            >
               <div className={showPriceDetails ? 'hidden' : 'contents'}>
                 {formExpo ? (
                   <ConfiguratorPreviewDialog
