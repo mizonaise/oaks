@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { Html } from '@react-three/drei'
 import type { ResolvedCp } from './resolveCp'
@@ -53,7 +53,34 @@ export const CpPanel = memo(function CpPanel ({
   /** Arrowed dimension lines to draw at this panel's face. */
   dims?: DimMeasure[]
 }) {
-  const tex = useTextureWithFallback(cp.textureUrl)
+  const baseTex = useTextureWithFallback(cp.textureUrl)
+  // Grain direction: the side panels (x- and z-normal faces) read vertically,
+  // while the top and bottom (y-normal) keep the texture running horizontally.
+  //
+  // A BoxGeometry's side faces map U across the face and V up it, so the
+  // texture arrives horizontal everywhere; rotating UVs by 90° on the sides
+  // stands the grain up. The loader caches one Texture per URL and panels
+  // sharing a cp share that instance, so rotate a *clone* — mutating the shared
+  // one would turn every other panel's grain with it.
+  const tex = useMemo(() => {
+    if (!baseTex) return null
+    if (axis === 'y') return baseTex
+    const rotated = baseTex.clone()
+    // `clone()` copies the image but starts with a fresh upload; without this
+    // the GPU never receives the clone's texel data.
+    rotated.needsUpdate = true
+    rotated.center.set(0.5, 0.5)
+    rotated.rotation = Math.PI / 2
+    return rotated
+  }, [baseTex, axis])
+
+  // Dispose only clones we minted here; the shared base texture is owned by
+  // `useTextureWithFallback` and must outlive this panel.
+  useEffect(() => {
+    if (!tex || tex === baseTex) return
+    return () => tex.dispose()
+  }, [tex, baseTex])
+
   // Thickness in scene units; fall back to 2mm so a 0-thickness cp still shows.
   const t = Math.max(cp.thickness, 2) * MM
 
