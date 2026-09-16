@@ -4,9 +4,10 @@ import { memo, useMemo } from 'react'
 import { type Box as ShapeBox } from './shapeTree'
 import {
   ArticleGroupDesigner,
+  type ArticleData,
   type GetDataFn
 } from '@processandtools/rp-article-designer'
-import { useGetArticleQuery, tecniboApi } from '@/lib/store/api/tecniboApi'
+import { tecniboApi } from '@/lib/store/api/tecniboApi'
 import { useAppStore } from '@/lib/store/hooks'
 
 const MM = 1
@@ -25,6 +26,7 @@ const FACING_YAW: Record<string, number> = {
 export const ArticleInBox = memo(function ArticleInBox ({
   box,
   articleName,
+  articleData,
   hasDoor = true,
   doorOpen,
   showDims = false,
@@ -33,6 +35,9 @@ export const ArticleInBox = memo(function ArticleInBox ({
 }: {
   box: ShapeBox
   articleName: string
+  /** The shape-wide article bundle, fetched server-side by the page. Null/
+   *  undefined when there is none, in which case no designer is mounted. */
+  articleData?: ArticleData | null
   /** Whether the designer builds the article with a door at all. */
   hasDoor?: boolean
   doorOpen: boolean
@@ -43,12 +48,7 @@ export const ArticleInBox = memo(function ArticleInBox ({
   /** Dev-only: when true, skip rendering the article designer entirely. */
   hidden?: boolean
 }) {
-  const { data: res, isError, error } = useGetArticleQuery(articleName)
   const store = useAppStore()
-
-  if (isError) {
-    console.error('Failed to fetch article data:', error)
-  }
 
   // Data loader for the article designer, backed by RTK Query instead of a
   // hand-rolled fetch + cache: dispatching `initiate` reuses the store's cache
@@ -89,9 +89,9 @@ export const ArticleInBox = memo(function ArticleInBox ({
         position={[0, (-box.h / 2) * MM, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
-        {res && !hidden && (
+        {articleData && !hidden && (
           <ArticleGroupDesigner
-            data={res}
+            data={articleData}
             articleList={[
               {
                 name: articleName,

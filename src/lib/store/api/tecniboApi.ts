@@ -7,15 +7,17 @@ import type { ExportedConfigurator } from "@oak-some/configurator-previewer";
 import type { ShapeData } from "@/lib/shape/schema";
 
 /**
- * Response envelope of the shape endpoint:
- * `GET /api/shape/shape/<SHAPE_NAME>` → `{ form, pricing, shape }`.
+ * Response envelope of the shape endpoint, fetched server-side by
+ * `fetchShape` (`GET <SHAPE_API>/product/<SHAPE_NAME>` → `{ form, pricing, shape }`)
+ * and passed to `ShapeConfigurator` as a prop, so it never becomes a browser
+ * request.
  * `form` is the exported configurator (`{ configurator, sources }`) or `null`
  * when the article has no attached form.
  */
 /**
  * Item of the product listing: `GET /api/shape/product` →
  * `[{ id, articleId, configuratorId, pricing }]`. `id` is the product/shape
- * name used by `getShape` (`/api/shape/product/<id>`); `pricing` is the pricing
+ * name used by `fetchShape` (`<SHAPE_API>/product/<id>`); `pricing` is the pricing
  * router name (with a leading `#`) or `null` when the product has none.
  */
 export interface ProductListItem {
@@ -29,6 +31,12 @@ export interface ShapeResponse {
   form: ExportedConfigurator | null;
   pricing: string;
   shape: ShapeData;
+  /**
+   * The shape's article bundle, served inline with the shape. Present for some
+   * products and an all-empty skeleton for others, so callers must check that
+   * it actually holds entries before relying on it.
+   */
+  articles?: ArticleData | null;
 }
 
 /**
@@ -177,8 +185,11 @@ const toMatSurf = (r: RpEngineMatSurf | null): MatSurfData => ({
 /**
  * RTK Query API for the Tecnibo backends. Resources:
  *  - article / material / surface: rp-engine data (per name)
- *  - shape:   shape definition (by remote shape name, e.g. OAKSOME_SHAPE_L)
  *  - form:    configurator tree (by form id, e.g. 107)
+ *
+ * The shape is NOT fetched here: it is loaded server-side by
+ * `@/lib/shape/fetchShape` — which also carries the article bundle inline — so
+ * its endpoint stays invisible to the browser.
  *
  * Requests go through same-origin proxy paths configured as Next.js rewrites
  * (see `next.config.ts`), so the upstream hosts stay server-side and CORS
@@ -194,6 +205,8 @@ export const tecniboApi = createApi({
   }),
   endpoints: (builder) => ({
     // → backend.tecnibo.com/api/rp-engine/article-data/<name>?forcerefresh=true
+    // Single article by name. The scene no longer uses this: its article bundle
+    // arrives inline with the shape (`ShapeResponse.articles`).
     getArticle: builder.query<ArticleData, string>({
       query: (articleName) => ({
         url: `/api/rp-engine/article-data/${articleName}?forcerefresh=true`,
@@ -206,13 +219,6 @@ export const tecniboApi = createApi({
     // Lists every available product/shape (id, article, configurator, pricing).
     getProducts: builder.query<ProductListItem[], void>({
       query: () => `/api/shape/product`,
-    }),
-
-    // → api.tecnibo.com/shape/<SHAPE_NAME>
-    // Single endpoint returning the shape, its exported configurator form
-    // (`{ configurator, sources }` or `null`) and pricing in one payload.
-    getShape: builder.query<ShapeResponse, string>({
-      query: (shapeName) => `/api/shape/product/${shapeName}`,
     }),
 
     // → backend.tecnibo.com/api/rp-engine/material-data/<name>
@@ -273,10 +279,8 @@ export const tecniboApi = createApi({
 });
 
 export const {
-  useGetArticleQuery,
   useGetProductsQuery,
   useGetProductsConfigQuery,
-  useGetShapeQuery,
   useGetMaterialQuery,
   useGetSurfaceQuery,
   useGetMaterialDataQuery,

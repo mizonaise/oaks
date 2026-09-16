@@ -7,10 +7,9 @@ import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
 import { buildShapeXml, downloadXml, downloadJson } from '@/lib/shape/xmlExport'
 import type { ShapeData } from '@/lib/shape/schema'
-import {
-  useGetProductsConfigQuery,
-  useGetShapeQuery
-} from '@/lib/store/api/tecniboApi'
+import { useGetProductsConfigQuery } from '@/lib/store/api/tecniboApi'
+import type { ShapeResponse } from '@/lib/store/api/tecniboApi'
+import type { ArticleData } from '@processandtools/rp-article-designer'
 
 import { ConfiguratorPreviewDialog } from '@oak-some/configurator-previewer'
 import {
@@ -115,11 +114,20 @@ function setNested (
 export function ShapeConfigurator ({
   dev = false,
   shapeName,
+  shape: remoteShape,
+  articleData,
   templateId,
   country
 }: {
   dev?: boolean
   shapeName: string
+  /** The shape payload, fetched server-side by the page (see `fetchShape`) so
+   *  the shape endpoint never shows up as a browser request. */
+  shape: ShapeResponse
+  /** The shape's article bundle, likewise fetched server-side. `null` when the
+   *  rp-engine had nothing (or the request failed): the scene then draws no
+   *  articles rather than failing. */
+  articleData?: ArticleData | null
   /** `?country=` from the shape URL, selecting the price list. Defaults to
    *  `DEFAULT_COUNTRY` (BE) when absent. */
   country?: string | null
@@ -127,33 +135,25 @@ export function ShapeConfigurator ({
    *  values seed `initialValues`. */
   templateId?: string
 }) {
-  // Fetch the shape from the remote shape endpoint by its declared name
-  // (e.g. OAKSOME_SHAPE_FR). A single endpoint returns the shape, its exported
-  // configurator form (`{ configurator, sources }` or `null`) and pricing.
-  const {
-    data: remoteShape,
-    isLoading: shapeLoading,
-    isError: shapeError,
-    error: shapeErrorObj
-  } = useGetShapeQuery(shapeName, {
-    skip: !shapeName
-  })
+  // The shape arrives already resolved from the server (`fetchShape` in the
+  // page), so there is no loading or error state to handle here: a missing
+  // shape became a `notFound()` and a failed request an error boundary, both
+  // upstream of this component.
 
   // Stable reference: the `?? {}` fallback would otherwise mint a fresh object
-  // each render (while the shape is still loading), retriggering every useMemo
-  // below it.
+  // each render, retriggering every useMemo below it.
   const shape = useMemo(
     () =>
-      (remoteShape?.shape ?? {}) as ShapeData & {
+      remoteShape.shape as ShapeData & {
         variables?: Record<string, unknown>
       },
     [remoteShape]
   )
-  const formExpo = remoteShape?.form ?? null
+  const formExpo = remoteShape.form
 
   // Pricing router name from the shape (e.g. `#DS_PRICING_ROUNTER`); strip the
   // leading `#` before using it as the pricing endpoint segment.
-  const pricingName = (remoteShape?.pricing ?? '').replace(/^#/, '')
+  const pricingName = (remoteShape.pricing ?? '').replace(/^#/, '')
 
   // Register the remote shape's descriptors/cps BEFORE any child runs walkZone
   // / cp resolution. Calling synchronously in the render body (not inside a
@@ -397,38 +397,6 @@ export function ShapeConfigurator ({
     )
   }
 
-  if (shapeLoading) {
-    return (
-      <StatusScreen
-        title='Just a moment…'
-        message='Getting your configurator ready.'
-      />
-    )
-  }
-
-  if (shapeError) {
-    const detail = errorMessage(shapeErrorObj)
-    return (
-      <StatusScreen
-        title='Failed to load'
-        message='Could not load the shape.'
-        detail={detail}
-        tone='error'
-      />
-    )
-  }
-
-  // Query resolved without error but returned nothing usable.
-  if (!remoteShape) {
-    return (
-      <StatusScreen
-        title='Nothing to show'
-        message='The shape response was empty.'
-        tone='error'
-      />
-    )
-  }
-
   return (
     <div
       className={`flex flex-col flex-1 font-sans min-h-screen${
@@ -509,6 +477,7 @@ export function ShapeConfigurator ({
             <ShapeViewer
               dev={dev}
               shape={shape}
+              articleData={articleData}
               scopes={resolvedScopes}
               selectedName={selectedZone}
               showHierarchy={showHierarchy}
@@ -581,6 +550,7 @@ export function ShapeConfigurator ({
                     onGoToZone={(zoneId: string) => {
                       // Select the box whose zone name matches in the viewer.
                       setSelectedZone(zoneId)
+                      console.log('Form requested zone', zoneId, '→ selectedZone now', zoneId)
                     }}
                     onNameSetChange={names => {
                       setFormValues(names)
@@ -676,19 +646,6 @@ export function ShapeConfigurator ({
       </main>
     </div>
   )
-}
-
-/** Best-effort human-readable message from an RTK Query error. */
-function errorMessage (err: unknown): string | undefined {
-  if (!err || typeof err !== 'object') return undefined
-  const e = err as { status?: unknown; error?: unknown; data?: unknown }
-  if (typeof e.error === 'string') return e.error
-  if (e.status !== undefined) {
-    const body =
-      typeof e.data === 'string' ? e.data : e.data ? JSON.stringify(e.data) : ''
-    return `HTTP ${String(e.status)}${body ? ` — ${body}` : ''}`
-  }
-  return undefined
 }
 
 /** Full-screen loading / error / empty state for the configurator. */

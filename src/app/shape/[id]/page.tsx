@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { ShapeConfigurator } from '@/components/ShapeConfigurator'
+import { fetchShape } from '@/lib/shape/fetchShape'
 
 export default async function ShapePage ({
   params,
@@ -22,9 +23,22 @@ export default async function ShapePage ({
   // downstream when absent.
   const country = Array.isArray(countryParam) ? countryParam[0] : countryParam
 
+  // Fetched here rather than in the client component so neither endpoint
+  // appears as a browser request.
+  console.log("Fetching shape and articles for", id, "with template", template, "and country", country)
+  const shape = await fetchShape(id)
+  if (!shape) notFound()
+
+  // The shape response carries its own article bundle, so no separate article
+  // request is made. Products whose `articles` is the empty skeleton simply
+  // render no articles.
+  const articleData = shape.articles ?? null
+
   return (
     <ShapeConfigurator
       shapeName={id}
+      shape={shape}
+      articleData={articleData}
       templateId={template}
       country={country}
     />

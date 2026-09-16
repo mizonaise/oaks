@@ -6,9 +6,13 @@ import { evalExpr } from '@/lib/form/expr'
 import { Hierarchy } from './Hierarchy'
 import { Shape3D } from './Shape3D'
 import { walkZone, type Box } from './shapeTree'
+import type { ArticleData } from '@processandtools/rp-article-designer'
 
 type Props = {
   shape: {
+    /** The shape's declared name (e.g. `OS_SHAPE_F`), used to key the
+     *  shape-wide article fetch. */
+    name?: string
     width?: unknown
     depth?: unknown
     height?: unknown
@@ -18,6 +22,8 @@ type Props = {
     globalVars: FlatVars
     namespaces: Record<string, FlatVars>
   }
+  /** The shape's article bundle, fetched server-side by the page. */
+  articleData?: ArticleData | null
   /** Dev mode also shows the box Hierarchy alongside the canvas. */
   dev?: boolean
   /** When set, selects the box whose zone `name` matches (e.g. from goToZone). */
@@ -45,23 +51,37 @@ export function readDim (
 export function ShapeViewer ({
   shape,
   scopes,
+  articleData,
   dev = false,
   selectedName,
   showHierarchy: showHierarchyProp,
   onCaptureReady
 }: Props) {
-  const { boxes, bounds } = useMemo(() => {
+  const { boxes, bounds, dimsResolved } = useMemo(() => {
     const { globalVars, namespaces } = scopes
-    const w = readDim(shape.width, globalVars, 6000)
-    const d = readDim(shape.depth, globalVars, 500)
-    const h = readDim(shape.height, globalVars, 3000)
+    // Sentinel distinct from any real dimension: `readDim` returns it verbatim
+    // when the expression can't be evaluated yet, which is how we tell a
+    // genuinely-resolved dimension from a fallback. Shapes like the CMB
+    // combinations declare `$ZONE_W`-style dims that only resolve once the
+    // form's variables arrive, a render or more after mount.
+    const UNRESOLVED = -1
+    const rawW = readDim(shape.width, globalVars, UNRESOLVED)
+    const rawD = readDim(shape.depth, globalVars, UNRESOLVED)
+    const rawH = readDim(shape.height, globalVars, UNRESOLVED)
+    const dimsResolved =
+      rawW !== UNRESOLVED && rawD !== UNRESOLVED && rawH !== UNRESOLVED
+    // Keep the old fallbacks for the geometry so the scene still builds while
+    // the variables are in flight; only the camera waits for the real numbers.
+    const w = rawW === UNRESOLVED ? 6000 : rawW
+    const d = rawD === UNRESOLVED ? 500 : rawD
+    const h = rawH === UNRESOLVED ? 3000 : rawH
     const boxes: Box[] = walkZone(
       shape.zone as Parameters<typeof walkZone>[0],
       { x: 0, y: 0, z: 0, w, h, d },
       globalVars,
       namespaces
     )
-    return { boxes, bounds: { w, h, d } }
+    return { boxes, bounds: { w, h, d }, dimsResolved }
   }, [shape, scopes])
 
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null)
@@ -108,6 +128,8 @@ export function ShapeViewer ({
         )}
         <Shape3D
           dev={dev}
+          articleData={articleData}
+          dimsResolved={dimsResolved}
           boxes={boxes}
           bounds={bounds}
           globalVars={scopes.globalVars}

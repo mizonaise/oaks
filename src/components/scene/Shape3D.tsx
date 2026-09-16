@@ -24,9 +24,16 @@ import { SceneLights } from './SceneLights'
 import { GroundShadow } from './GroundShadow'
 import { RoomWalls, findCpWalls } from './RoomWalls'
 import { BoxItem } from './BoxItem'
+import type { ArticleData } from '@processandtools/rp-article-designer'
 
 type Props = {
   dev?: boolean
+  /** The shape's article bundle, fetched server-side by the page. */
+  articleData?: ArticleData | null
+  /** False while the shape's dimensions are still `$VAR` expressions awaiting
+   *  the form's variables — the geometry falls back to default sizes until
+   *  then, so the opening camera fit waits rather than framing the wrong box. */
+  dimsResolved?: boolean
   boxes: ShapeBox[]
   bounds: { w: number; h: number; d: number }
   globalVars: FlatVars
@@ -46,6 +53,17 @@ type Props = {
 }
 
 const MM = 1
+
+// Perspective camera settings for the non-dev view. Declared here (rather than
+// only as JSX props) because `FitToShape` must compute its distance from the
+// SAME values: an effect can run before R3F has applied these props, and the
+// camera then still reports three.js defaults (fov 75, zoom 1), which yields a
+// wildly wrong fit.
+const CAM_FOV = 65
+const CAM_ZOOM = 20
+// Module-level constant so the array identity never changes: drei re-applies
+// `position` when the prop changes, which would overwrite the fitted distance.
+const CAM_INITIAL_POS: [number, number, number] = [0, 1.25, 100]
 const SCALE = 0.001
 
 /**
@@ -116,6 +134,8 @@ const DEFAULT_DIM_CP_CONFIG: DimCpConfig = {
 
 export function Shape3D ({
   dev = false,
+  articleData,
+  dimsResolved = true,
   boxes,
   bounds,
   globalVars,
@@ -130,6 +150,37 @@ export function Shape3D ({
   const h = bounds.h * MM * SCALE
   const ox = -w / 2
   const oz = -d / 2
+
+  // True extent of everything drawn, in world units. `bounds` is only the
+  // shape's declared envelope; `walkZone` can place boxes outside it (and
+  // panel oversize pushes them further), so framing on `bounds` alone can
+  // clip the unit. Union the box extents with the envelope and keep the
+  // widest span either side of centre, since the camera looks down the
+  // centreline and the view is symmetric about it.
+  const fit = useMemo(() => {
+    let minX = 0
+    let maxX = bounds.w
+    let minY = 0
+    let maxY = bounds.h
+    let minZ = 0
+    let maxZ = bounds.d
+    for (const b of boxes) {
+      if (b.x < minX) minX = b.x
+      if (b.y < minY) minY = b.y
+      if (b.z < minZ) minZ = b.z
+      if (b.x + b.w > maxX) maxX = b.x + b.w
+      if (b.y + b.h > maxY) maxY = b.y + b.h
+      if (b.z + b.d > maxZ) maxZ = b.z + b.d
+    }
+    // The camera centres on the shape's own mid-line (x: bounds.w/2,
+    // y: fitH/2), so what must fit is twice the larger half-span.
+    const halfX = Math.max(bounds.w / 2 - minX, maxX - bounds.w / 2)
+    return {
+      w: halfX * 2 * MM * SCALE,
+      h: maxY * MM * SCALE,
+      d: (maxZ - minZ) * MM * SCALE
+    }
+  }, [boxes, bounds])
 
   // The underlying <canvas> element, so a parent can snapshot the current view.
   // `preserveDrawingBuffer` (below) keeps the framebuffer readable after the
@@ -164,6 +215,39 @@ export function Shape3D ({
   // wall and see the unit from outside. A built-in side limits the camera to
   // the corridor between the walls; open sides allow free rotation.
   const controlsRef = useRef<OrbitControlsImpl>(null)
+
+  // The form emits a `goToZone` as soon as it mounts, for whatever zone it
+  // opens on. Framing that would drop the user into a close-up of a single
+  // (often article-sized) zone instead of the whole unit, so it is ignored;
+  // every later request is a real navigation and frames normally.
+  //
+  // Owned here rather than inside `CameraHandler`, which unmounts whenever
+  // free-look is toggled — a ref there would reset and make the next zone
+  // request look like the mount-time one again.
+  const formRequestSeen = useRef(false)
+  // True for the form's very first zone request only.
+  const isInitialZoneRequest = useCallback(() => {
+    if (formRequestSeen.current) return false
+    formRequestSeen.current = true
+    return true
+  }, [])
+
+  // Set once a zone has actually taken the camera, so `FitToShape` stops
+  // refitting rather than yanking the view back mid-navigation.
+  const zoneOwnsCamera = useRef(false)
+  const claimCameraForZone = useCallback(() => {
+    zoneOwnsCamera.current = true
+  }, [])
+
+  // Set by `FitToShape` once it has framed the resolved shape. Until then a
+  // zone claim must not lock the camera: a `goToZone` arriving while the
+  // dimensions are still in flight would otherwise freeze the view on the
+  // fallback framing, which is what "the first render doesn't show all the
+  // shape" looks like.
+  const openingFitDone = useRef(false)
+  const markOpeningFitDone = useCallback(() => {
+    openingFitDone.current = true
+  }, [])
 
   // Free-look: when on, the user drives the camera (clamped by the walls) and
   // zone-camera framing is ignored. Off by default so the configurator keeps
@@ -349,11 +433,22 @@ export function Shape3D ({
           // A wider-than-default FOV (drei's default is 50) takes in more of
           // the room around the shape. `CameraHandler` reads `fov` off the
           // camera, so zone framing follows it.
+          //
+          // NO `position` prop: drei re-applies it on every re-render, which
+          // would clobber the distance `FitToShape` computes (and the position
+          // `CameraHandler` lerps to). The camera's placement is owned
+          // imperatively by those two, starting from the fit.
+          // `position` is the INITIAL placement only: drei re-applies this
+          // prop whenever it changes, so it is deliberately a constant. The
+          // real distance is set imperatively by `FitToShape` (and then by
+          // `CameraHandler` for zone framing); a changing prop here would
+          // clobber both, and omitting it entirely leaves the camera at the
+          // origin, where OrbitControls collapses it onto its own target.
           <PerspectiveCamera
             makeDefault
-            position={[0, h / 2, 100]}
-            fov={65}
-            zoom={20}
+            position={CAM_INITIAL_POS}
+            fov={CAM_FOV}
+            zoom={CAM_ZOOM}
           />
         )}
         {/* <OrthographicCamera makeDefault position={[0, 0, 100]} zoom={100} /> */}
@@ -366,6 +461,7 @@ export function Shape3D ({
                   key={b.index}
                   box={b}
                   dev={dev}
+                  articleData={articleData}
                   isSelected={b.index === selectedIndex}
                   inSelectedSubtree={
                     selectedIndex != null &&
@@ -417,11 +513,28 @@ export function Shape3D ({
           // centre, which free-look's rotation clamp can't pull back.
           enablePan={dev}
         />
+        {/* Opening view: frame the whole unit rather than sitting at a fixed
+            distance that suits only one shape size. */}
+        {!dev && (
+          <FitToShape
+            controlsRef={controlsRef}
+            zoneOwnsCamera={zoneOwnsCamera}
+            enabled={dimsResolved}
+            onFitted={markOpeningFitDone}
+            w={fit.w}
+            h={fit.h}
+            d={fit.d}
+            targetY={h / 2}
+          />
+        )}
         {/* Free-look hands the camera to the user, so the zone framing stands
             down entirely — unmounting it also drops its per-frame lerp. */}
         {!dev && !freeLook && (
           <CameraHandler
             controlsRef={controlsRef}
+            isInitialZoneRequest={isInitialZoneRequest}
+            claimCameraForZone={claimCameraForZone}
+            openingFitDone={openingFitDone}
             boxes={boxes}
             selectedIndex={selectedIndex}
             ox={ox}
@@ -532,8 +645,138 @@ function WallClamp ({
  * scaled by `scale`, so a box point `(x, y, z)` lands at world
  * `(ox + x·scale, y·scale, oz + z·scale)`.
  */
+/**
+ * Frames the whole shape on mount: pushes the camera back to the distance at
+ * which the unit's full width and height fit the frustum.
+ *
+ * The static camera sits at a fixed `z = 100`, which frames a large unit
+ * acceptably but leaves a small one tiny in the middle of the view (a 900mm
+ * unit fills about 8% of the width). Fitting to the real bounds makes the
+ * opening shot consistent at any size.
+ *
+ * Runs once, and only before any zone framing has happened — `CameraHandler`
+ * owns the camera after that.
+ */
+function FitToShape ({
+  controlsRef,
+  zoneOwnsCamera,
+  enabled,
+  onFitted,
+  w,
+  h,
+  d,
+  targetY
+}: {
+  controlsRef: React.RefObject<OrbitControlsImpl | null>
+  /** Set by `CameraHandler` once a zone has taken the camera. While false the
+   *  opening view is ours to (re)fit; once true we stand down for good. */
+  zoneOwnsCamera: React.RefObject<boolean>
+  /** False while the shape dimensions are still unresolved; fitting then would
+   *  frame the fallback box and, once a zone claims the camera, never correct
+   *  itself. */
+  enabled: boolean
+  /** Called after the opening fit lands, releasing zone framing to take over. */
+  onFitted: () => void
+  /** Full extent of everything drawn, in world units — not just the shape's
+   *  declared envelope, so nothing sitting outside it gets clipped. */
+  w: number
+  h: number
+  d: number
+  /** Height the orbit target sits at, matching `OrbitControls`' own target so
+   *  the fit and the controls agree on what the camera looks at. */
+  targetY: number
+}) {
+  const { camera, size } = useThree()
+  // The bounds come from form variables and the canvas is measured
+  // asynchronously, so the first render often has fallback dimensions or a
+  // zero-width canvas. Refit whenever the inputs actually change rather than
+  // locking in that first guess; the key keeps it to one fit per distinct size.
+  const lastFit = useRef<string | null>(null)
+  // Placement computed by the effect, applied on the next frame (see above).
+  const pending = useRef<{ y: number; dist: number } | null>(null)
+
+  // `fov`/`zoom` come from the JSX props; only the placement is imperative.
+  useFrame(() => {
+    const p = pending.current
+    if (!p) return
+    pending.current = null
+    camera.position.set(0, p.y, p.dist)
+    const controls = controlsRef.current
+    if (controls) {
+      controls.target.set(0, p.y, 0)
+      controls.update()
+    }
+    camera.updateProjectionMatrix()
+    onFitted()
+  })
+
+  useEffect(() => {
+    // Dimensions still in flight: the bounds are placeholders, so fitting now
+    // would frame the wrong box.
+    if (!enabled) return
+    // A zone owns the camera now — never pull the view back to the whole shape.
+    if (zoneOwnsCamera.current) return
+    // Nothing to fit until the shape has real dimensions and the canvas has
+    // been measured (aspect is meaningless at zero width).
+    if (w <= 0 || h <= 0 || size.width === 0) return
+    const key = `${w}x${h}x${d}x${targetY}x${size.width}x${size.height}`
+    if (lastFit.current === key) return
+    lastFit.current = key
+
+    const persp = camera as THREE.PerspectiveCamera
+    // Derive the frustum from the canvas and the INTENDED camera settings, not
+    // from whatever is on the camera object right now: this effect can run
+    // before R3F applies the `fov`/`zoom` props, when the camera still reports
+    // three.js defaults and the fit comes out an order of magnitude too close.
+    const aspect = size.width / size.height || persp.aspect || 1
+    // `zoom` magnifies the view, so fold it into the effective FOV — the same
+    // adjustment `CameraHandler` makes when fitting a zone.
+    const tanV = Math.tan(THREE.MathUtils.degToRad(CAM_FOV) / 2) / CAM_ZOOM
+    const tanH = tanV * aspect
+
+    // The camera looks at `targetY`, so the vertical half-span that must fit
+    // is the larger distance from there to the top or the bottom of the
+    // content — not simply half the height.
+    const halfV = Math.max(targetY, h - targetY)
+
+    // Fit both axes and take the larger distance so neither is clipped.
+    //
+    // The frustum widens with distance, so the *nearest* geometry is what
+    // constrains the view: a deep shape (the CMB combinations are as deep as
+    // they are wide) has its front face `d / 2` closer to the camera than the
+    // orbit target at z = 0. Fit against that near face, then push back by
+    // `d / 2` so the measured distance is preserved — adding the depth to a
+    // centre-measured fit would leave the front corners overflowing.
+    const margin = 1.12
+    const halfD = d / 2
+    const dist = Math.max(halfV / tanV, w / 2 / tanH) * margin + halfD
+
+    // Hand the computed placement to the frame loop rather than applying it
+    // here: drei re-applies the camera's `position` prop after this effect, so
+    // an imperative write now is immediately overwritten. `useFrame` runs after
+    // that commit, so applying there sticks.
+    pending.current = { y: targetY, dist }
+  }, [
+    camera,
+    size,
+    w,
+    h,
+    d,
+    targetY,
+    enabled,
+    onFitted,
+    controlsRef,
+    zoneOwnsCamera
+  ])
+
+  return null
+}
+
 function CameraHandler ({
   controlsRef,
+  isInitialZoneRequest,
+  claimCameraForZone,
+  openingFitDone,
   boxes,
   selectedIndex,
   ox,
@@ -541,6 +784,18 @@ function CameraHandler ({
   scale
 }: {
   controlsRef: React.RefObject<OrbitControlsImpl | null>
+  /** True for the form's mount-time `goToZone` only, which is ignored so the
+   *  page opens on the whole unit rather than a close-up of one zone. Later
+   *  requests are real navigations and frame normally. State lives in the
+   *  parent so free-look unmounting this doesn't reset it. */
+  isInitialZoneRequest: () => boolean
+  /** Called when a zone actually takes the camera, so `FitToShape` stops
+   *  refitting the opening view. */
+  claimCameraForZone: () => void
+  /** Whether the opening fit has landed. A zone request arriving before it
+   *  (the dimensions are still resolving) must not claim the camera, or the
+   *  view stays stuck on the fallback framing. */
+  openingFitDone: React.RefObject<boolean>
   boxes: ShapeBox[]
   selectedIndex: string | null
   ox: number
@@ -559,6 +814,16 @@ function CameraHandler ({
     // `camera` is set only on zones that explicitly define it, so this fires
     // exactly for those zones (not inherited descendants).
     if (!box || !box.camera) return
+
+    // The form's mount-time request: ignore it so the opening fit survives.
+    if (isInitialZoneRequest()) return
+
+    // Wait for the opening fit: claiming the camera before the shape has been
+    // framed at its real size would strand the view on the fallback framing.
+    if (!openingFitDone.current) return
+
+    // From here the camera belongs to this zone.
+    claimCameraForZone()
 
     // Box center in world units. The scene group applies the offset
     // `[ox, 0, oz]` in world units first, then an inner group scales box
@@ -639,7 +904,17 @@ function CameraHandler ({
     if (controls && dist > controls.maxDistance) controls.maxDistance = dist
 
     isAnimating.current = true
-  }, [selectedIndex, boxes, ox, oz, scale, controlsRef])
+  }, [
+    selectedIndex,
+    boxes,
+    ox,
+    oz,
+    scale,
+    controlsRef,
+    isInitialZoneRequest,
+    claimCameraForZone,
+    openingFitDone
+  ])
 
   useFrame(() => {
     if (!isAnimating.current) return

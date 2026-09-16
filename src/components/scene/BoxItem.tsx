@@ -8,6 +8,7 @@ import { BoxEdges } from './BoxEdges'
 import { BoxPickMesh } from './BoxPickMesh'
 import { BoxSidePanels } from './BoxSidePanels'
 import { ArticleInBox } from './ArticleInBox'
+import type { ArticleData } from '@processandtools/rp-article-designer'
 
 const MM = 1
 
@@ -22,6 +23,7 @@ function colorForBox (b: ShapeBox): string {
 export const BoxItem = memo(function BoxItem ({
   box,
   dev = false,
+  articleData,
   isSelected,
   inSelectedSubtree = false,
   isCameraZone = false,
@@ -37,6 +39,8 @@ export const BoxItem = memo(function BoxItem ({
 }: {
   box: ShapeBox
   dev?: boolean
+  /** Shared article bundle for the whole shape, fetched server-side. */
+  articleData?: ArticleData | null
   /** True only for the exact selected box; drives the highlight. */
   isSelected: boolean
   /** True for the selected box and its descendants; drives the door cascade. */
@@ -121,6 +125,7 @@ export const BoxItem = memo(function BoxItem ({
         <ArticleInBox
           box={box}
           articleName={articleName}
+          articleData={articleData}
           hasDoor={hasDoor}
           doorOpen={doorOpenForBox}
           showDims={showDims}
