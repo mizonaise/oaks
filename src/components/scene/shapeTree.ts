@@ -226,6 +226,16 @@ function parseLinDiv(
 ): Slice[] | null {
   if (!linDiv) return null;
   let spec = linDiv.trim();
+  // A whole-spec `$VAR` may hold the real spec (often a `#DESCRIPTOR` name).
+  // Dereference it (bounded, to survive an accidental self-reference) before
+  // the descriptor check, so `"$Z10_LD_ART"` -> `"#DS_Z10_LD_ART_ZONE"` works.
+  for (let i = 0; i < 8 && /^\$[A-Za-z_][\w ]*$/.test(spec); i++) {
+    const v = vars[spec.slice(1)];
+    if (v == null) break;
+    const next = String(v).trim();
+    if (next === spec) break;
+    spec = next;
+  }
   if (spec.startsWith("#")) {
     spec = resolveDescriptor(spec.slice(1), parentAxisSize, vars).trim();
   }
