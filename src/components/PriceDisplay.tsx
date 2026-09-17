@@ -428,7 +428,7 @@ export function PriceDetails ({
           {data && (
             <p className='mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
               Incl. {data.tva.reduced_rate}% VAT —{' '}
-              {euro.format(data.prices.price_ht)} excl. VAT
+              {euro.format(data.prices?.price_ht ?? 0)} excl. VAT
             </p>
           )}
         </div>
