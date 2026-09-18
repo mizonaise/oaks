@@ -541,6 +541,13 @@ export function ShapeConfigurator ({
               <div className={showPriceDetails ? 'hidden' : 'contents'}>
                 {formExpo ? (
                   <ConfiguratorPreviewDialog
+                    key={
+                      templateId
+                        ? savedConfig
+                          ? 'loaded'
+                          : 'loading'
+                        : 'default'
+                    }
                     initialValues={initialValues}
                     onVariableSetChange={vars => {
                       for (const [name, value] of Object.entries(vars)) {
@@ -550,7 +557,6 @@ export function ShapeConfigurator ({
                     onGoToZone={(zoneId: string) => {
                       // Select the box whose zone name matches in the viewer.
                       setSelectedZone(zoneId)
-                      console.log('Form requested zone', zoneId, '→ selectedZone now', zoneId)
                     }}
                     onNameSetChange={names => {
                       setFormValues(names)
@@ -609,7 +615,7 @@ export function ShapeConfigurator ({
 
           {/* 3: description */}
           <div className='min-w-0  overflow-auto'>
-            {dev &&Object.keys(labels).length > 0 && (
+            {dev && Object.keys(labels).length > 0 && (
               <CollapsibleSection title='Description'>
                 <LabelsSection labels={labels} />
               </CollapsibleSection>
