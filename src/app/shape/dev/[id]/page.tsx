@@ -14,8 +14,21 @@ export default async function ShapePage ({
   if (!id) notFound()
 
   // `?country=` selects the price list (e.g. `?country=ma`).
-  const { country: countryParam } = await searchParams
+  const query = await searchParams
+  const countryParam = query.country
   const country = Array.isArray(countryParam) ? countryParam[0] : countryParam
+
+  // Dev-only: every other `?FIELD=value` pair seeds the form, the other half of
+  // the "Copy link" button which encodes the current values into such a URL.
+  // Read here rather than from `window.location` so the values are in hand for
+  // the form's first render, which seeds once and ignores `initialValues`
+  // afterwards. `id` is the template selector, not a form field, so it never
+  // seeds a value; `country` is a page param, likewise.
+  const initialValues: Record<string, string> = {}
+  for (const [key, value] of Object.entries(query)) {
+    if (key === 'id' || key === 'country' || value === undefined) continue
+    initialValues[key] = Array.isArray(value) ? value[0] : value
+  }
 
   // Fetched here rather than in the client component so neither endpoint
   // appears as a browser request.
@@ -33,6 +46,7 @@ export default async function ShapePage ({
       shapeName={id}
       shape={shape}
       articleData={articleData}
+      initialValues={initialValues}
       country={country}
     />
   )

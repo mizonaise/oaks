@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { ShapeConfigurator } from '@/components/ShapeConfigurator'
 import { fetchShape } from '@/lib/shape/fetchShape'
+import { fetchProductsConfig } from '@/lib/shape/fetchProductsConfig'
 
 export default async function ShapePage ({
   params,
@@ -24,8 +25,14 @@ export default async function ShapePage ({
   const country = Array.isArray(countryParam) ? countryParam[0] : countryParam
 
   // Fetched here rather than in the client component so neither endpoint
-
-  const shape = await fetchShape(id)
+  // appears as a browser request. Both run in parallel. The template's saved
+  // values have to be resolved before the first render: the form seeds itself
+  // once and ignores `initialValues` afterwards, so a client-side fetch would
+  // always land too late.
+  const [shape, initialValues] = await Promise.all([
+    fetchShape(id),
+    template ? fetchProductsConfig(template) : Promise.resolve({})
+  ])
   if (!shape) notFound()
 
   // The shape response carries its own article bundle, so no separate article
@@ -33,14 +40,12 @@ export default async function ShapePage ({
   // render no articles.
   const articleData = shape.articles ?? null
 
-  console.log('Fetched shape', templateId)
-
   return (
     <ShapeConfigurator
       shapeName={id}
       shape={shape}
       articleData={articleData}
-      templateId={template}
+      initialValues={initialValues}
       country={country}
     />
   )

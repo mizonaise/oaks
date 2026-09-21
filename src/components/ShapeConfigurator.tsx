@@ -1,13 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ShapeViewer } from '@/components/scene/ShapeViewer'
 import { resolveVariables } from '@/lib/form/variables'
 import type { FlatVars } from '@/lib/form/expr'
 import { setShapeData } from '@/lib/shape/registry'
 import { buildShapeXml, downloadXml, downloadJson } from '@/lib/shape/xmlExport'
 import type { ShapeData } from '@/lib/shape/schema'
-import { useGetProductsConfigQuery } from '@/lib/store/api/tecniboApi'
 import type { ShapeResponse } from '@/lib/store/api/tecniboApi'
 import type { ArticleData } from '@processandtools/rp-article-designer'
 
@@ -111,12 +110,16 @@ function setNested (
   return out
 }
 
+/** Stable empty default for `initialValues`: an inline `= {}` would mint a new
+ *  object each render, needlessly rerunning the form's seeding memos. */
+const NO_INITIAL_VALUES: Record<string, string> = {}
+
 export function ShapeConfigurator ({
   dev = false,
   shapeName,
   shape: remoteShape,
   articleData,
-  templateId,
+  initialValues = NO_INITIAL_VALUES,
   country
 }: {
   dev?: boolean
@@ -131,9 +134,13 @@ export function ShapeConfigurator ({
   /** `?country=` from the shape URL, selecting the price list. Defaults to
    *  `DEFAULT_COUNTRY` (BE) when absent. */
   country?: string | null
-  /** `?id=` from the shape URL. When set, that template's saved `data.form`
-   *  values seed `initialValues`. */
-  templateId?: string
+  /** Form seeds, resolved server-side by the page so they are present on the
+   *  very first render: the form seeds itself once from this and ignores later
+   *  changes. In production these are the `?id=` template's saved `data.form`
+   *  values (see `fetchProductsConfig`); on the dev route, the `?FIELD=value`
+   *  pairs of the URL. Empty when there is nothing to seed, and the form then
+   *  starts from the shape's own defaults. */
+  initialValues?: Record<string, string>
 }) {
   // The shape arrives already resolved from the server (`fetchShape` in the
   // page), so there is no loading or error state to handle here: a missing
@@ -160,39 +167,6 @@ export function ShapeConfigurator ({
   // useMemo) avoids any chance of useMemo cache + Strict-Mode replay leaving
   // the registry pointed at the previous shape.
   setShapeData(shape)
-
-  // Saved form values for the `?id=` template, fetched from the products-config
-  // endpoint. Skipped when there's no id, so a plain `/shape/<NAME>` starts from
-  // the shape's own defaults.
-  const { data: savedConfig } = useGetProductsConfigQuery(templateId ?? '', {
-    skip: !templateId
-  })
-
-  // Dev-only: seed the form from the URL query string, every `?FIELD=value` pair
-  // becoming an `initialValues` entry. This is the other half of the dev-only
-  // "Copy link" button, which encodes the current values into such a URL. Read
-  // from `window.location.search` (client-only) once on mount — SSR has no URL,
-  // so it starts empty and fills in after hydration.
-  //
-  // Outside dev the query string is NOT a value source: `/shape/<NAME>` seeds
-  // only from `data.form` of the products-config endpoint (when `?id=` is given),
-  // so a link can't silently pin a configuration.
-  const [urlValues, setUrlValues] = useState<Record<string, string>>({})
-  useEffect(() => {
-    if (!dev) return
-    const params = new URLSearchParams(window.location.search)
-    const values: Record<string, string> = {}
-    for (const [key, value] of params.entries()) values[key] = value
-    setUrlValues(values)
-  }, [dev])
-
-  // Non-dev: the template's saved `data.form` is the only seed. Dev: the URL
-  // query wins on top, so "Copy link" round-trips exactly. `id` is the template
-  // selector, not a form field, so it never seeds a value.
-  const initialValues = useMemo(() => {
-    const { id: _id, ...rest } = urlValues
-    return { ...(savedConfig ?? {}), ...rest }
-  }, [savedConfig, urlValues])
 
   // Nested-by-dots updates emitted by the form (bare names → under "global",
   // dotted names → nested objects).
@@ -541,13 +515,6 @@ export function ShapeConfigurator ({
               <div className={showPriceDetails ? 'hidden' : 'contents'}>
                 {formExpo ? (
                   <ConfiguratorPreviewDialog
-                    key={
-                      templateId
-                        ? savedConfig
-                          ? 'loaded'
-                          : 'loading'
-                        : 'default'
-                    }
                     initialValues={initialValues}
                     onVariableSetChange={vars => {
                       for (const [name, value] of Object.entries(vars)) {
