@@ -549,12 +549,12 @@ export function ShapeConfigurator ({
 
               {/* The kit's price-detail screen (4346:24887): it replaces the
                   panel body while open, with the back arrow returning here. */}
-              {/* {showPriceDetails && (
+              {showPriceDetails && (
                 <PriceDetails
                   pricing={pricing}
                   onBack={() => setShowPriceDetails(false)}
                 />
-              )} */}
+              )}
             </div>
 
             {/* The kit's buy row (`.cfg-achat-row`, 4346:20937/20938): the Buy

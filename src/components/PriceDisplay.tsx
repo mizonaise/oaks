@@ -6,10 +6,15 @@ import type { ShapeData } from '@/lib/shape/schema'
 import { computeShapeBounds, computeZoneSizes } from '@/lib/shape/xmlExport'
 import {
   useGetPricingMutation,
+  useGetCountryPricingQuery,
   type PricingNamespace,
   type PricingRequest,
   type PricingResponse
 } from '@/lib/store/api/tecniboApi'
+import {
+  computeCountryPrice,
+  type CountryPrice
+} from '@/lib/pricing/countryPricing'
 
 /** The resolved variable scopes as produced by `ShapeConfigurator`. */
 export interface Scopes {
@@ -154,6 +159,12 @@ export interface UsePricingResult {
   request: PricingRequest
   isLoading: boolean
   isError: boolean
+  /**
+   * The country-level price: the engine's excl.-VAT figure with the country's
+   * promotions cascaded off it and VAT added back at the DEFAULT rate.
+   * `undefined` until the country request lands, or when it failed.
+   */
+  countryPrice: CountryPrice | undefined
 }
 
 /**
@@ -195,7 +206,34 @@ export function usePricing (
     return () => clearTimeout(t)
   }, [requestKey, getPricing, pricingName])
 
-  return { data, request, isLoading, isError }
+  // The country's VAT rates and promotions, applied to the engine's excl.-VAT
+  // figure. Skipped until that figure exists, since `price_ht` is part of the
+  // request. `country` is normalized the same way as the pricing request above,
+  // so both sides agree on which country is in force.
+  //
+  // `totalPrice` IS that excl.-VAT figure: the engine prices the configuration
+  // and stops there, leaving VAT and promotions to the country endpoint. (It
+  // used to return a `prices.price_ht` alongside its own VAT/promotion blocks
+  // and no longer sends any of them, so reading `prices` here would skip the
+  // country request and leave the bar showing the bare HT price.)
+  const priceHt = data?.totalPrice
+  const { data: countryData } = useGetCountryPricingQuery(
+    { countryCode: country ?? DEFAULT_COUNTRY, priceHt: priceHt ?? 0 },
+    { skip: priceHt === undefined }
+  )
+
+  // Promotions off the excl.-VAT price, then VAT on the remainder. `undefined`
+  // while the country request is in flight or when it failed: callers then fall
+  // back to the engine's own total rather than showing nothing.
+  const countryPrice = useMemo(
+    () =>
+      priceHt !== undefined && countryData
+        ? computeCountryPrice(priceHt, countryData)
+        : undefined,
+    [priceHt, countryData]
+  )
+
+  return { data, request, isLoading, isError, countryPrice }
 }
 
 /**
@@ -213,24 +251,57 @@ export function PriceDisplay ({
   /** Toggles the detail screen. Omit to render the bar without its Question Box. */
   onToggleDetails?: () => void
 }) {
-  const { data, isLoading, isError } = pricing
+  const { data, isLoading, isError, countryPrice } = pricing
+
+  // The headline figure: the country's promotions cascaded off the engine's
+  // excl.-VAT price, with VAT added back at the country's default rate.
+  //
+  // No fallback to `data.totalPrice`: that figure is excl. VAT, so showing it
+  // here would understate the price by the VAT rate while passing as a total.
+  // The bar holds its previous value (or the spinner) until the TTC is known.
+  const headline = countryPrice?.ttc
 
   // Keep the last successfully computed total so the price doesn't flash to a
   // spinner on every recompute.
   const [lastTotal, setLastTotal] = useState<number | null>(null)
   useEffect(() => {
-    if (data) setLastTotal(data.totalPrice)
-  }, [data])
+    if (headline !== undefined) setLastTotal(headline)
+  }, [headline])
 
-  const total = data?.totalPrice ?? lastTotal
+  const total = headline ?? lastTotal
   const showSpinner = isLoading && total === null
 
   // Non-null, non-zero category totals from the response's `details` map —
   // these are the lines the detail screen shows, so the Question Box only
   // appears when there is something to show.
   const details = useMemo(() => detailLines(data), [data])
-  const promo = activePromo(data)
-  const strike = strikePrice(data)
+
+  // Tags row: the kit shows the pre-promotion price struck through beside a
+  // Flash Green tag naming the discount (`data-prix="barre"`, index.html:91).
+  // Both come from the country endpoint; the engine's own promotion fields are
+  // the fallback for while that request is in flight, or after it failed.
+  const enginePromo = countryPrice ? null : activePromo(data)
+  const strike =
+    countryPrice && countryPrice.discount > 0
+      ? // Struck price is TTC like the headline beside it, so the comparison is
+        // like for like: the gross excl.-VAT figure with the same VAT added.
+        countryPrice.grossHt * (1 + countryPrice.tva.default_rate / 100)
+      : strikePrice(data)
+
+  // The promotion label: the single promotion's own discount when there is just
+  // one, and the total euros off when several cascade (their percentages don't
+  // sum to the effective discount, so quoting one of them would mislead).
+  const promoLabel = countryPrice
+    ? countryPrice.applied.length === 1
+      ? countryPrice.applied[0].promotion.discount_type === 'fixed_amount'
+        ? `−${euro.format(countryPrice.applied[0].promotion.discount_pct)}`
+        : `−${countryPrice.applied[0].promotion.discount_pct}%`
+      : countryPrice.discount > 0
+        ? `−${euro.format(countryPrice.discount)}`
+        : null
+    : enginePromo
+      ? `−${enginePromo.discount_pct}%`
+      : null
 
   // Styling follows the Stoëmp kit's Price bar (`.cfg-prix`, 4346:20901):
   // the amount in Yet Grotesk 700 30/32 Dark Green, a Question Box beside it
@@ -287,16 +358,14 @@ export function PriceDisplay ({
           pre-promotion price struck through, then the promotion itself on
           the Flash Green tag — sat on the amount's row, at its right end.
           Only rendered while a promotion is running. */}
-      {promo && total !== null && (
+      {promoLabel && total !== null && (
         <div className='k-prix-tags'>
           {strike !== null && (
             <span className='k-tag-xxs k-tag-xxs--barre tabular-nums'>
               {euro.format(strike)}
             </span>
           )}
-          <span className='k-tag-xxs k-tag-xxs--flash'>
-            −{promo.discount_pct}%
-          </span>
+          <span className='k-tag-xxs k-tag-xxs--flash'>{promoLabel}</span>
         </div>
       )}
     </header>
@@ -347,19 +416,23 @@ export function PriceDetails ({
   /** Returns to the form. Omit to render the screen without its back arrow. */
   onBack?: () => void
 }) {
-  const { data } = pricing
+  const { data, countryPrice } = pricing
 
   const lines = useMemo(() => detailLines(data), [data])
-  const promo = activePromo(data)
-  const strike = strikePrice(data)
+  // The country's promotions when they've landed, each with the running total
+  // it discounted. Falls back to the engine's single merged promotion, which is
+  // all there is while the country request is in flight or after it failed.
+  const countryPromos = countryPrice?.applied ?? null
+  const promo = countryPromos ? null : activePromo(data)
+  const strike = countryPromos ? null : strikePrice(data)
 
   if (lines.length === 0) return null
 
-  // `totalPrice` is the engine's own figure, not the sum of the lines above:
-  // the two can differ (rounding, promotions applied on the total, categories
-  // excluded from `details`), and the bar shows the engine's — so the Total
-  // line must agree with the bar.
-  const total = data?.totalPrice ?? 0
+  // Must agree with the price bar, so it uses the same figure: the
+  // promotion-adjusted TTC, and no engine fallback (that one is excl. VAT).
+  // Not the sum of the lines above — those are excl. VAT and pre-promotion, and
+  // the engine excludes some categories from `details` entirely.
+  const total = countryPrice?.ttc
 
   return (
     <section className='flex min-h-0 flex-1 flex-col px-6 pt-6'>
@@ -394,10 +467,32 @@ export function PriceDetails ({
               </div>
             </div>
           ))}
-          {/* Active promotion, between the category lines and the total —
-              the discount is already baked into `totalPrice`, so this line
-              explains the figure rather than adding to it. Named in the line
-              label, with the kit's price tags (struck-through original +
+          {/* One row per country promotion, in the order applied — the kit's
+              line pattern (`js/configurateur.js:65`): the label carries an
+              inline Flash Green tag naming the discount, the right-hand column
+              the euros it took off. A cascade, so each discounts what the
+              previous one left, which is why the tag and the amount only agree
+              on the first percentage promotion. */}
+          {countryPromos?.map(a => (
+            <div className='k-ligne' key={a.promotion.id}>
+              <div className='k-ligne-tete'>
+                <span className='k-ligne-nom'>
+                  {a.promotion.name}{' '}
+                  <span className='k-tag-xxs k-tag-xxs--flash'>
+                    {a.promotion.discount_type === 'fixed_amount'
+                      ? `−${euro.format(a.promotion.discount_pct)}`
+                      : `−${a.promotion.discount_pct}%`}
+                  </span>
+                </span>
+                <span className='k-ligne-prix tabular-nums'>
+                  −{euro.format(a.amount)}
+                </span>
+              </div>
+            </div>
+          ))}
+          {/* Engine's own merged promotion — the fallback shown only while the
+              country request is in flight, or after it failed. Named in the
+              line label, with the kit's price tags (struck-through original +
               Flash Green discount) standing in for the amount. */}
           {promo && (
             <div className='k-ligne'>
@@ -416,19 +511,33 @@ export function PriceDetails ({
               </div>
             </div>
           )}
-          <div className='k-ligne k-ligne--total'>
-            <div className='k-ligne-tete'>
-              <span>Total</span>
-              <span className='k-ligne-prix tabular-nums'>
-                {euro.format(total)}
+          {/* Total incl. VAT, with the excl.-VAT figure and the rate beneath
+              it as the kit's Flash Green tag (`js/configurateur.js:71`, "Net
+              {ht} + 21 % TVA"). `.k-ligne--total` stacks the two with an 8px
+              gap. Both need the country endpoint (the engine's own figure is
+              excl. VAT), so the row waits for it rather than briefly showing an
+              HT price under a "Total" label. */}
+          {countryPrice && total !== undefined && (
+            <div className='k-ligne k-ligne--total'>
+              <div className='k-ligne-tete'>
+                <span>Total</span>
+                <span className='k-ligne-prix tabular-nums'>
+                  {euro.format(total)}
+                </span>
+              </div>
+              <span className='k-tag-xxs k-tag-xxs--flash tabular-nums'>
+                Net {euro.format(countryPrice.netHt)} +{' '}
+                {countryPrice.tva.default_rate}% VAT
               </span>
             </div>
-          </div>
-          {/* Which VAT rate the total carries, plus the excl.-VAT figure. */}
-          {data && (
+          )}
+          {/* The reduced rate, for reference only — the Total above carries the
+              default rate. Outside the kit's line components on purpose: it is
+              an aside, not a priced line. */}
+          {countryPrice && (
             <p className='mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
-              Incl. {data.tva.reduced_rate}% VAT —{' '}
-              {euro.format(data.prices?.price_ht ?? 0)} excl. VAT
+              At the reduced {countryPrice.tva.reduced_rate}% rate:{' '}
+              {euro.format(countryPrice.ttcReduced)} incl. VAT.
             </p>
           )}
         </div>

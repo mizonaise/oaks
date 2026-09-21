@@ -5,6 +5,10 @@ import type {
 } from "@processandtools/rp-article-designer";
 import type { ExportedConfigurator } from "@oak-some/configurator-previewer";
 import type { ShapeData } from "@/lib/shape/schema";
+import type {
+  CountryPricingData,
+  CountryPricingResponse,
+} from "@/lib/pricing/countryPricing";
 
 /**
  * Response envelope of the shape endpoint, fetched server-side by
@@ -127,12 +131,24 @@ export interface PricingCountry {
 }
 
 export interface PricingResponse {
-  /** The price to display — TTC at the reduced rate, promotions applied. */
+  /** The engine's own total. Superseded by the country endpoint's computed TTC
+   *  (see `computeCountryPrice`), and kept as the fallback shown while that
+   *  request is in flight. */
   totalPrice: number;
-  tva: PricingTva;
-  promotion: PricingPromotion | null;
-  prices: PricingPrices;
-  country: PricingCountry;
+  /**
+   * VAT/promotion/country blocks the engine used to return. It no longer sends
+   * them — VAT rates and promotions now come from the oaksome country pricing
+   * endpoint — so they are optional and every read must guard. Kept on the type
+   * rather than deleted so an older deployment still type-checks.
+   *
+   * @deprecated Use the country endpoint via `usePricing().countryPrice`.
+   */
+  tva?: PricingTva;
+  /** @deprecated See `tva`. */
+  promotion?: PricingPromotion | null;
+  prices?: PricingPrices;
+  /** @deprecated See `tva`. */
+  country?: PricingCountry;
   /**
    * Totals per human-readable category (e.g. `Carcase & Fittings`, `Handle`,
    * `Door`, `Pose`) — the price-details lines. Replaces the former
@@ -264,6 +280,27 @@ export const tecniboApi = createApi({
       },
     }),
 
+    // → www.tecnibo.com/api/oaksome/pricing?country_code=<CC>&price_ht=<HT>
+    // The country's VAT rates and active promotions. It returns no total: the
+    // caller applies the promotions and VAT itself (see `computeCountryPrice`).
+    // `price_ht` is part of the key because the promotion set can depend on the
+    // amount, so it refetches when the configured price changes.
+    getCountryPricing: builder.query<
+      CountryPricingData | null,
+      { countryCode: string; priceHt: number }
+    >({
+      query: ({ countryCode, priceHt }) =>
+        `/api/oaksome/pricing?country_code=${encodeURIComponent(
+          countryCode,
+        )}&price_ht=${encodeURIComponent(priceHt.toFixed(2))}`,
+      transformResponse: (r: CountryPricingResponse) => {
+        if (!r?.success || !r.data) return null;
+        // The endpoint omits `promotions` when there are none; normalize so
+        // callers can iterate unconditionally.
+        return { ...r.data, promotions: r.data.promotions ?? [] };
+      },
+    }),
+
     // → api.tecnibo.com/pricing/<PRICING_NAME>
     // Computes the total price from the resolved variable scopes. The pricing
     // router name comes from the shape's `pricing` field (leading `#` stripped).
@@ -286,4 +323,5 @@ export const {
   useGetMaterialDataQuery,
   useGetSurfaceDataQuery,
   useGetPricingMutation,
+  useGetCountryPricingQuery,
 } = tecniboApi;
