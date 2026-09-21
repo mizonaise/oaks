@@ -35,7 +35,8 @@ export const BoxItem = memo(function BoxItem ({
   dimCpConfig,
   showDims = false,
   contrasted = false,
-  hideArticle = false
+  hideArticle = false,
+  frameOnly = false
 }: {
   box: ShapeBox
   dev?: boolean
@@ -62,6 +63,10 @@ export const BoxItem = memo(function BoxItem ({
   contrasted?: boolean
   /** Dev-only: when true, skip rendering the article designer. */
   hideArticle?: boolean
+  /** Dev-only: when true, draw the whole box as a wireframe — its CP side
+   *  panels and the article designer's contents alike — so the structure reads
+   *  through the shape. */
+  frameOnly?: boolean
 }) {
   const inset = box.isArticle ? 2 : 0
   const sx = Math.max((box.w - inset) * MM, 0.0001)
@@ -92,7 +97,7 @@ export const BoxItem = memo(function BoxItem ({
 
   return (
     <group position={[cx, cy, cz]}>
-      {dev && (
+      {dev && !frameOnly && (
         <BoxEdges
           sx={sx}
           sy={sy}
@@ -119,6 +124,7 @@ export const BoxItem = memo(function BoxItem ({
           sides={box.sides}
           vars={box.vars ?? globalVars}
           dimCpConfig={dimCpConfig}
+          wireframe={frameOnly}
         />
       )}
       {box.isArticle && articleName && box.vars && box.w > 10 && box.h > 10 && box.d > 10 && (
@@ -131,6 +137,7 @@ export const BoxItem = memo(function BoxItem ({
           showDims={showDims}
           contrasted={contrasted}
           hidden={hideArticle}
+          wireframe={frameOnly}
         />
       )}
     </group>

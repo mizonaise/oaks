@@ -207,6 +207,9 @@ export function Shape3D ({
   const [contrasted, setContrasted] = useState(false)
   // Dev-only: hide the article designer so only the box shell/panels show.
   const [hideArticle, setHideArticle] = useState(false)
+  // Dev-only: draw the shape as a wireframe — side panels and article contents
+  // alike — with the room walls left out, so the structure reads through it.
+  const [frameOnly, setFrameOnly] = useState(false)
   // Dev-only walls toggle, driven by the in-canvas button below. Outside dev
   // the walls are always on, so this only gates the dev view.
   const [wallsShown, setWallsShown] = useState(false)
@@ -401,6 +404,21 @@ export function Shape3D ({
           <DoorPanelIcon off={!hasDoor} />
         </button>
       )}
+      {dev && (
+        <button
+          type='button'
+          onClick={() => setFrameOnly(open => !open)}
+          title={frameOnly ? 'Show full shape' : 'Show frame only'}
+          aria-pressed={frameOnly}
+          className={`absolute right-3 top-87 z-10 flex h-10 w-10 items-center justify-center rounded-full border shadow-md backdrop-blur transition ${
+            frameOnly
+              ? 'border-zinc-800 bg-zinc-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
+              : 'border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <FrameIcon />
+        </button>
+      )}
       <Canvas
         ref={canvasRef}
         shadows='soft'
@@ -478,12 +496,13 @@ export function Shape3D ({
                   showDims={showDims}
                   contrasted={contrasted}
                   hideArticle={hideArticle}
+                  frameOnly={frameOnly}
                 />
               )
             })}
           </group>
 
-          {(!dev || wallsShown) && (
+          {(!dev || wallsShown) && !frameOnly && (
             <Suspense fallback={null}>
               <RoomWalls
                 dev={dev}
@@ -1035,6 +1054,26 @@ function DoorPanelIcon ({ off }: { off: boolean }) {
 }
 
 // Brick-wall glyph; a slash crosses it out when `off` (walls hidden).
+// Open-carcass glyph for the dev "frame only" toggle: a cabinet shell with
+// its top, bottom and sides, and nothing inside.
+function FrameIcon () {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <path d='M4 4h16v16H4z' />
+      <path d='M4 7.5h16M4 16.5h16M7.5 7.5v9M16.5 7.5v9' />
+    </svg>
+  )
+}
+
 function WallIcon ({ off }: { off: boolean }) {
   return (
     <svg

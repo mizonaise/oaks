@@ -24,8 +24,7 @@ export default async function ShapePage ({
   const country = Array.isArray(countryParam) ? countryParam[0] : countryParam
 
   // Fetched here rather than in the client component so neither endpoint
-  // appears as a browser request.
-  console.log("Fetching shape and articles for", id, "with template", template, "and country", country)
+
   const shape = await fetchShape(id)
   if (!shape) notFound()
 
@@ -33,6 +32,8 @@ export default async function ShapePage ({
   // request is made. Products whose `articles` is the empty skeleton simply
   // render no articles.
   const articleData = shape.articles ?? null
+
+  console.log('Fetched shape', templateId)
 
   return (
     <ShapeConfigurator

@@ -26,7 +26,8 @@ export const CpPanel = memo(function CpPanel ({
   sx,
   sy,
   sz,
-  dims
+  dims,
+  wireframe = false
 }: {
   cp: ResolvedCp
   axis: FaceAxis
@@ -52,6 +53,8 @@ export const CpPanel = memo(function CpPanel ({
   sz: number
   /** Arrowed dimension lines to draw at this panel's face. */
   dims?: DimMeasure[]
+  /** Dev-only: draw the panel as a wireframe instead of a solid surface. */
+  wireframe?: boolean
 }) {
   const baseTex = useTextureWithFallback(cp.textureUrl)
   // Grain direction: the side panels (x- and z-normal faces) read vertically,
@@ -143,21 +146,30 @@ export const CpPanel = memo(function CpPanel ({
   }
   return (
     <>
-      <mesh position={pos} castShadow receiveShadow>
+      <mesh position={pos} castShadow={!wireframe} receiveShadow={!wireframe}>
         <boxGeometry args={args} />
         {/* Distinct keys force a fresh material when the texture finishes loading.
             Without them R3F reuses the no-map material instance and just assigns
             `map`, but the shader was compiled without USE_MAP so it renders black. */}
-        {tex ? (
+        {/* In wireframe the texture is never sampled, so skip the mapped
+            material entirely — its shader would compile for nothing. The key
+            carries the wireframe flag for the same reason it carries the map:
+            toggling it must mint a fresh material, not mutate the cached one. */}
+        {wireframe ? (
+          <meshBasicMaterial key='wire' color='#555' wireframe />
+        ) : tex ? (
           <meshStandardMaterial key='mapped' map={tex} />
         ) : (
           <meshStandardMaterial key='plain' color='#888' />
         )}
         {/* Wireframe outline of the panel edges, drawn as a child so it inherits
-            the mesh transform. Native three.js edges (no drei helper). */}
-        <lineSegments geometry={edges}>
-          <lineBasicMaterial color={'#000000'} opacity={0.2} transparent={true} />
-        </lineSegments>
+            the mesh transform. Native three.js edges (no drei helper). Dropped in
+            wireframe mode, where the mesh already draws its own edges. */}
+        {!wireframe && (
+          <lineSegments geometry={edges}>
+            <lineBasicMaterial color={'#000000'} opacity={0.2} transparent={true} />
+          </lineSegments>
+        )}
       </mesh>
       {dims?.map((d, k) => {
         // Centered on the box center, floating just in front of the front face.

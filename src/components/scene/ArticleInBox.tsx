@@ -7,6 +7,7 @@ import {
   type ArticleData,
   type GetDataFn
 } from '@processandtools/rp-article-designer'
+import { WireframeSubtree } from './WireframeSubtree'
 import { tecniboApi } from '@/lib/store/api/tecniboApi'
 import { useAppStore } from '@/lib/store/hooks'
 
@@ -31,7 +32,8 @@ export const ArticleInBox = memo(function ArticleInBox ({
   doorOpen,
   showDims = false,
   contrasted = false,
-  hidden = false
+  hidden = false,
+  wireframe = false
 }: {
   box: ShapeBox
   articleName: string
@@ -47,6 +49,10 @@ export const ArticleInBox = memo(function ArticleInBox ({
   contrasted?: boolean
   /** Dev-only: when true, skip rendering the article designer entirely. */
   hidden?: boolean
+  /** Dev-only: draw the designer's meshes as wireframes. The designer has no
+   *  wireframe option of its own, so the flag is applied to the materials it
+   *  builds — see `WireframeSubtree`. */
+  wireframe?: boolean
 }) {
   const store = useAppStore()
 
@@ -90,23 +96,27 @@ export const ArticleInBox = memo(function ArticleInBox ({
         rotation={[-Math.PI / 2, 0, 0]}
       >
         {articleData && !hidden && (
-          <ArticleGroupDesigner
-            data={articleData}
-            articleList={[
-              {
-                name: articleName,
-                visibility: true,
-                isShadowed: true,
-                hasDoor,
-                isContrasted: contrasted,
-                isDimensioned: showDims,
-                isDoorOpen: doorOpen,
-                dimensions: { width, height: box.h, depth },
-                variables: box.vars as Record<string, string>
-              }
-            ]}
-            getData={fetchData}
-          />
+          <WireframeSubtree enabled={wireframe}>
+            <ArticleGroupDesigner
+              data={articleData}
+              articleList={[
+                {
+                  name: articleName,
+                  visibility: true,
+                  // A wireframe casting a solid shadow reads wrong, and the
+                  // designer's own shadows are baked from its solid meshes.
+                  isShadowed: !wireframe,
+                  hasDoor,
+                  isContrasted: contrasted,
+                  isDimensioned: showDims,
+                  isDoorOpen: doorOpen,
+                  dimensions: { width, height: box.h, depth },
+                  variables: box.vars as Record<string, string>
+                }
+              ]}
+              getData={fetchData}
+            />
+          </WireframeSubtree>
         )}
       </group>
     </group>
