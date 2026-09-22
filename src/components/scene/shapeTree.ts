@@ -195,10 +195,19 @@ function resolveDescriptor(name: string, X: number, vars: FlatVars): string {
 }
 
 // Splits a `<weight>+<expr>mm` filler token into its weight and min-size
-// expressions, or returns null if the token isn't of that form. Both parts may
-// be arbitrary expressions containing their own `+` and parentheses (e.g.
-// `(round($ZF_CNT/2 - 0.4))+($IS_BI_L * $ZFL_W)mm`), so we split on the *last*
-// top-level `+` (depth 0) rather than a regex, then require a trailing `mm`.
+// expressions, or returns null if the token isn't of that form.
+//
+// The weight must be a BARE NUMBER (`1+400mm`, `2+115mm`). A parenthesized
+// weight is not accepted, because `(expr)+(expr)mm` is structurally identical
+// to an ordinary fixed-size slice whose expression merely contains a top-level
+// `+` — e.g. `($A*(1-$F))+($F*$W)mm`, a single summed `mm` value rather than a
+// weight and a base. Those two forms cannot be told apart syntactically, and
+// the summed-expression reading is the one the data actually uses, so it wins.
+// Anything needing a computed filler weight must use the explicit `<n>+<expr>mm`
+// form with a literal weight.
+//
+// We split on the *first* top-level `+` (depth 0); everything left of it must
+// be that literal number.
 function splitWeightPlusMin(
   token: string,
 ): { weight: string; size: string } | null {
@@ -210,12 +219,16 @@ function splitWeightPlusMin(
     const ch = body[i];
     if (ch === "(") depth++;
     else if (ch === ")") depth--;
-    else if (ch === "+" && depth === 0) splitAt = i;
+    else if (ch === "+" && depth === 0) {
+      splitAt = i;
+      break;
+    }
   }
   if (splitAt < 0) return null;
   const weight = body.slice(0, splitAt).trim();
   const size = body.slice(splitAt + 1).trim();
   if (weight === "" || size === "") return null;
+  if (!/^-?\d+(?:\.\d+)?$/.test(weight)) return null;
   return { weight, size };
 }
 
@@ -241,6 +254,45 @@ function parseLinDiv(
   }
 
   if (spec === "") return null;
+
+  // Expand any token that is a lone `$VAR` (or `#DESCRIPTOR`) holding a spec of
+  // its own, splicing its slices into this one. Lets a spec be composed from
+  // named groups, e.g. `"$Z10_COL_LD_01 : $Z10_COL_LD_02"` where each variable
+  // holds ten `mm` slices, yielding twenty slices here. A var resolving to a
+  // plain value (no `:`) still expands to itself, so single-slice refs like
+  // `"$WS_1_THK mm"` are unaffected. Bounded to survive reference cycles.
+  for (let pass = 0; pass < 8; pass++) {
+    if (!spec.includes(":")) break;
+    let changed = false;
+    const expanded = spec
+      .split(":")
+      .map((rawToken) => {
+        const token = rawToken.trim();
+        let resolved: string | null = null;
+        if (/^\$[A-Za-z_][\w ]*$/.test(token)) {
+          const v = vars[token.slice(1)];
+          if (v != null) resolved = String(v).trim();
+        } else if (token.startsWith("#")) {
+          resolved = resolveDescriptor(
+            token.slice(1),
+            parentAxisSize,
+            vars,
+          ).trim();
+        }
+        // Only treat it as an expansion when it actually changes the token;
+        // otherwise leave it for the normal per-token evaluation below.
+        if (resolved == null || resolved === "" || resolved === token) {
+          return token;
+        }
+        changed = true;
+        return resolved;
+      })
+      .join(":");
+    if (!changed) break;
+    spec = expanded;
+  }
+
+  if (spec.trim() === "") return null;
 
   return spec.split(":").map((rawToken) => {
     const token = rawToken.trim();

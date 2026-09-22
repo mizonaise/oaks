@@ -26,7 +26,10 @@ export function resolveVariables (
 
   for (const k in flat) {
     const v = flat[k]
-    if (typeof v === 'string' && REF.test(v)) pending[k] = v
+    // Spec strings (`a mm : b mm : …`) are passed through verbatim: they are
+    // parsed later by `parseLinDiv`, and `evalExpr` would collapse them to a
+    // single number. See {@link isSpecString}.
+    if (typeof v === 'string' && REF.test(v) && !isSpecString(v)) pending[k] = v
     else resolved[k] = v
   }
 
@@ -56,6 +59,29 @@ export function resolveVariables (
   // Anything still pending stays as its original expression string.
   for (const k in pending) resolved[k] = pending[k]
   return resolved
+}
+
+/**
+ * True when a string is a layout *spec* rather than an arithmetic expression.
+ *
+ * `evalExpr` only ever yields a single number, so running it over a spec
+ * destroys it: `"($A*(1-$F))+($F*$W)mm : ($B*…)mm : …"` evaluates its first
+ * term and stops at the `:` its tokenizer doesn't know, collapsing ten slices
+ * to `"1"`. Such values are consumed verbatim by `parseLinDiv` (which does
+ * understand `:` and `mm`), so they must survive resolution untouched.
+ *
+ * A spec is recognised by a `:` outside parentheses, or a trailing `mm`.
+ */
+function isSpecString (expr: string): boolean {
+  if (/(\s*mm)+\s*$/i.test(expr)) return true
+  let depth = 0
+  for (let i = 0; i < expr.length; i++) {
+    const c = expr[i]
+    if (c === '(') depth++
+    else if (c === ')') depth--
+    else if (c === ':' && depth === 0) return true
+  }
+  return false
 }
 
 function allDepsResolved (expr: string, resolved: FlatVars): boolean {
