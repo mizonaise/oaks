@@ -74,6 +74,8 @@ export function resolveVariables (
  */
 function isSpecString (expr: string): boolean {
   if (/(\s*mm)+\s*$/i.test(expr)) return true
+  // Conditional-unit form `…mm(<cond>)`, see parseLinDiv.
+  if (/\bmm\s*\([^)]*\)\s*$/i.test(expr)) return true
   let depth = 0
   for (let i = 0; i < expr.length; i++) {
     const c = expr[i]

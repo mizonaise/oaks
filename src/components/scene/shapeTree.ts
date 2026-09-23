@@ -211,6 +211,8 @@ function resolveDescriptor(name: string, X: number, vars: FlatVars): string {
 function splitWeightPlusMin(
   token: string,
 ): { weight: string; size: string } | null {
+  // `…mm(<cond>)` is the conditional-unit form, handled by the caller.
+  if (/\bmm\s*\([^)]*\)\s*$/i.test(token)) return null;
   if (!/(\s*mm)+\s*$/i.test(token)) return null;
   const body = token.replace(/(\s*mm)+\s*$/i, "").trim();
   let depth = 0;
@@ -239,21 +241,51 @@ function parseLinDiv(
 ): Slice[] | null {
   if (!linDiv) return null;
   let spec = linDiv.trim();
+  // Only trace this one spec; every other zone stays silent.
+  const TRACE = "#DS_Z10_LD_ART_ZONE_TEST";
+  const dbg = spec === TRACE;
+  const log = (...a: unknown[]) => {
+    if (dbg) console.log(...a);
+  };
+  const end = () => {
+    if (dbg) console.groupEnd();
+  };
+  if (dbg) {
+    console.group(`[linDiv] ${spec}  (axis ${parentAxisSize}mm)`);
+    console.log("1. input:", spec);
+  }
   // A whole-spec `$VAR` may hold the real spec (often a `#DESCRIPTOR` name).
   // Dereference it (bounded, to survive an accidental self-reference) before
   // the descriptor check, so `"$Z10_LD_ART"` -> `"#DS_Z10_LD_ART_ZONE"` works.
   for (let i = 0; i < 8 && /^\$[A-Za-z_][\w ]*$/.test(spec); i++) {
     const v = vars[spec.slice(1)];
-    if (v == null) break;
+    if (v == null) {
+      log(`2. deref $${spec.slice(1)}: NOT IN vars — stop`);
+      break;
+    }
     const next = String(v).trim();
-    if (next === spec) break;
+    if (next === spec) {
+      log(`2. deref $${spec.slice(1)}: self-reference — stop`);
+      break;
+    }
+    log(`2. deref $${spec.slice(1)} →`, next);
     spec = next;
   }
   if (spec.startsWith("#")) {
-    spec = resolveDescriptor(spec.slice(1), parentAxisSize, vars).trim();
+    const name = spec.slice(1);
+    spec = resolveDescriptor(name, parentAxisSize, vars).trim();
+    const known = Object.keys(getDescriptors()).includes(name);
+    log(
+      `3. descriptor #${name} →`,
+      spec === "" ? (known ? "(empty action)" : "NOT FOUND in registry") : spec,
+    );
   }
 
-  if (spec === "") return null;
+  if (spec === "") {
+    log("→ RESULT: null (spec empty)");
+    end();
+    return null;
+  }
 
   // Expand any token that is a lone `$VAR` (or `#DESCRIPTOR`) holding a spec of
   // its own, splicing its slices into this one. Lets a spec be composed from
@@ -284,6 +316,7 @@ function parseLinDiv(
         if (resolved == null || resolved === "" || resolved === token) {
           return token;
         }
+        log(`4. expand ${token} →`, resolved);
         changed = true;
         return resolved;
       })
@@ -292,9 +325,15 @@ function parseLinDiv(
     spec = expanded;
   }
 
-  if (spec.trim() === "") return null;
+  if (spec.trim() === "") {
+    log("→ RESULT: null (empty after expansion)");
+    end();
+    return null;
+  }
+  log("5. final spec:", spec);
 
-  return spec.split(":").map((rawToken) => {
+  const rows: Record<string, unknown>[] = [];
+  const res = spec.split(":").map((rawToken, ti) => {
     const token = rawToken.trim();
     // Filler with minimum size: `<weight>+<expr>mm` (e.g. `1+400mm`).
     // The weight is a bare integer or a fully-parenthesized expression
@@ -311,6 +350,13 @@ function parseLinDiv(
       const minSize = /^-?\d+(?:\.\d+)?$/.test(sizeExpr)
         ? Number(sizeExpr)
         : evalExpr(sizeExpr, {}, {}, vars);
+      rows.push({
+        "#": ti,
+        token,
+        kind: "FILLER+base",
+        expr: `${weightExpr} + ${sizeExpr}`,
+        value: `weight ${weightNum}, base ${minSize}mm`,
+      });
       return {
         size: null,
         weight: Number.isFinite(weightNum) ? weightNum : 0,
@@ -318,14 +364,103 @@ function parseLinDiv(
       };
     }
     // `mm` suffix → fixed size. Everything else (bare integer, $VAR, expr) → weight.
+    //
+    // `mm(<cond>)` makes that choice per slice at render time: the slice is a
+    // fixed size when `<cond>` evaluates non-zero, and a weight when it is 0.
+    // A plain `mm` is always fixed. This is the only way to vary the unit, as
+    // the suffix is literal text that cannot depend on a computed value —
+    // e.g. `($M*(1-$F))+($F*$W)mm($F)` is `$W`mm when `$F`=1, else weight `$M`.
+    const cond = /\bmm\s*\(([^)]*)\)\s*$/i.exec(token);
+    if (cond) {
+      const body = token.slice(0, cond.index).trim();
+      if (body === "") {
+        rows.push({ "#": ti, token, kind: "EMPTY", expr: "", value: "0mm" });
+        return { size: 0, weight: 0 };
+      }
+      const on = evalExpr(cond[1], {}, {}, vars) !== 0;
+      const bn = /^-?\d+(?:\.\d+)?$/.test(body)
+        ? Number(body)
+        : evalExpr(body, {}, {}, vars);
+      const bv = Number.isFinite(bn) ? bn : 0;
+      rows.push({
+        "#": ti,
+        token,
+        kind: on ? "FIXED (cond on)" : "WEIGHT (cond off)",
+        expr: `${body}  [if ${cond[1]}]`,
+        value: on ? `${bv}mm` : `weight ${bv}`,
+      });
+      return on ? { size: bv, weight: 0 } : { size: null, weight: bv };
+    }
     const hasMm = /(\s*mm)+\s*$/i.test(token);
     const expr = token.replace(/(\s*mm)+\s*$/i, "").trim();
-    if (expr === "") return { size: 0, weight: 0 };
+    if (expr === "") {
+      rows.push({ "#": ti, token, kind: "EMPTY", expr: "", value: "0mm" });
+      return { size: 0, weight: 0 };
+    }
+
+    // `A + B mm`: the `mm` binds to the LAST term, so only `B` is millimetres
+    // and `A` is a weight. The two are mutually exclusive by construction —
+    // `($M*(1-$F)) + ($F*$W)mm` is `$W`mm when `$F`=1 and weight `$M` when
+    // `$F`=0 — so whichever side is non-zero decides the slice's unit:
+    // a non-zero `mm` term makes it fixed, otherwise the rest is the weight.
+    // This keeps a plain `100mm` fixed (no `+`, so nothing to split).
+    if (hasMm) {
+      let d = 0;
+      let at = -1;
+      for (let i = 0; i < expr.length; i++) {
+        const c = expr[i];
+        if (c === "(") d++;
+        else if (c === ")") d--;
+        else if (c === "+" && d === 0) at = i;
+      }
+      if (at >= 0) {
+        const lhs = expr.slice(0, at).trim();
+        const rhs = expr.slice(at + 1).trim();
+        const ln = evalExpr(lhs, {}, {}, vars);
+        const rn = evalExpr(rhs, {}, {}, vars);
+        const lv = Number.isFinite(ln) ? ln : 0;
+        const rv = Number.isFinite(rn) ? rn : 0;
+        rows.push({
+          "#": ti,
+          token,
+          kind: rv !== 0 ? "FIXED (mm term)" : "WEIGHT (mm term 0)",
+          expr: `${lhs} + ${rhs}mm`,
+          value: rv !== 0 ? `${rv}mm` : `weight ${lv}`,
+        });
+        return rv !== 0
+          ? { size: rv, weight: 0 }
+          : { size: null, weight: lv };
+      }
+    }
     const numericLiteral = /^-?\d+(?:\.\d+)?$/.test(expr);
     const n = numericLiteral ? Number(expr) : evalExpr(expr, {}, {}, vars);
     const value = Number.isFinite(n) ? n : 0;
+    rows.push({
+      "#": ti,
+      token,
+      kind: hasMm ? "FIXED" : "WEIGHT",
+      expr,
+      value: Number.isFinite(n)
+        ? hasMm
+          ? `${value}mm`
+          : `weight ${value}`
+        : "NaN → 0",
+    });
     return hasMm ? { size: value, weight: 0 } : { size: null, weight: value };
   });
+
+  log("6. slices:");
+  if (dbg) console.table(rows);
+  const fixedSum = res.reduce((s, sl) => s + (sl.size ?? 0), 0);
+  const fillers = res.filter((sl) => sl.size === null).length;
+  log(
+    `7. ${res.length} slice(s) | fixed ${fixedSum}mm | ${fillers} filler(s) | axis ${parentAxisSize}mm` +
+      (fillers === 0 && fixedSum < parentAxisSize
+        ? ` ⚠ no filler: the spare ${parentAxisSize - fixedSum}mm is shared out across the fixed slices, so they render LARGER than declared`
+        : ""),
+  );
+  end();
+  return res;
 }
 
 // Resolve a side-slot value: token like "AD zone info01" or literal "0".
