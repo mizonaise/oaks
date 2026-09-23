@@ -398,12 +398,16 @@ function parseLinDiv(
       return { size: 0, weight: 0 };
     }
 
-    // `A + B mm`: the `mm` binds to the LAST term, so only `B` is millimetres
-    // and `A` is a weight. The two are mutually exclusive by construction —
-    // `($M*(1-$F)) + ($F*$W)mm` is `$W`mm when `$F`=1 and weight `$M` when
-    // `$F`=0 — so whichever side is non-zero decides the slice's unit:
-    // a non-zero `mm` term makes it fixed, otherwise the rest is the weight.
-    // This keeps a plain `100mm` fixed (no `+`, so nothing to split).
+    // `A + B mm`: the `mm` binds to the LAST term, so the slice carries BOTH
+    // parts — `A` is its weight and `B` its size in millimetres. That is a
+    // filler with a guaranteed base: it takes `B`mm first, then shares the
+    // remaining space in proportion to `A` (see `distribute`).
+    //
+    // `($M*(1-$F)) + ($F*$W)mm` therefore reads as weight `$M`, base `$W`mm,
+    // and because `$F` is 0 or 1 exactly one side is non-zero: `$F`=1 gives
+    // `weight 0, base $W` (a pure fixed size) and `$F`=0 gives `weight $M,
+    // base 0` (a pure weight). A plain `100mm` has no top-level `+`, so it
+    // stays an ordinary fixed size.
     if (hasMm) {
       let d = 0;
       let at = -1;
@@ -418,18 +422,20 @@ function parseLinDiv(
         const rhs = expr.slice(at + 1).trim();
         const ln = evalExpr(lhs, {}, {}, vars);
         const rn = evalExpr(rhs, {}, {}, vars);
-        const lv = Number.isFinite(ln) ? ln : 0;
-        const rv = Number.isFinite(rn) ? rn : 0;
+        const weight = Number.isFinite(ln) ? ln : 0;
+        const base = Number.isFinite(rn) ? rn : 0;
         rows.push({
           "#": ti,
           token,
-          kind: rv !== 0 ? "FIXED (mm term)" : "WEIGHT (mm term 0)",
+          kind: "WEIGHT + SIZE",
           expr: `${lhs} + ${rhs}mm`,
-          value: rv !== 0 ? `${rv}mm` : `weight ${lv}`,
+          value: `weight ${weight}, size ${base}mm`,
         });
-        return rv !== 0
-          ? { size: rv, weight: 0 }
-          : { size: null, weight: lv };
+        // A zero-weight slice with a base is just a fixed size; emitting it as
+        // one keeps it out of the filler pool so it neither grows nor collapses.
+        return weight === 0
+          ? { size: base, weight: 0 }
+          : { size: null, weight, minSize: base };
       }
     }
     const numericLiteral = /^-?\d+(?:\.\d+)?$/.test(expr);
