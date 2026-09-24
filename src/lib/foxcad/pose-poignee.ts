@@ -25,7 +25,7 @@
  */
 import * as THREE from 'three'
 import { processLindiv } from 'imos-linear-division'
-import { estContour, matricePiece, sommetsLocaux, type CoteCharnieres } from './geometrie.ts'
+import { estContour, matricePiece, sommetsLocaux, type CoteCharnieres } from './geometrie'
 import type { Piece } from './types'
 
 /** une portée de variables (le `PVarString` du Set, les `variables[].WERT` de l'article, celles du squelette, le formulaire) */

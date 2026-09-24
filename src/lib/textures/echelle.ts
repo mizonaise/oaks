@@ -33,7 +33,7 @@
  */
 
 // relatif, avec l'extension : node --test (sans outil) lit ce module comme geometrie.ts le lit
-import { decorFabricant, type FabricantDecor } from '../../data/echelle-decors.ts'
+import { decorFabricant, type FabricantDecor } from '../../data/echelle-decors'
 
 /** le défaut quand la texture n'est d'aucune famille : une répétition de l'image par mètre — un choix de d5, dit à l'écran */
 export const ECHELLE_DEFAUT_MM = 1000

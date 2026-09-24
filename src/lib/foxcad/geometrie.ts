@@ -13,8 +13,8 @@
  */
 import * as THREE from 'three'
 import type { Piece, Vecteur3 } from './types'
-import { ECHELLE_DEFAUT_MM } from '../textures/echelle.ts'
-import { uvEchelleReelle } from '../textures/uv.ts'
+import { ECHELLE_DEFAUT_MM } from '../textures/echelle'
+import { uvEchelleReelle } from '../textures/uv'
 
 const rad = (deg: number): number => (deg * Math.PI) / 180
 

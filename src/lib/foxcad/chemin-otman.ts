@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react'
 import type { Piece } from './types'
-import { direMultipart, direMultipartZone, type MultipartZone, type TraverseEnPente } from './multipart.ts'
+import { direMultipart, direMultipartZone, type MultipartZone, type TraverseEnPente } from './multipart'
 
 /**
  * LE CHEMIN D'OTMAN SUR LES FORMES FOX-CAD (d5, 23/09/2026 — retours de Dorian 06:4x / 06:5x, lignes du lead) : sur `OS_SHAPE_HEX` /

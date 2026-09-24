@@ -15,7 +15,7 @@ import type { FlatVars } from '@/lib/form/expr'
 import type { ShapeData } from '@/lib/shape/schema'
 import { collectSets } from '@/lib/shape/xmlExport'
 import { estErreur, type DemandeCalculLot, type Piece, type ReponseCalculLot } from './types'
-import { multipartDePosition } from './multipart.ts'
+import { multipartDePosition } from './multipart'
 
 export const PANNEAUX_FOX_CAD_DEFAUT = 'OS_SHAPE_HEX,OS_SHAPE_HEX2,OAKSOME_SHAPE_HEX,OAKSOME_SHAPE_HEX2'
 

@@ -7,6 +7,9 @@ import { Hierarchy } from './Hierarchy'
 import { Shape3D } from './Shape3D'
 import { walkZone, type Box } from './shapeTree'
 import type { ArticleData } from '@processandtools/rp-article-designer'
+import type { PositionFoxCad } from '@/lib/foxcad/lot'
+import type { ReponseCalculLot } from '@/lib/foxcad/types'
+import type { PortesPleines } from '@/lib/foxcad/portes-pleines'
 
 type Props = {
   shape: {
@@ -34,6 +37,11 @@ type Props = {
   /** Receives a `() => string | null` that snapshots the canvas as a PNG data
    *  URL, so a parent can capture the current view on demand. */
   onCaptureReady?: (capture: () => string | null) => void
+  /** The configuration panel's values (`ZF_*`, `OV_*`…), for the parametric
+   *  scene model: column functions, door types, installation, fillers. */
+  valeurs?: Record<string, string>
+  /** B3 : les pièces de fox-cad (HEX / HEX 2), passées telles quelles à la scène */
+  foxcad?: { positions: PositionFoxCad[]; reponse: ReponseCalculLot | null; portesPleines?: PortesPleines | null } | null
 }
 
 export function readDim (
@@ -55,7 +63,9 @@ export function ShapeViewer ({
   dev = false,
   selectedName,
   showHierarchy: showHierarchyProp,
-  onCaptureReady
+  onCaptureReady,
+  valeurs,
+  foxcad = null
 }: Props) {
   const { boxes, bounds, dimsResolved } = useMemo(() => {
     const { globalVars, namespaces } = scopes
@@ -137,6 +147,8 @@ export function ShapeViewer ({
           onSelect={() => {}}
           selectedZone={selectedName}
           onCaptureReady={onCaptureReady}
+          valeurs={valeurs}
+          foxcad={foxcad}
         />
       </div>
     </div>

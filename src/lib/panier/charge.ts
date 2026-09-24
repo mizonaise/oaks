@@ -15,7 +15,7 @@
  *    `variables` et `descriptors` dans un ordre qui change d'une réponse à l'autre (mesuré le 24/09 sur 4848) ; `front` — le commit du front,
  *    gravé au build (`next.config.ts`).
  */
-import { htDeLaReponse, type ReponsePrix } from '../prix/taxe.ts'
+import { htDeLaReponse, type ReponsePrix } from '../prix/taxe'
 
 /** les clés du message avant la ligne de 11:0x, dans leur ordre — le site les lit, elles ne bougent pas */
 export const CLES_AVANT = ['action', 'name', 'pricing', 'form', 'description', 'shape', 'xmlFile', 'image'] as const

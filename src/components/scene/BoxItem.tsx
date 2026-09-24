@@ -32,11 +32,13 @@ export const BoxItem = memo(function BoxItem ({
   hidden = false,
   hasDoor = true,
   doorOpen,
+  doorsRemoved = false,
   dimCpConfig,
   showDims = false,
   contrasted = false,
   hideArticle = false,
-  frameOnly = false
+  frameOnly = false,
+  sansContenu = false
 }: {
   box: ShapeBox
   dev?: boolean
@@ -55,6 +57,8 @@ export const BoxItem = memo(function BoxItem ({
   /** Whether articles are built with doors at all. */
   hasDoor?: boolean
   doorOpen: boolean
+  /** Banc de rendu: render articles without their doors. */
+  doorsRemoved?: boolean
   /** Per-CP dimension config; `null` hides all labels. */
   dimCpConfig?: DimCpConfig | null
   /** Whether dimensioning is on (drives the article designer's labels). */
@@ -67,6 +71,8 @@ export const BoxItem = memo(function BoxItem ({
    *  panels and the article designer's contents alike — so the structure reads
    *  through the shape. */
   frameOnly?: boolean
+  /** B3 (22/09) : les pièces de cette forme viennent de fox-cad — ni panneaux CP, ni designer d'Otman ; seules les arêtes et la sélection du mode dev restent. */
+  sansContenu?: boolean
 }) {
   const inset = box.isArticle ? 2 : 0
   const sx = Math.max((box.w - inset) * MM, 0.0001)
@@ -116,7 +122,7 @@ export const BoxItem = memo(function BoxItem ({
           color={highlightColor}
         />
       )}
-      {box.sides && (
+      {box.sides && !sansContenu && (
         <BoxSidePanels
           sx={sx}
           sy={sy}
@@ -125,15 +131,17 @@ export const BoxItem = memo(function BoxItem ({
           vars={box.vars ?? globalVars}
           dimCpConfig={dimCpConfig}
           wireframe={frameOnly}
+          contrasted={contrasted}
         />
       )}
-      {box.isArticle && articleName && box.vars && box.w > 10 && box.h > 10 && box.d > 10 && (
+      {box.isArticle && !sansContenu && articleName && box.vars && box.w > 10 && box.h > 10 && box.d > 10 && (
         <ArticleInBox
           box={box}
           articleName={articleName}
           articleData={articleData}
           hasDoor={hasDoor}
           doorOpen={doorOpenForBox}
+          doorsRemoved={doorsRemoved}
           showDims={showDims}
           contrasted={contrasted}
           hidden={hideArticle}

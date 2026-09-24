@@ -1,10 +1,14 @@
 'use client'
 
-import { memo, useEffect, useMemo } from 'react'
+import { memo, useEffect, useId, useMemo } from 'react'
 import * as THREE from 'three'
 import { Html } from '@react-three/drei'
 import type { ResolvedCp } from './resolveCp'
 import { useTextureWithFallback } from './useTextureWithFallback'
+import { bancFlags, useBanc } from './banc/BancContext'
+import { echelleTexture } from '@/lib/textures/echelle'
+import { uvEchelleReelle } from '@/lib/textures/uv'
+import { signalerEchelle } from '@/lib/textures/magasin'
 
 export type FaceAxis = 'x' | 'y' | 'z'
 
@@ -27,9 +31,12 @@ export const CpPanel = memo(function CpPanel ({
   sy,
   sz,
   dims,
-  wireframe = false
+  wireframe = false,
+  contrasted = false
 }: {
   cp: ResolvedCp
+  /** Schema mode: draw the black edge lines. */
+  contrasted?: boolean
   axis: FaceAxis
   sign: 1 | -1
   /** Offset (mm) along the face normal; negative pulls the panel inward. */
@@ -57,6 +64,10 @@ export const CpPanel = memo(function CpPanel ({
   wireframe?: boolean
 }) {
   const baseTex = useTextureWithFallback(cp.textureUrl)
+  const banc = useBanc()
+  const flags = bancFlags(banc)
+  const schema = contrasted || flags.schema
+  const showEdges = wireframe || schema || banc.edges
   // Grain direction: the side panels (x- and z-normal faces) read vertically,
   // while the top and bottom (y-normal) keep the texture running horizontally.
   //
@@ -120,6 +131,22 @@ export const CpPanel = memo(function CpPanel ({
     () => new THREE.EdgesGeometry(new THREE.BoxGeometry(...args)),
     args
   )
+  // Nuit du 22 au 23/09 (d5) : la texture à l'ÉCHELLE RÉELLE — la boîte reçoit des UV en mm / échelle (projection par la normale
+  // dominante, `lib/textures/uv.ts`) au lieu des UV [0, 1] de `boxGeometry`, qui étiraient l'image entière sur chaque face quelle que
+  // soit sa taille (mesuré le 22/09). L'échelle vient du principe de couleur d'imos (`SCALEFAKT`, par la table extraite ou par le
+  // rp-engine) ou du défaut, et la scène le dit (`signalerEchelle` → la ligne sous la scène).
+  const echelle = useMemo(() => echelleTexture(cp.render, cp.scalefakt), [cp.render, cp.scalefakt])
+  const geometrie = useMemo(
+    () => uvEchelleReelle(new THREE.BoxGeometry(args[0], args[1], args[2]), echelle.mm),
+    [args[0], args[1], args[2], echelle.mm]
+  )
+  useEffect(() => () => geometrie.dispose(), [geometrie])
+  const idEchelle = useId()
+  useEffect(() => {
+    if (!tex) return
+    signalerEchelle(idEchelle, echelle)
+    return () => signalerEchelle(idEchelle, null)
+  }, [idEchelle, tex, echelle])
   // Offsets can shrink a dimension to zero or negative — don't render a
   // degenerate/inverted panel. (Runs after hooks to keep hook order stable.)
   if (args.some((d) => d <= 0)) return null
@@ -146,8 +173,13 @@ export const CpPanel = memo(function CpPanel ({
   }
   return (
     <>
-      <mesh position={pos} castShadow={!wireframe} receiveShadow={!wireframe}>
-        <boxGeometry args={args} />
+      <mesh
+        position={pos}
+        geometry={geometrie}
+        castShadow={!wireframe}
+        receiveShadow={!wireframe}
+        userData={{ cp: true, materiau: cp.matName, surface: cp.surfName, texture: echelle.texture, echelleMm: echelle.mm, echelleSource: echelle.source }}
+      >
         {/* Distinct keys force a fresh material when the texture finishes loading.
             Without them R3F reuses the no-map material instance and just assigns
             `map`, but the shader was compiled without USE_MAP so it renders black. */}
@@ -155,17 +187,35 @@ export const CpPanel = memo(function CpPanel ({
             material entirely — its shader would compile for nothing. The key
             carries the wireframe flag for the same reason it carries the map:
             toggling it must mint a fresh material, not mutate the cached one. */}
+        {/* Melamine family by default (banc de rendu 2026-09-10): roughness .62
+            instead of the 1.0 default (absolute matte, no light glides on the
+            face), no metalness, environment at full strength. */}
         {wireframe ? (
           <meshBasicMaterial key='wire' color='#555' wireframe />
         ) : tex ? (
-          <meshStandardMaterial key='mapped' map={tex} />
+          <meshStandardMaterial
+            key='mapped'
+            map={tex}
+            roughness={banc.roughness}
+            metalness={0}
+            envMapIntensity={banc.envMapIntensity}
+            wireframe={flags.wireframe}
+          />
         ) : (
-          <meshStandardMaterial key='plain' color='#888' />
+          <meshStandardMaterial
+            key='plain'
+            color='#B8B2A7'
+            roughness={banc.roughness}
+            metalness={0}
+            envMapIntensity={banc.envMapIntensity}
+            wireframe={flags.wireframe}
+          />
         )}
         {/* Wireframe outline of the panel edges, drawn as a child so it inherits
             the mesh transform. Native three.js edges (no drei helper). Dropped in
-            wireframe mode, where the mesh already draws its own edges. */}
-        {!wireframe && (
+            wireframe mode, where the mesh already draws its own edges; otherwise
+            shown only in schema mode (contrasted / banc edges). */}
+        {!wireframe && showEdges && (
           <lineSegments geometry={edges}>
             <lineBasicMaterial color={'#000000'} opacity={0.2} transparent={true} />
           </lineSegments>

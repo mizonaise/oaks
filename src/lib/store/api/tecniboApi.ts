@@ -327,6 +327,7 @@ export const tecniboApi = createApi({
 });
 
 export const {
+  useGetArticleQuery,
   useGetProductsQuery,
   useGetProductsConfigQuery,
   useGetMaterialQuery,

@@ -26,9 +26,9 @@
  */
 import * as THREE from 'three'
 import type { Piece, PositionCalculee, Vecteur3 } from './types'
-import { estErreur } from './types.ts'
-import { estPorte, matricePiece } from './geometrie.ts'
-import { estFacadeAuxCotes, type CotesFacade, type ObjetScene } from './chemin-otman.ts'
+import { estErreur } from './types'
+import { estPorte, matricePiece } from './geometrie'
+import { estFacadeAuxCotes, type CotesFacade, type ObjetScene } from './chemin-otman'
 
 /* ─── le module plein que le designer d'Otman sait dessiner ───────────────────────────────────────────────────────────────────────── */
 

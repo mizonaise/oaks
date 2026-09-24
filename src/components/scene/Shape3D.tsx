@@ -25,6 +25,52 @@ import { GroundShadow } from './GroundShadow'
 import { RoomWalls, findCpWalls } from './RoomWalls'
 import { BoxItem } from './BoxItem'
 import type { ArticleData } from '@processandtools/rp-article-designer'
+import { FoxCadPieces } from './FoxCadPieces'
+import { SuperpositionOtman } from './SuperpositionOtman'
+import type { PositionFoxCad } from '@/lib/foxcad/lot'
+import type { ReponseCalculLot } from '@/lib/foxcad/types'
+import type { PortesPleines } from '@/lib/foxcad/portes-pleines'
+import { PerformanceMonitor, Stats } from '@react-three/drei'
+import {
+  BANC_DEFAULTS,
+  BancContext,
+  bancFlags,
+  decodeSettings,
+  withPerf,
+  type BancSettings
+} from './banc/BancContext'
+import { BancPanel } from './banc/BancPanel'
+import { CameraPreset } from './banc/CameraPreset'
+import { HumanShadow } from './banc/HumanShadow'
+import { Dimensions } from './banc/Dimensions'
+import { InteriorDims } from './banc/InteriorDims'
+import { ViewerControls } from './ViewerControls'
+import { CaptureBridge } from './capture/CaptureBridge'
+import { CaptureRig } from './capture/CaptureRig'
+import {
+  installBridge,
+  isCaptureMode,
+  priseDemandee,
+  valeursCourantes,
+  setCapture as registerCapture,
+  setVue as registerVue
+} from '@/lib/pipeline/bridge'
+import { modeleScene } from '@/lib/pipeline/scene'
+import {
+  colonneAOuvrir,
+  lumierePour,
+  prise as prisePar,
+  type ModeImage,
+  type PriseSpec
+} from '@/lib/pipeline/stations'
+import { WalkMode, type WalkLimits } from './WalkMode'
+import { clampedAzimuth, eyeHeight, frameUnit, polarLimits } from './framing'
+import { perfProfile, type PerfProfile } from './perf'
+import { installerRelaisMedia } from '@/lib/media/relais'
+
+// le média de Tecnibo par l'hôte de la page, pour tous les chargeurs de three (les nôtres, le designer d'Otman, special-kms) — avant le
+// premier chargement de la scène ; voir `lib/media/relais.ts` (d5, 23/09 16:5x : le réseau Tecnibo bloquait le CDN depuis le public)
+installerRelaisMedia()
 
 type Props = {
   dev?: boolean
@@ -50,20 +96,17 @@ type Props = {
    *  data URL (null if the canvas isn't ready). Called on mount so a parent can
    *  capture the current view on demand (e.g. for add-to-cart). */
   onCaptureReady?: (capture: () => string | null) => void
+  /** The configuration panel's values, for the parametric scene model. Passed
+   *  as a prop (not read from the bridge) so the model updates with the form:
+   *  the bridge's fiche is registered in an effect, i.e. after the first render,
+   *  and a model built from an empty map has columns without type or door
+   *  (measured 15/09: D09 « aucune colonne à porte » on a five-door unit). */
+  valeurs?: Record<string, string>
+  /** B3 (22/09) : pour HEX / HEX 2, les pièces de la scène viennent de fox-cad — les positions du lot et la dernière réponse ; `null` = le designer d'Otman */
+  foxcad?: { positions: PositionFoxCad[]; reponse: ReponseCalculLot | null; portesPleines?: PortesPleines | null } | null
 }
 
 const MM = 1
-
-// Perspective camera settings for the non-dev view. Declared here (rather than
-// only as JSX props) because `FitToShape` must compute its distance from the
-// SAME values: an effect can run before R3F has applied these props, and the
-// camera then still reports three.js defaults (fov 75, zoom 1), which yields a
-// wildly wrong fit.
-const CAM_FOV = 65
-const CAM_ZOOM = 20
-// Module-level constant so the array identity never changes: drei re-applies
-// `position` when the prop changes, which would overwrite the fitted distance.
-const CAM_INITIAL_POS: [number, number, number] = [0, 1.25, 100]
 const SCALE = 0.001
 
 /**
@@ -126,10 +169,9 @@ function hiddenForCameraZone (
 }
 
 const DEFAULT_DIM_CP_CONFIG: DimCpConfig = {
-
-  "CP_1_FI_*": { w: false, h: true, d: false },
-  "CP_1_BA_*": { w: false, h: true, d: false },
-  "CP_1_CM_*": { w: false, h: true, d: false }
+  'CP_1_FI_*': { w: false, h: true, d: false },
+  'CP_1_BA_*': { w: false, h: true, d: false },
+  'CP_1_CM_*': { w: false, h: true, d: false }
 }
 
 export function Shape3D ({
@@ -143,44 +185,15 @@ export function Shape3D ({
   onSelect,
   dimCpConfig = DEFAULT_DIM_CP_CONFIG,
   selectedZone,
-  onCaptureReady
+  onCaptureReady,
+  valeurs,
+  foxcad = null
 }: Props) {
   const w = bounds.w * MM * SCALE
   const d = bounds.d * MM * SCALE
   const h = bounds.h * MM * SCALE
   const ox = -w / 2
   const oz = -d / 2
-
-  // True extent of everything drawn, in world units. `bounds` is only the
-  // shape's declared envelope; `walkZone` can place boxes outside it (and
-  // panel oversize pushes them further), so framing on `bounds` alone can
-  // clip the unit. Union the box extents with the envelope and keep the
-  // widest span either side of centre, since the camera looks down the
-  // centreline and the view is symmetric about it.
-  const fit = useMemo(() => {
-    let minX = 0
-    let maxX = bounds.w
-    let minY = 0
-    let maxY = bounds.h
-    let minZ = 0
-    let maxZ = bounds.d
-    for (const b of boxes) {
-      if (b.x < minX) minX = b.x
-      if (b.y < minY) minY = b.y
-      if (b.z < minZ) minZ = b.z
-      if (b.x + b.w > maxX) maxX = b.x + b.w
-      if (b.y + b.h > maxY) maxY = b.y + b.h
-      if (b.z + b.d > maxZ) maxZ = b.z + b.d
-    }
-    // The camera centres on the shape's own mid-line (x: bounds.w/2,
-    // y: fitH/2), so what must fit is twice the larger half-span.
-    const halfX = Math.max(bounds.w / 2 - minX, maxX - bounds.w / 2)
-    return {
-      w: halfX * 2 * MM * SCALE,
-      h: maxY * MM * SCALE,
-      d: (maxZ - minZ) * MM * SCALE
-    }
-  }, [boxes, bounds])
 
   // The underlying <canvas> element, so a parent can snapshot the current view.
   // `preserveDrawingBuffer` (below) keeps the framebuffer readable after the
@@ -199,25 +212,217 @@ export function Shape3D ({
     })
   }, [onCaptureReady])
 
-  const [showDims, setShowDims] = useState(false)
-  const [doorsOpen, setDoorsOpen] = useState(false)
-  // Whether the article designer builds doors at all (`hasDoor`), distinct
-  // from `doorsOpen`, which only swings the doors it has built.
-  const [hasDoor, setHasDoor] = useState(true)
-  const [contrasted, setContrasted] = useState(false)
+  // Banc de rendu (2026-09-10): the `banc=1` query mounts the tuning panel and
+  // `rendu=` carries a shared setting set. Read once on mount (client only).
+  const [banc, setBanc] = useState(false)
+  // B4 (22/09) : `?banc=1&panneau=0` — le banc sans son panneau (leva) : les réglages `rendu=` et les champs semés par l'adresse, sans
+  // l'interface. Mesuré le 22/09 : hors capture, le panneau fait planter la page (« reading 'path' ») ; le pipeline l'évite par `capture=1`,
+  // l'outil de preuve des pages entières (`scripts/preuve-fox-cad.mjs --sans-banc`) passe par ici.
+  const [panneau, setPanneau] = useState(true)
+  const [chosen, setChosen] = useState<BancSettings>(BANC_DEFAULTS)
+  // Pipeline de rendu (2026-09-14): `capture=1` is the headless mode the
+  // capture script drives — canvas alone, fixed pixel density, and the
+  // `window.__oaks` bridge. It reuses `rendu=` for the settings, so a view is
+  // described exactly the same way whether a human or a script opens it.
+  const [capture, setCapture] = useState(false)
+  // Plan de prises de vue (2026-09-15): `?prise=<id>` names one shot of
+  // `lib/pipeline/prises-de-vue.json`. The shot then decides doors, dimension
+  // lines and light; the camera is placed by `CaptureRig` from the parametric
+  // scene model — the orbit, presets and initial framing stand down.
+  const [priseSpec, setPriseSpec] = useState<PriseSpec | null>(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setBanc(params.get('banc') === '1')
+    setPanneau(params.get('panneau') !== '0')
+    setCapture(isCaptureMode())
+    const shared = decodeSettings(params.get('rendu'))
+    if (Object.keys(shared).length) setChosen({ ...BANC_DEFAULTS, ...shared })
+    const id = priseDemandee()
+    setPriseSpec(id && isCaptureMode() ? prisePar(id) : null)
+  }, [])
+
+  // The parametric scene model: room, walls, window and light DERIVED from the
+  // shape's CPs and the configuration panel (`lib/pipeline/scene.ts`). Read
+  // once per geometry; the drawn room (`RoomWalls`) computes the same thing.
+  const modele = useMemo(
+    () => modeleScene(boxes, { w, h, d }, valeurs ?? valeursCourantes(), SCALE, chosen.ceilingGap),
+    [boxes, w, h, d, chosen.ceilingGap, valeurs]
+  )
+
+  // The bridge exists only in capture mode (see `lib/pipeline/bridge.ts`): no
+  // ordinary page of the configurator ever puts anything on `window`.
+  useEffect(() => {
+    if (!capture) return
+    installBridge()
+    return () => {
+      registerCapture(null)
+      registerVue(null)
+      delete window.__oaks
+    }
+  }, [capture])
+
+  // Hand the canvas snapshot to the bridge. Same `toDataURL` the cart payload
+  // already uses — the framebuffer, not a screenshot of the page.
+  useEffect(() => {
+    if (!capture) return
+    registerCapture(() => {
+      const canvas = canvasRef.current
+      if (!canvas) return null
+      try {
+        return canvas.toDataURL('image/png')
+      } catch {
+        return null
+      }
+    })
+  }, [capture])
+
+  // What the browser can afford. Measured on mount, not during render: the
+  // static export is prerendered on a machine that is not the user's, and a
+  // value read during the first render would be the server's answer.
+  const [perf, setPerf] = useState<PerfProfile | null>(null)
+  useEffect(() => setPerf(perfProfile()), [])
+  // Live correction: `PerformanceMonitor` watches the real frame rate and hands
+  // back a 0..1 factor. It only runs when the pixel density is on `auto` and
+  // the bench panel is closed — the design team judges a fixed image.
+  const [perfFactor, setPerfFactor] = useState(1)
+  // In capture mode the density is fixed and the live perf correction is off:
+  // the image must depend on the URL alone, never on how fast this machine
+  // happened to render. Otherwise two runs of the same view differ in size.
+  const autoPerf = chosen.dpr === 'auto' && !banc && !capture
+
+  const settingsBase = useMemo(() => {
+    const base = withPerf(chosen, perf ?? perfProfile(), banc || capture)
+    if (capture) return { ...base, dpr: 1 as const, stats: false }
+    if (!autoPerf || perfFactor >= 1) return base
+    // One notch down per decline, never below 1 — under that the canvas is
+    // blurrier than the page it sits in.
+    // `withPerf` has already resolved `auto`; the guard is for the type only.
+    const current = typeof base.dpr === 'number' ? base.dpr : 1
+    const dpr = Math.max(1, Math.round(current * perfFactor * 2) / 2) as
+      | 1
+      | 1.5
+      | 2
+    return dpr === current ? base : { ...base, dpr }
+  }, [chosen, perf, banc, capture, autoPerf, perfFactor])
+
+  // Two layers on top of the bench settings:
+  // 1. the scene model's light — the key comes from the window side the model
+  //   chose (rule A8), unless the bench moved it explicitly;
+  // 2. the shot, when one is named — its doors, its dimension lines, its light.
+  //   The image mode (client / schema) still comes from the URL, so a shot's
+  //   two twins are the same camera with a different rendering.
+  const settings = useMemo<BancSettings>(() => {
+    let s = settingsBase
+    if (s.keyAz === BANC_DEFAULTS.keyAz && s.keyEl === BANC_DEFAULTS.keyEl) {
+      s = { ...s, keyAz: modele.lumiere.keyAz, keyEl: modele.lumiere.keyEl }
+    }
+    if (!priseSpec) return s
+    const mode: ModeImage = s.mode === 'schema' ? 'schema' : 'client'
+    const lum = lumierePour(priseSpec.lumiere)
+    const portes =
+      priseSpec.portes === 'une-ouverte' || priseSpec.portes === 'une-entrouverte'
+        ? 'fermees'
+        : priseSpec.portes
+    const ouverte = colonneAOuvrir(priseSpec, modele.colonnes)
+    // Stations du pipeline (couche 3) : tone mapping « neutral » — il garde la teinte des finitions là où ACES
+    // les délave (mesuré le 19/09 : ΔE 25-29 entre le rendu et la teinte de la fiche) — et exposition à 1.
+    // Ombres PCF et non VSM : mesuré le 20/09, les ombres VSM étouffent la tache de soleil qui passe par la fenêtre
+    // (et un mur vu de dos n y projette rien) ; en PCF elle est nette et le rendu quatre fois plus rapide.
+    // Ambiance basse : c est la fenêtre qui éclaire, sinon la tache de soleil ne se lit pas.
+    const neutre = priseSpec.cadrage === 'station' ? { toneMapping: 'neutral' as const, exposure: 1, shadowType: 'pcf' as const, envIntensity: 0.35, ambient: 0.1, hemi: 0.15, fill: 0.2 } : {}
+    return {
+      ...s,
+      ...neutre,
+      camera: 'face',
+      doors: portes,
+      dims: priseSpec.cotes[mode],
+      keyAz: lum.keyAz,
+      keyEl: lum.keyEl,
+      keyIntensity: lum.keyIntensity,
+      doorsOpenOn: ouverte ? String(ouverte.rang) : ''
+    }
+  }, [settingsBase, modele, priseSpec])
+
+  // Couche 3 : pour une station du pipeline, la lumière vient de la fenêtre du modèle de pièce (coordonnées monde :
+  // le groupe du meuble est décalé de (-w/2, 0, -d/2)).
+  const fenetreMonde = useMemo(() => {
+    if (priseSpec?.cadrage !== 'station' && priseSpec?.cadrage !== 'plan') return null
+    const mur = modele.plan.murs.find(m => m.fenetre?.type === 'fenetre' && m.axe === 'x')
+    if (!mur?.fenetre) return null
+    const f = mur.fenetre
+    // Ce qui fait face à la fenêtre : la face intérieure de l'aile d'un L, sinon l'autre bord de la pièce.
+    const aile = mur.normale === 1 ? modele.emprise.aile_droite : modele.emprise.aile_gauche
+    const enFace = aile
+      ? (mur.normale === 1 ? w - aile.largeur_m : aile.largeur_m)
+      : (mur.normale === 1 ? modele.piece.x_droite_m : modele.piece.x_gauche_m)
+    return {
+      portee: Math.abs(enFace - mur.at),
+      faceAuMeuble: !!aile,
+      margeMeuble: f.centre_m - f.largeur_m / 2 - modele.emprise.p_corps_m,
+      centre: [mur.at - w / 2, f.allege_m + f.hauteur_m / 2, f.centre_m - d / 2] as [number, number, number],
+      normale: [mur.normale, 0] as [number, number],
+      largeur: f.largeur_m,
+      hauteur: f.hauteur_m
+    }
+  }, [priseSpec, modele, w, d])
+
+  // Columns (1-based ranks from the left) whose doors open on top of `doors`.
+  const openIndexes = useMemo(() => {
+    const rangs = new Set(
+      String(settings.doorsOpenOn ?? '')
+        .split(',')
+        .map(s => Number(s.trim()))
+        .filter(n => Number.isFinite(n) && n > 0)
+    )
+    return modele.colonnes.filter(k => rangs.has(k.rang)).map(k => k.index)
+  }, [settings.doorsOpenOn, modele.colonnes])
+  const boxDoorOpen = useCallback(
+    (index: string) => openIndexes.some(i => index === i || index.startsWith(`${i}.`)),
+    [openIndexes]
+  )
+
+  const flags = bancFlags(settings)
+  const schema = flags.schema
+  // Dev-only wireframe toggle: the branch's `mode: 'filaire'` bench setting is
+  // a clean equivalent of webapp's old manual `frameOnly` state (same effect —
+  // draw the whole box, its CP panels and the article contents as a
+  // wireframe), so it drives `BoxItem`'s existing `frameOnly` prop directly
+  // rather than keeping a second, independent toggle.
+  const frameOnly = flags.wireframe
+
+  // One writer for the mode settings, shared by the viewer toolbar, the bench
+  // panel and a `?rendu=` link — so a value can never be true in one and stale
+  // in the other.
+  const patchSettings = useCallback(
+    (patch: Partial<BancSettings>) => setChosen(s => ({ ...s, ...patch })),
+    []
+  )
+
+  const doorsOpenEff = settings.doors === 'ouvertes'
+  const doorsRemovedEff = settings.doors === 'retirees'
+  const dimsVisible = settings.dims !== 'aucune'
+  const dimLevel = settings.dims === 'aucune' ? 'globales' : settings.dims
+  const designerDims = dimsVisible && dimLevel === 'designer'
   // Dev-only: hide the article designer so only the box shell/panels show.
   const [hideArticle, setHideArticle] = useState(false)
-  // Dev-only: draw the shape as a wireframe — side panels and article contents
-  // alike — with the room walls left out, so the structure reads through it.
-  const [frameOnly, setFrameOnly] = useState(false)
-  // Dev-only walls toggle, driven by the in-canvas button below. Outside dev
-  // the walls are always on, so this only gates the dev view.
+  // Dev-only: whether articles are built with doors at all (distinct from
+  // `doorsOpenEff`, which only swings the doors that were built). Webapp-only
+  // feature — the branch's `BancSettings.doors` ('fermees'/'ouvertes'/
+  // 'retirees') only swings/removes doors, it never controls whether the
+  // article designer builds them in the first place.
+  const [hasDoor, setHasDoor] = useState(true)
+  // Dev-only walls toggle. `RoomWalls` no longer takes a `dev` prop (the room
+  // is now always the parametric model), so outside dev the walls are always
+  // mounted; in dev this simply gates whether `<RoomWalls>` mounts at all.
   const [wallsShown, setWallsShown] = useState(false)
 
   // Constrain the horizontal orbit so the camera can't swing past a built-in
   // wall and see the unit from outside. A built-in side limits the camera to
   // the corridor between the walls; open sides allow free rotation.
   const controlsRef = useRef<OrbitControlsImpl>(null)
+  // The offset group holding the unit (unit-local metres) — measured by the
+  // interior dimension chains.
+  const unitGroupRef = useRef<THREE.Group | null>(null)
 
   // The form emits a `goToZone` as soon as it mounts, for whatever zone it
   // opens on. Framing that would drop the user into a close-up of a single
@@ -235,27 +440,27 @@ export function Shape3D ({
     return true
   }, [])
 
-  // Set once a zone has actually taken the camera, so `FitToShape` stops
-  // refitting rather than yanking the view back mid-navigation.
-  const zoneOwnsCamera = useRef(false)
-  const claimCameraForZone = useCallback(() => {
-    zoneOwnsCamera.current = true
-  }, [])
+  // Set once a zone has actually taken the camera. The branch has no
+  // `FitToShape` to hold off (see below), so this is now only informational /
+  // for API parity with `CameraHandler`'s webapp-derived signature.
+  const claimCameraForZone = useCallback(() => {}, [])
 
-  // Set by `FitToShape` once it has framed the resolved shape. Until then a
-  // zone claim must not lock the camera: a `goToZone` arriving while the
-  // dimensions are still in flight would otherwise freeze the view on the
-  // fallback framing, which is what "the first render doesn't show all the
-  // shape" looks like.
-  const openingFitDone = useRef(false)
-  const markOpeningFitDone = useCallback(() => {
-    openingFitDone.current = true
-  }, [])
+  // The branch's initial framing (`InitialFrame`, driven by `frameUnit`) runs
+  // synchronously as soon as the perspective camera mounts, unlike webapp's
+  // old async `FitToShape` — so the opening fit is considered done immediately
+  // rather than waiting on a callback. `CameraHandler` still takes the ref for
+  // API parity / safety.
+  const openingFitDone = useRef(true)
 
   // Free-look: when on, the user drives the camera (clamped by the walls) and
   // zone-camera framing is ignored. Off by default so the configurator keeps
   // its current behaviour of framing whatever zone the form points at.
   const [freeLook, setFreeLook] = useState(false)
+
+  // Walk-through (FPS). Like free-look it takes the camera, and more of it:
+  // the orbit itself stands down until the user comes back.
+  const [walk, setWalk] = useState(false)
+  const leaveWalk = useCallback(() => setWalk(false), [])
 
   // A zone is actively requested while `selectedZone` is a non-empty name other
   // than "0" (the form's "nothing selected" sentinel). That zone owns the
@@ -266,9 +471,13 @@ export function Shape3D ({
     selectedZone.includes('OV') === false
 
   // Holding the toggle off while a zone is active would strand the camera in
-  // free-look; turn it off as soon as a zone takes over.
+  // free-look; turn it off as soon as a zone takes over. Same for the walk:
+  // the form asking for a zone means the customer is configuring, not visiting.
   useEffect(() => {
-    if (zoneActive) setFreeLook(false)
+    if (zoneActive) {
+      setFreeLook(false)
+      setWalk(false)
+    }
   }, [zoneActive])
 
   // How far the camera may swing off the shape's centerline before a room wall
@@ -309,6 +518,113 @@ export function Shape3D ({
     [boxes, selectedIndex]
   )
 
+  // Une porte de fox-cad s'ouvre comme celles du designer (`BoxItem` : `doorOpen || inSelectedSubtree`, sauf sur une zone caméra, cadrée et non ouverte)
+  const doorOpenFor = useCallback(
+    (index: string) =>
+      settings.doors === 'ouvertes' ||
+      boxDoorOpen(index) ||
+      (selectedIndex != null && !selectedIsCameraNode && (index === selectedIndex || index.startsWith(`${selectedIndex}.`))),
+    [settings.doors, boxDoorOpen, selectedIndex, selectedIsCameraNode]
+  )
+
+  // Eye height actually used: the setting, capped by the ceiling of a built-in
+  // room (a flush ceiling on a low unit is lower than a standing person).
+  const eye = eyeHeight(
+    settings.camHeight,
+    h,
+    settings.roomEnabled,
+    settings.ceilingGap
+  )
+
+  // Pipeline (2026-09-14): publish the view ACTUALLY rendered, not the one
+  // asked for — the eye height is capped by the ceiling, and the pixel size is
+  // the window's. An image whose framing isn't recorded can't be reproduced,
+  // and Flora has to be told the framing it is extending.
+  useEffect(() => {
+    if (!capture) return
+    registerVue(() => {
+      const canvas = canvasRef.current
+      return {
+        prise_id: priseSpec?.id ?? null,
+        preset: settings.camera,
+        mode: settings.mode,
+        portes: settings.doors,
+        portes_ouvertes_colonnes: settings.doorsOpenOn || null,
+        cotes: settings.dims,
+        fov_v_deg: settings.fov,
+        oeil_m: eye,
+        oeil_demande_m: settings.camHeight,
+        densite: settings.dpr,
+        lumiere: { cle_azimut_deg: settings.keyAz, cle_elevation_deg: settings.keyEl, cle_intensite: settings.keyIntensity },
+        piece: {
+          activee: settings.roomEnabled,
+          jeu_plafond_m: settings.ceilingGap
+        },
+        murs_m: { gauche: wallLeft, droite: wallRight },
+        encombrement_mm: { l: bounds.w, h: bounds.h, p: bounds.d },
+        pixels: canvas ? { l: canvas.width, h: canvas.height } : null,
+        // The parametric scene model — the same numbers the room is drawn from
+        // and the camera stations are tested against.
+        scene: {
+          installation: modele.installation,
+          murs: modele.murs,
+          piece: modele.piece,
+          fenetre: modele.fenetre,
+          cote_ouvert: modele.cote_ouvert,
+          lumiere: modele.lumiere,
+          fileurs_mm: modele.fileurs_mm,
+          colonnes: modele.colonnes,
+          cp: modele.cp,
+          // Couche 1 (20/09) : la fiche publie ce qui est dessine - murs trouves et emprise des boites.
+          emprise: modele.emprise,
+          plan: modele.plan,
+          cpWalls: modele.cpWalls,
+          // B4 (22/09) : les rampants de la pièce (HEX / HEX 2), lus sur les champs du formulaire, et ce que le formulaire dit d'impossible.
+          rampants: modele.rampants,
+          rampants_remarques: modele.rampants_remarques,
+          boites: boxes.map(b => ({ i: b.index, nom: b.name, n: b.depth, x: b.x, z: b.z, w: b.w, d: b.d, h: b.h, art: !!b.isArticle, diag: b.vars ? Object.fromEntries(['ZM_W','ZMA_W','ZM_STEP','ZM_CNT','ZM_CNT_01','IS_ML_N','IS_ML_P','ZL_W','ZLA_W','ZL_STEP','ZL_CNT','ZFR_W','ZFL_W','IS_BI_R','IS_BI_L','FI_1_THK','ZM_D','ZL_D'].map(k => [k, (b.vars as Record<string, unknown>)[k]])) : undefined, cp: b.sides ? Object.fromEntries(Object.entries(b.sides).filter(([, s]) => s?.cp).map(([k, s]) => [k, s!.cp])) : null }))
+        }
+      }
+    })
+  }, [capture, settings, eye, wallLeft, wallRight, bounds, modele, priseSpec])
+
+  // Initial framing (banc de rendu 2026-09-10): the whole unit fits the view
+  // at fov 35 with a 1.15 margin, seen from a three-quarter left angle at the
+  // customer's eye height. The aspect is assumed 16:10 at mount and refined by
+  // `InitialFrame` once the canvas knows its real one.
+  const initialCamera = useMemo(() => {
+    const f = frameUnit({
+      bounds: { w, h, d },
+      fov: settings.fov,
+      eye,
+      margin: 1.15
+    })
+    return {
+      distance: f.distance,
+      polar: f.polar,
+      target: f.target.toArray() as [number, number, number],
+      position: f.position.toArray() as [number, number, number]
+    }
+  }, [w, h, d, settings.fov, eye])
+
+  // Where the walker may go: inside the room, out of the furniture. The room
+  // is built by `RoomWalls` from the same numbers, so these bounds are its
+  // bounds — floor from the back wall forward, side walls where the shape
+  // declares them, a default margin where it does not.
+  const walkLimits = useMemo<WalkLimits>(() => {
+    const margin = Math.max(0.6, 0.25 * w)
+    const roomD = d + Math.max(4, 2.6 * w)
+    const clear = 0.3
+    return {
+      xMin: (wallLeft !== null ? -wallLeft : -(w / 2 + margin)) + clear,
+      xMax: (wallRight !== null ? wallRight : w / 2 + margin) - clear,
+      zMin: -d / 2 + clear,
+      zMax: -d / 2 + roomD - clear,
+      unitHalfW: w / 2 + 0.25,
+      unitFrontZ: d / 2 + 0.35
+    }
+  }, [w, d, wallLeft, wallRight])
+
   return (
     <div
       /*
@@ -318,66 +634,36 @@ export function Shape3D ({
         the full window height (minus the dev gutters), matching the form
         column beside it, so `aspect` is released.
       */
-      className={`relative aspect-[1/1.1] max-h-[calc(100dvh-3rem)] w-full overflow-hidden rounded lg:aspect-auto lg:h-[calc(100dvh-3rem)] lg:max-h-none${
-        dev ? ' border border-zinc-200 dark:border-zinc-800' : ''
-      }`}
+      className={
+        capture
+          ? // Capture mode: the canvas takes the whole window and nothing else
+            // is drawn. The script sizes the window (2048×2048), so the canvas
+            // is square by construction rather than by cropping afterwards.
+            'fixed inset-0 z-[9999] h-screen w-screen overflow-hidden bg-white'
+          : `relative aspect-[1/1.1] max-h-[calc(100dvh-3rem)] w-full overflow-hidden rounded lg:aspect-auto lg:h-[calc(100dvh-3rem)] lg:max-h-none${
+              dev ? ' border border-zinc-200 dark:border-zinc-800' : ''
+            }`
+      }
     >
-      <button
-        type='button'
-        onClick={() => setDoorsOpen(open => !open)}
-        title={doorsOpen ? 'Close all doors' : 'Open all doors'}
-        aria-pressed={doorsOpen}
-        className='absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
-      >
-        <DoorIcon open={doorsOpen} />
-      </button>
-      <button
-        type='button'
-        onClick={() => setShowDims(open => !open)}
-        title={showDims ? 'Hide dimensions' : 'Show dimensions'}
-        aria-pressed={showDims}
-        className='absolute right-3 top-15 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
-      >
-        <RulerIcon />
-      </button>
-      <button
-        type='button'
-        onClick={() => setContrasted(open => !open)}
-        title={contrasted ? 'Disable contrast' : 'Enable contrast'}
-        aria-pressed={contrasted}
-        className='absolute right-3 top-27 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
-      >
-        <ContrastIcon />
-      </button>
-      <button
-        type='button'
-        onClick={() => setFreeLook(open => !open)}
-        disabled={zoneActive}
-        title={
-          zoneActive
-            ? 'Rotation unavailable while a zone is selected'
-            : freeLook
-            ? 'Disable rotation'
-            : 'Enable rotation'
-        }
-        aria-pressed={freeLook}
-        className={`absolute right-3 top-39 z-10 flex h-10 w-10 items-center justify-center rounded-full border shadow-md backdrop-blur transition ${
-          zoneActive
-            ? 'cursor-not-allowed border-zinc-200 bg-white/60 text-zinc-300 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-600'
-            : freeLook
-            ? 'border-zinc-800 bg-zinc-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
-            : 'border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
-        }`}
-      >
-        <OrbitIcon />
-      </button>
+      {!dev && !capture && (
+        <ViewerControls
+          settings={settings}
+          onChange={patchSettings}
+          walk={walk}
+          onWalk={setWalk}
+          walkDisabled={zoneActive}
+          freeLook={freeLook}
+          onFreeLook={setFreeLook}
+          maxEye={eye}
+        />
+      )}
       {dev && (
         <button
           type='button'
           onClick={() => setHideArticle(open => !open)}
           title={hideArticle ? 'Show article' : 'Hide article'}
           aria-pressed={hideArticle}
-          className='absolute right-3 top-51 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+          className='absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
         >
           <EyeIcon off={hideArticle} />
         </button>
@@ -388,7 +674,7 @@ export function Shape3D ({
           onClick={() => setWallsShown(open => !open)}
           title={wallsShown ? 'Hide walls' : 'Show walls'}
           aria-pressed={wallsShown}
-          className='absolute right-3 top-63 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+          className='absolute right-3 top-15 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
         >
           <WallIcon off={!wallsShown} />
         </button>
@@ -399,47 +685,96 @@ export function Shape3D ({
           onClick={() => setHasDoor(open => !open)}
           title={hasDoor ? 'Remove doors' : 'Add doors'}
           aria-pressed={hasDoor}
-          className='absolute right-3 top-75 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
+          className='absolute right-3 top-27 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-md backdrop-blur transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
         >
           <DoorPanelIcon off={!hasDoor} />
         </button>
       )}
-      {dev && (
-        <button
-          type='button'
-          onClick={() => setFrameOnly(open => !open)}
-          title={frameOnly ? 'Show full shape' : 'Show frame only'}
-          aria-pressed={frameOnly}
-          className={`absolute right-3 top-87 z-10 flex h-10 w-10 items-center justify-center rounded-full border shadow-md backdrop-blur transition ${
-            frameOnly
-              ? 'border-zinc-800 bg-zinc-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900'
-              : 'border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800'
-          }`}
-        >
-          <FrameIcon />
-        </button>
+      {banc && panneau && !capture && (
+        <BancPanel initial={chosen} external={chosen} onChange={setChosen} />
       )}
       <Canvas
         ref={canvasRef}
-        shadows='soft'
-        dpr={[1, 2]}
-        // R3F defaults to ACES Filmic tone mapping, which renders a material
-        // `#ffffff` as a slightly off (grayish) white — so the canvas white
-        // doesn't match the page's CSS white. Disable it for true white.
+        // VSM shadow maps: blurred, wide shadows (charte « soft shadows »)
+        // without the PCSS shader patch, which breaks on three r184. Schema
+        // mode keeps the crisp PCF shadows the AI pipeline was tuned on.
+        shadows={
+          !flags.shadows
+            ? false
+            : schema || settings.shadowType === 'pcf'
+            ? 'soft'
+            : { type: THREE.VSMShadowMap }
+        }
+        dpr={flags.dpr}
+        // Banc de rendu 2026-09-10: ACES Filmic tone mapping (was NoToneMapping —
+        // without it any light > 1 clips and the bright faces block up; the
+        // page's beige is matched by the background colour below, not by
+        // disabling tone mapping). In schema mode keep the flat, untouched
+        // colours the AI pipeline expects.
         // `preserveDrawingBuffer` keeps the framebuffer readable after each
         // frame so `canvas.toDataURL()` can snapshot the current view.
-        gl={{ toneMapping: THREE.NoToneMapping, preserveDrawingBuffer: true }}
+        gl={{
+          toneMapping: schema
+            ? THREE.NoToneMapping
+            : THREE.ACESFilmicToneMapping,
+          toneMappingExposure: settings.exposure,
+          preserveDrawingBuffer: true,
+          antialias: true,
+          powerPreference: 'high-performance'
+        }}
       >
         {/* The canvas is transparent by default, so the page shows through.
             Paint it with the kit's BACKGROUND token (Light Beige `--fond`,
             #F6F5F0) so the viewer reads as its own surface. `attach` sets
             `scene.background`, which also lands in `toDataURL()` snapshots —
             a CSS background would be missing from those. */}
-        <color attach='background' args={['#ffffff']} />
-        <SceneLights
-          radius={Math.hypot(w, h, d) / 2}
-          contrasted={contrasted}
+        <BancContext.Provider value={settings}>
+        <color
+          attach='background'
+          args={[schema ? '#f6f5f0' : settings.background]}
         />
+        <ToneMappingSync schema={schema} settings={settings} />
+        {autoPerf && (
+          // Frame-rate feedback: two declines take the density from 2 to 1.
+          // `flipflops` stops it oscillating once it has settled.
+          <PerformanceMonitor
+            flipflops={3}
+            onChange={api => setPerfFactor(api.factor)}
+            onFallback={() => setPerfFactor(0.5)}
+          />
+        )}
+        {!dev && !priseSpec && (
+          <InitialFrame
+            bounds={{ w, h, d }}
+            fov={settings.fov}
+            eye={eye}
+            controlsRef={controlsRef}
+            wallLeft={wallLeft}
+            wallRight={wallRight}
+            margin={dimsVisible ? 1.4 : 1.15}
+          />
+        )}
+        {settings.stats && <Stats />}
+        {/* Answers `window.__oaks.ready()`: no loading, camera at rest, and it
+            has lasted. Draws nothing. */}
+        {capture && <CaptureBridge />}
+        {/* The shot plan's camera: measures the rendered geometry, resolves the
+            named shot against the scene model, places the camera — no orbit,
+            no lerp — and publishes the EFFECTIVE camera for the fiche. */}
+        {capture && priseSpec && (
+          <CaptureRig
+            spec={priseSpec}
+            bounds={{ w, h, d }}
+            walls={{ left: wallLeft, right: wallRight }}
+            room={{ depth: modele.piece.profondeur_m - modele.emprise.p_m, height: modele.piece.hauteur_m }}
+            eye={eye}
+            unitGroupRef={unitGroupRef}
+            colonnes={modele.colonnes}
+            scene={modele}
+            cotesVisibles={dimsVisible && dimLevel !== 'designer'}
+          />
+        )}
+        <SceneLights radius={Math.hypot(w, h, d) / 2} contrasted={schema} fenetre={fenetreMonde} />
         {/* <OrthographicCamera makeDefault zoom={100} position={[0, h / 2, 100]} /> */}
         {dev ? (
           <OrthographicCamera
@@ -448,32 +783,22 @@ export function Shape3D ({
             position={[0, h / 2, 100]}
           />
         ) : (
-          // A wider-than-default FOV (drei's default is 50) takes in more of
-          // the room around the shape. `CameraHandler` reads `fov` off the
-          // camera, so zone framing follows it.
-          //
-          // NO `position` prop: drei re-applies it on every re-render, which
-          // would clobber the distance `FitToShape` computes (and the position
-          // `CameraHandler` lerps to). The camera's placement is owned
-          // imperatively by those two, starting from the fit.
-          // `position` is the INITIAL placement only: drei re-applies this
-          // prop whenever it changes, so it is deliberately a constant. The
-          // real distance is set imperatively by `FitToShape` (and then by
-          // `CameraHandler` for zone framing); a changing prop here would
-          // clobber both, and omitting it entirely leaves the camera at the
-          // origin, where OrbitControls collapses it onto its own target.
+          // Eye-level three-quarter view (charte: no overhead, no low angle):
+          // fov 35 instead of 65 (wide-angle distortion), camera at eye height
+          // and at the distance that fits the whole unit — see `initialCamera`.
           <PerspectiveCamera
             makeDefault
-            position={CAM_INITIAL_POS}
-            fov={CAM_FOV}
-            zoom={CAM_ZOOM}
+            position={initialCamera.position}
+            fov={settings.fov}
           />
         )}
         {/* <OrthographicCamera makeDefault position={[0, 0, 100]} zoom={100} /> */}
-        <group position={[ox, 0, oz]}>
+        <group position={[ox, 0, oz]} ref={unitGroupRef}>
           <group scale={[SCALE, SCALE, SCALE]}>
             {boxes.map(b => {
               if (b.depth === 0 && !b.isArticle) return null
+              // les pièces viennent de fox-cad : les boîtes d'Otman ne dessinent rien (en mode dev, leurs arêtes et la sélection restent)
+              if (foxcad && !dev) return null
               return (
                 <BoxItem
                   key={b.index}
@@ -491,64 +816,149 @@ export function Shape3D ({
                   globalVars={globalVars}
                   hidden={hiddenIndexes.has(b.index)}
                   hasDoor={hasDoor}
-                  doorOpen={doorsOpen}
-                  dimCpConfig={showDims ? dimCpConfig : null}
-                  showDims={showDims}
-                  contrasted={contrasted}
+                  doorOpen={doorsOpenEff || boxDoorOpen(b.index)}
+                  doorsRemoved={doorsRemovedEff}
+                  dimCpConfig={designerDims ? dimCpConfig : null}
+                  showDims={designerDims}
+                  contrasted={schema}
                   hideArticle={hideArticle}
                   frameOnly={frameOnly}
+                  sansContenu={foxcad !== null}
                 />
               )
             })}
+            {foxcad && foxcad.reponse && (
+              <FoxCadPieces
+                positions={foxcad.positions}
+                reponse={foxcad.reponse}
+                globalVars={globalVars}
+                hiddenIndexes={hiddenIndexes}
+                doorOpenFor={doorOpenFor}
+                doorsRemoved={doorsRemovedEff}
+                contrasted={schema}
+              />
+            )}
+            {/* 23/09 : le chemin d'Otman superposé aux pièces de fox-cad — ses panneaux masqués, ses rendus spéciaux gardés (tringle,
+                façade spéciale d'une zone sans porte fox-cad, poignée GLB) ; monté dès qu'un calcul a répondu, comme les pièces */}
+            {foxcad && foxcad.reponse && (
+              <SuperpositionOtman
+                boxes={boxes}
+                positions={foxcad.positions}
+                reponse={foxcad.reponse}
+                portesPleines={foxcad.portesPleines ?? null}
+                globalVars={globalVars}
+                hiddenIndexes={hiddenIndexes}
+                doorOpenFor={doorOpenFor}
+                doorsRemoved={doorsRemovedEff}
+                contrasted={schema}
+              />
+            )}
           </group>
 
           {(!dev || wallsShown) && !frameOnly && (
             <Suspense fallback={null}>
               <RoomWalls
-                dev={dev}
                 w={w}
                 h={h}
                 d={d}
                 boxes={boxes}
                 scale={SCALE}
+                contrasted={schema}
+                mursOmbre={!!fenetreMonde}
+                rampants={modele.rampants}
               />
             </Suspense>
           )}
-          <GroundShadow w={w} d={d} />
+          {/* Client mode: the room floor (standard material) receives the
+              shadow itself; the shadow catcher is only needed in schema mode,
+              where the floor is a flat basic material. */}
+          {(dev || schema) && <GroundShadow w={w} d={d} />}
+          {!dev && !schema && settings.humanShadow && flags.shadows && (
+            <HumanShadow w={w} d={d} keyDir={[-0.8, 1.4, 1.2]} />
+          )}
+          {dimsVisible && dimLevel !== 'designer' && (
+            <Dimensions
+              w={w}
+              h={h}
+              d={d}
+              boxes={boxes}
+              scale={SCALE}
+              level={dimLevel}
+              walls={{ left: wallLeft !== null, right: wallRight !== null }}
+              ceilingFlush={settings.roomEnabled && settings.ceilingGap < 0.3}
+            />
+          )}
+          {/* Interior chains (clear heights between shelves, widths between
+              dividers), measured on the rendered geometry — only when the
+              interior can be seen. */}
+          <InteriorDims
+            target={unitGroupRef}
+            bounds={{ w, h, d }}
+            visible={
+              dimsVisible &&
+              dimLevel === 'detaillees' &&
+              (doorsOpenEff || doorsRemovedEff)
+            }
+          />
         </group>
+        {/* Under a named shot the rig owns the camera outright: no orbit, no
+            eye-height sync, no fit margin, no walk, no preset — anything that
+            calls `controls.update()` would drag the camera off its station. */}
+        {!priseSpec && (
         <OrbitControls
           ref={controlsRef}
-          target={[0, h / 2, 0]}
-          // enableDamping
+          target={initialCamera.target}
+          // Banc de rendu 2026-09-10: zoom and rotation are always open (were
+          // dev-only / behind the free-look toggle), bounded so the customer
+          // can zoom onto a handle but never see the unit from above or below.
+          enableDamping
+          dampingFactor={0.08}
           rotateSpeed={0.5}
-          // minDistance={dev ? 1 : 60}
-          // maxDistance={dev ? 500 : 124}
-          dampingFactor={0.05}
-          enableZoom={dev}
-          // Dev keeps its free camera; outside dev, rotation is what the
-          // free-look toggle grants (WallClamp below bounds it).
-          enableRotate={dev || freeLook}
-          // Panning is never offered outside dev: it slides the unit off
-          // centre, which free-look's rotation clamp can't pull back.
+          enableZoom
+          zoomToCursor
+          minDistance={dev ? 1 : initialCamera.distance * 0.45}
+          maxDistance={dev ? 500 : initialCamera.distance * 2.2}
+          // The polar range must contain the framing, or the first `update()`
+          // drags the camera off the eye height it was just placed at.
+          minPolarAngle={dev ? 0 : polarLimits(initialCamera.polar).min}
+          maxPolarAngle={dev ? Math.PI : polarLimits(initialCamera.polar).max}
           enablePan={dev}
+          enableRotate
         />
-        {/* Opening view: frame the whole unit rather than sitting at a fixed
-            distance that suits only one shape size. */}
-        {!dev && (
-          <FitToShape
+        )}
+        {!dev && !walk && !priseSpec && settings.camera === 'auto' && (
+          <EyeHeightSync eye={eye} controlsRef={controlsRef} />
+        )}
+        {!dev && !walk && !priseSpec && (
+          <FitMargin
+            margin={dimsVisible ? 1.4 : 1.15}
             controlsRef={controlsRef}
-            zoneOwnsCamera={zoneOwnsCamera}
-            enabled={dimsResolved}
-            onFitted={markOpeningFitDone}
-            w={fit.w}
-            h={fit.h}
-            d={fit.d}
-            targetY={h / 2}
+          />
+        )}
+        {!dev && !priseSpec && (
+          <WalkMode
+            active={walk}
+            controlsRef={controlsRef}
+            eye={eye}
+            limits={walkLimits}
+            onExit={leaveWalk}
           />
         )}
         {/* Free-look hands the camera to the user, so the zone framing stands
             down entirely — unmounting it also drops its per-frame lerp. */}
-        {!dev && !freeLook && (
+        {!dev && !walk && !priseSpec && settings.camera !== 'auto' && (
+          <CameraPreset
+            preset={settings.camera}
+            bounds={{ w, h, d }}
+            walls={{ left: wallLeft !== null, right: wallRight !== null }}
+            wallsM={{ left: wallLeft, right: wallRight }}
+            controlsRef={controlsRef}
+            fov={settings.fov}
+            eye={eye}
+            margin={dimsVisible ? 1.4 : 1.15}
+          />
+        )}
+        {!dev && !freeLook && !walk && !priseSpec && settings.camera === 'auto' && (
           <CameraHandler
             controlsRef={controlsRef}
             isInitialZoneRequest={isInitialZoneRequest}
@@ -559,9 +969,11 @@ export function Shape3D ({
             ox={ox}
             oz={oz}
             scale={SCALE}
+            wallLeft={wallLeft}
+            wallRight={wallRight}
           />
         )}
-        {!dev && freeLook && (
+        {!dev && freeLook && !walk && !priseSpec && (
           <WallClamp
             controlsRef={controlsRef}
             wallLeft={wallLeft}
@@ -569,9 +981,172 @@ export function Shape3D ({
             halfHeight={h / 2.4}
           />
         )}
+        </BancContext.Provider>
       </Canvas>
     </div>
   )
+}
+
+/**
+ * Pulls back when the dimension lines appear, and comes back in when they go.
+ *
+ * The lines are drawn *outside* the unit, so at the framing that fits the unit
+ * alone they fall off the edge of the canvas: measured on the 8 000 mm CMB,
+ * turning the cotes on changed nothing on screen but a digit clipped at the
+ * left border. The initial framing already knows the answer (margin 1.4 with
+ * cotes, 1.15 without) but it runs once, at mount.
+ *
+ * Scaling the orbit radius rather than re-framing is deliberate: the customer
+ * keeps the angle they had chosen, the view just breathes out.
+ */
+function FitMargin ({
+  margin,
+  controlsRef
+}: {
+  margin: number
+  controlsRef: React.RefObject<OrbitControlsImpl | null>
+}) {
+  const camera = useThree(s => s.camera)
+  const last = useRef(margin)
+  useEffect(() => {
+    if (margin === last.current) return
+    const ratio = margin / last.current
+    last.current = margin
+    const controls = controlsRef.current
+    if (!controls) return
+    const offset = camera.position.clone().sub(controls.target)
+    if (offset.lengthSq() < 1e-6) return
+    controls.maxDistance = Math.max(
+      controls.maxDistance,
+      offset.length() * ratio
+    )
+    camera.position.copy(controls.target).addScaledVector(offset, ratio)
+    controls.update()
+  }, [margin, camera, controlsRef])
+  return null
+}
+
+/**
+ * Keeps the camera at the eye height while the customer drags the slider,
+ * without re-framing: the orbit radius and azimuth are the user's, only the
+ * polar angle moves so the eye lands at the asked-for height. Re-running the
+ * initial framing instead would throw away whatever rotation they had made.
+ */
+function EyeHeightSync ({
+  eye,
+  controlsRef
+}: {
+  eye: number
+  controlsRef: React.RefObject<OrbitControlsImpl | null>
+}) {
+  const camera = useThree(s => s.camera)
+  const first = useRef(true)
+  useEffect(() => {
+    if (first.current) {
+      first.current = false
+      return
+    }
+    const controls = controlsRef.current
+    if (!controls) return
+    const offset = camera.position.clone().sub(controls.target)
+    const radius = offset.length()
+    if (radius < 1e-3) return
+    const az = Math.atan2(offset.x, offset.z)
+    const polar = Math.acos(
+      THREE.MathUtils.clamp((eye - controls.target.y) / radius, -0.9, 0.9)
+    )
+    camera.position
+      .set(
+        radius * Math.sin(polar) * Math.sin(az),
+        radius * Math.cos(polar),
+        radius * Math.sin(polar) * Math.cos(az)
+      )
+      .add(controls.target)
+    const limits = polarLimits(polar)
+    controls.minPolarAngle = limits.min
+    controls.maxPolarAngle = limits.max
+    controls.update()
+  }, [eye, camera, controlsRef])
+  return null
+}
+
+function InitialFrame ({
+  bounds,
+  fov,
+  eye,
+  controlsRef,
+  wallLeft,
+  wallRight,
+  margin = 1.15
+}: {
+  bounds: { w: number; h: number; d: number }
+  fov: number
+  /** Eye height above the floor (m). */
+  eye: number
+  controlsRef: React.RefObject<OrbitControlsImpl | null>
+  wallLeft: number | null
+  wallRight: number | null
+  /** Fit margin: 1.15 for the unit alone, wider when dimension lines sit around it. */
+  margin?: number
+}) {
+  const camera = useThree(s => s.camera)
+  const aspect = useThree(s => s.viewport.aspect)
+  const done = useRef(false)
+  useEffect(() => {
+    if (done.current) return
+    const persp = camera as THREE.PerspectiveCamera
+    if (!persp.isPerspectiveCamera) return
+    const f = frameUnit({
+      bounds,
+      fov,
+      aspect,
+      margin,
+      eye,
+      wallLeft,
+      wallRight
+    })
+    camera.position.copy(f.position)
+    const controls = controlsRef.current
+    if (controls) {
+      controls.target.copy(f.target)
+      controls.minDistance = f.distance * 0.45
+      controls.maxDistance = f.distance * 2.2
+      const limits = polarLimits(f.polar)
+      controls.minPolarAngle = limits.min
+      controls.maxPolarAngle = limits.max
+      controls.update()
+    } else {
+      camera.lookAt(f.target)
+    }
+    done.current = true
+  }, [camera, aspect, bounds, fov, eye, controlsRef, wallLeft, wallRight, margin])
+  return null
+}
+
+/**
+ * Keeps the renderer's tone mapping in step with the mode after mount: the
+ * `gl` prop only applies at creation, so toggling schema mode would otherwise
+ * leave ACES on. Schema mode wants the flat, untouched colours.
+ */
+function ToneMappingSync ({
+  schema,
+  settings
+}: {
+  schema: boolean
+  settings: BancSettings
+}) {
+  const gl = useThree(s => s.gl)
+  useEffect(() => {
+    const map: Record<string, THREE.ToneMapping> = {
+      aces: THREE.ACESFilmicToneMapping,
+      agx: THREE.AgXToneMapping,
+      neutral: THREE.NeutralToneMapping,
+      none: THREE.NoToneMapping
+    }
+    gl.toneMapping = schema ? THREE.NoToneMapping : map[settings.toneMapping]
+    gl.toneMappingExposure = settings.exposure
+  }, [gl, schema, settings.toneMapping, settings.exposure])
+  return null
 }
 
 /**
@@ -663,134 +1238,18 @@ function WallClamp ({
  * Box coords are in mm and the scene group is offset by `[ox, 0, oz]` then
  * scaled by `scale`, so a box point `(x, y, z)` lands at world
  * `(ox + x·scale, y·scale, oz + z·scale)`.
- */
-/**
- * Frames the whole shape on mount: pushes the camera back to the distance at
- * which the unit's full width and height fit the frustum.
  *
- * The static camera sits at a fixed `z = 100`, which frames a large unit
- * acceptably but leaves a small one tiny in the middle of the view (a 900mm
- * unit fills about 8% of the width). Fitting to the real bounds makes the
- * opening shot consistent at any size.
- *
- * Runs once, and only before any zone framing has happened — `CameraHandler`
- * owns the camera after that.
+ * Webapp-only zone-camera claiming (kept from before this merge, not present
+ * on the branch): the form emits a `goToZone` as soon as it mounts, for
+ * whatever zone it opens on. Framing that would drop the user into a
+ * close-up of a single (often article-sized) zone instead of the whole unit,
+ * so it is ignored (`isInitialZoneRequest`); every later request is a real
+ * navigation and frames normally. Likewise a zone claim must wait for the
+ * opening fit (`openingFitDone`) — the branch's initial framing is handled
+ * synchronously by `InitialFrame`/`frameUnit` rather than an async
+ * `FitToShape`, but the ref plumbing is still useful protection against a
+ * `goToZone` racing the very first render before dims resolve.
  */
-function FitToShape ({
-  controlsRef,
-  zoneOwnsCamera,
-  enabled,
-  onFitted,
-  w,
-  h,
-  d,
-  targetY
-}: {
-  controlsRef: React.RefObject<OrbitControlsImpl | null>
-  /** Set by `CameraHandler` once a zone has taken the camera. While false the
-   *  opening view is ours to (re)fit; once true we stand down for good. */
-  zoneOwnsCamera: React.RefObject<boolean>
-  /** False while the shape dimensions are still unresolved; fitting then would
-   *  frame the fallback box and, once a zone claims the camera, never correct
-   *  itself. */
-  enabled: boolean
-  /** Called after the opening fit lands, releasing zone framing to take over. */
-  onFitted: () => void
-  /** Full extent of everything drawn, in world units — not just the shape's
-   *  declared envelope, so nothing sitting outside it gets clipped. */
-  w: number
-  h: number
-  d: number
-  /** Height the orbit target sits at, matching `OrbitControls`' own target so
-   *  the fit and the controls agree on what the camera looks at. */
-  targetY: number
-}) {
-  const { camera, size } = useThree()
-  // The bounds come from form variables and the canvas is measured
-  // asynchronously, so the first render often has fallback dimensions or a
-  // zero-width canvas. Refit whenever the inputs actually change rather than
-  // locking in that first guess; the key keeps it to one fit per distinct size.
-  const lastFit = useRef<string | null>(null)
-  // Placement computed by the effect, applied on the next frame (see above).
-  const pending = useRef<{ y: number; dist: number } | null>(null)
-
-  // `fov`/`zoom` come from the JSX props; only the placement is imperative.
-  useFrame(() => {
-    const p = pending.current
-    if (!p) return
-    pending.current = null
-    camera.position.set(0, p.y, p.dist)
-    const controls = controlsRef.current
-    if (controls) {
-      controls.target.set(0, p.y, 0)
-      controls.update()
-    }
-    camera.updateProjectionMatrix()
-    onFitted()
-  })
-
-  useEffect(() => {
-    // Dimensions still in flight: the bounds are placeholders, so fitting now
-    // would frame the wrong box.
-    if (!enabled) return
-    // A zone owns the camera now — never pull the view back to the whole shape.
-    if (zoneOwnsCamera.current) return
-    // Nothing to fit until the shape has real dimensions and the canvas has
-    // been measured (aspect is meaningless at zero width).
-    if (w <= 0 || h <= 0 || size.width === 0) return
-    const key = `${w}x${h}x${d}x${targetY}x${size.width}x${size.height}`
-    if (lastFit.current === key) return
-    lastFit.current = key
-
-    const persp = camera as THREE.PerspectiveCamera
-    // Derive the frustum from the canvas and the INTENDED camera settings, not
-    // from whatever is on the camera object right now: this effect can run
-    // before R3F applies the `fov`/`zoom` props, when the camera still reports
-    // three.js defaults and the fit comes out an order of magnitude too close.
-    const aspect = size.width / size.height || persp.aspect || 1
-    // `zoom` magnifies the view, so fold it into the effective FOV — the same
-    // adjustment `CameraHandler` makes when fitting a zone.
-    const tanV = Math.tan(THREE.MathUtils.degToRad(CAM_FOV) / 2) / CAM_ZOOM
-    const tanH = tanV * aspect
-
-    // The camera looks at `targetY`, so the vertical half-span that must fit
-    // is the larger distance from there to the top or the bottom of the
-    // content — not simply half the height.
-    const halfV = Math.max(targetY, h - targetY)
-
-    // Fit both axes and take the larger distance so neither is clipped.
-    //
-    // The frustum widens with distance, so the *nearest* geometry is what
-    // constrains the view: a deep shape (the CMB combinations are as deep as
-    // they are wide) has its front face `d / 2` closer to the camera than the
-    // orbit target at z = 0. Fit against that near face, then push back by
-    // `d / 2` so the measured distance is preserved — adding the depth to a
-    // centre-measured fit would leave the front corners overflowing.
-    const margin = 1.12
-    const halfD = d / 2
-    const dist = Math.max(halfV / tanV, w / 2 / tanH) * margin + halfD
-
-    // Hand the computed placement to the frame loop rather than applying it
-    // here: drei re-applies the camera's `position` prop after this effect, so
-    // an imperative write now is immediately overwritten. `useFrame` runs after
-    // that commit, so applying there sticks.
-    pending.current = { y: targetY, dist }
-  }, [
-    camera,
-    size,
-    w,
-    h,
-    d,
-    targetY,
-    enabled,
-    onFitted,
-    controlsRef,
-    zoneOwnsCamera
-  ])
-
-  return null
-}
-
 function CameraHandler ({
   controlsRef,
   isInitialZoneRequest,
@@ -800,7 +1259,9 @@ function CameraHandler ({
   selectedIndex,
   ox,
   oz,
-  scale
+  scale,
+  wallLeft = null,
+  wallRight = null
 }: {
   controlsRef: React.RefObject<OrbitControlsImpl | null>
   /** True for the form's mount-time `goToZone` only, which is ignored so the
@@ -808,18 +1269,19 @@ function CameraHandler ({
    *  requests are real navigations and frame normally. State lives in the
    *  parent so free-look unmounting this doesn't reset it. */
   isInitialZoneRequest: () => boolean
-  /** Called when a zone actually takes the camera, so `FitToShape` stops
-   *  refitting the opening view. */
+  /** Called when a zone actually takes the camera. */
   claimCameraForZone: () => void
   /** Whether the opening fit has landed. A zone request arriving before it
-   *  (the dimensions are still resolving) must not claim the camera, or the
-   *  view stays stuck on the fallback framing. */
+   *  must not claim the camera, or the view stays stuck on the fallback
+   *  framing. */
   openingFitDone: React.RefObject<boolean>
   boxes: ShapeBox[]
   selectedIndex: string | null
   ox: number
   oz: number
   scale: number
+  wallLeft?: number | null
+  wallRight?: number | null
 }) {
   const { camera } = useThree()
 
@@ -893,9 +1355,25 @@ function CameraHandler ({
 
     const offset = new THREE.Vector3()
     switch (side) {
-      case 'FRONT':
-        offset.set(0, 0, dist)
+      case 'FRONT': {
+        // Banc de rendu 2026-09-10: the front view is a three-quarter view at
+        // eye height (charte: no flat elevation, no overhead), not a straight
+        // elevation. Same azimuth / polar as the initial framing, kept inside
+        // the room walls.
+        const az = clampedAzimuth(
+          THREE.MathUtils.degToRad(-35),
+          dist,
+          wallLeft,
+          wallRight
+        )
+        const polar = THREE.MathUtils.degToRad(82)
+        offset.set(
+          dist * Math.sin(polar) * Math.sin(az),
+          dist * Math.cos(polar),
+          dist * Math.sin(polar) * Math.cos(az)
+        )
         break
+      }
       case 'BACK':
         offset.set(0, 0, -dist)
         break
@@ -932,7 +1410,9 @@ function CameraHandler ({
     controlsRef,
     isInitialZoneRequest,
     claimCameraForZone,
-    openingFitDone
+    openingFitDone,
+    wallLeft,
+    wallRight
   ])
 
   useFrame(() => {
@@ -956,63 +1436,7 @@ function CameraHandler ({
   return null
 }
 
-// Ruler glyph for the dimensions toggle.
-function RulerIcon () {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='1.8'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    >
-      <path d='M3 8.5 8.5 3 21 15.5 15.5 21z' />
-      <path d='M8 8l1.5 1.5M11 5l2 2M14 8l1.5 1.5M5 11l2 2' />
-    </svg>
-  )
-}
-
-// Contrast glyph: a circle split into a filled and an empty half.
-function ContrastIcon () {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='1.8'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    >
-      <circle cx='12' cy='12' r='9' />
-      <path d='M12 3a9 9 0 0 1 0 18z' fill='currentColor' stroke='none' />
-    </svg>
-  )
-}
-
-// Orbit glyph for the rotation toggle: a body with a ring swung around it.
-function OrbitIcon () {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='1.8'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    >
-      <circle cx='12' cy='12' r='3.2' />
-      <ellipse cx='12' cy='12' rx='10' ry='4.6' transform='rotate(-30 12 12)' />
-    </svg>
-  )
-}
-
+// The customer-facing glyphs moved to `ViewerControls` with their buttons.
 // Eye glyph; a slash crosses it out when `off` (article hidden).
 function EyeIcon ({ off }: { off: boolean }) {
   return (
@@ -1028,6 +1452,26 @@ function EyeIcon ({ off }: { off: boolean }) {
     >
       <path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z' />
       <circle cx='12' cy='12' r='3' />
+      {off && <path d='M3 3l18 18' />}
+    </svg>
+  )
+}
+
+// Brick-wall glyph; a slash crosses it out when `off` (walls hidden).
+function WallIcon ({ off }: { off: boolean }) {
+  return (
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.8'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <rect x='3' y='5' width='18' height='14' rx='1' />
+      <path d='M3 9.7h18M3 14.3h18M9 5v4.7M15 9.7v4.6M9 14.3V19' />
       {off && <path d='M3 3l18 18' />}
     </svg>
   )
@@ -1049,76 +1493,6 @@ function DoorPanelIcon ({ off }: { off: boolean }) {
       <rect x='5' y='3' width='14' height='18' rx='1' />
       <circle cx='15.5' cy='12' r='1' />
       {off && <path d='M3 3l18 18' />}
-    </svg>
-  )
-}
-
-// Brick-wall glyph; a slash crosses it out when `off` (walls hidden).
-// Open-carcass glyph for the dev "frame only" toggle: a cabinet shell with
-// its top, bottom and sides, and nothing inside.
-function FrameIcon () {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='1.8'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    >
-      <path d='M4 4h16v16H4z' />
-      <path d='M4 7.5h16M4 16.5h16M7.5 7.5v9M16.5 7.5v9' />
-    </svg>
-  )
-}
-
-function WallIcon ({ off }: { off: boolean }) {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='1.8'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    >
-      <rect x='3' y='5' width='18' height='14' rx='1' />
-      <path d='M3 9.7h18M3 14.3h18M9 5v4.7M15 9.7v4.6M9 14.3V19' />
-      {off && <path d='M3 3l18 18' />}
-    </svg>
-  )
-}
-
-// Simple door glyph: a panel with a knob; the panel is ajar when `open`.
-function DoorIcon ({ open }: { open: boolean }) {
-  return (
-    <svg
-      width='20'
-      height='20'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth='1.8'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    >
-      <path d='M3 21h18' />
-      {open ? (
-        <>
-          <path d='M14 21V5l6-2v18' />
-          <path d='M11 21V8' />
-          <circle cx='17' cy='12' r='0.6' fill='currentColor' stroke='none' />
-        </>
-      ) : (
-        <>
-          <rect x='6' y='3' width='12' height='18' rx='1' />
-          <circle cx='15' cy='12' r='0.6' fill='currentColor' stroke='none' />
-        </>
-      )}
     </svg>
   )
 }

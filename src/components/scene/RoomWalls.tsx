@@ -1,92 +1,32 @@
 'use client'
 
-import { memo, useMemo } from 'react'
-import { CanvasTexture, DoubleSide, FrontSide, SRGBColorSpace } from 'three'
+import { memo, useEffect, useMemo } from 'react'
+import * as THREE from 'three'
+import { BackSide, CanvasTexture, DoubleSide, FrontSide, NoColorSpace } from 'three'
 import type { Box as ShapeBox } from './shapeTree'
+import { bancFlags, useBanc } from './banc/BancContext'
+import { hauteurPlafond, modeleScene, type FenetrePlan, type MurPlan, type Rampant } from '@/lib/pipeline/scene'
+import { valeursCourantes } from '@/lib/pipeline/bridge'
 
-/** The cp a zone puts on a face to say "a room wall stands here". */
-export const WALL_CP = 'CP_SPO_WALL'
+// The wall cp and its finder moved to the parametric scene model
+// (`lib/pipeline/scene.ts`, 2026-09-15) so that the drawn room, the camera
+// stations and the published fiche derive from ONE computation. Re-exported
+// here so existing imports keep working.
+export { WALL_CP, findCpWalls, type CpWall } from '@/lib/pipeline/scene'
 
-/**
- * A room wall derived from a box face carrying {@link WALL_CP}: the axis the
- * face looks along, which side of the box it is, and the face's extent — all in
- * *scene units* (mm × scale), since the room renders outside the scaled group
- * the boxes live in.
- */
-export type CpWall = {
-  key: string
-  /** Face normal axis. */
-  axis: 'x' | 'z'
-  /** -1 = low side of the box (left / front), +1 = high side (right / back). */
-  sign: -1 | 1
-  /** Plane position along the normal axis. */
-  at: number
-  /** Center of the face along its in-plane horizontal axis. */
-  center: number
-  /** Face size along that in-plane axis. */
-  size: number
-}
+// A linear fade band: fully opaque at `at` (0..1 along the axis, where the
+// unit stands) fading to transparent over `reach` (0..1) on each side.
+// `axis` 'u' runs along the first plane arg, 'v' along the second (V up).
+type FadeBand = { axis: 'u' | 'v'; at: number; reach: number }
 
 /**
- * One wall per box face referencing {@link WALL_CP}. `left`/`right` are the
- * x-normal faces, `front`/`back` the z-normal ones; `top`/`bottom` are ignored
- * since a room wall is vertical (and the floor/ceiling are always drawn).
- *
- * Box coords are mm — `scale` converts them to the room's scene units.
+ * Alpha texture for the room fade (banc de rendu 2026-09-10 — Maatkasten's
+ * `RoomWallFadeMaterial`): white (opaque) where the unit stands, black
+ * (transparent) beyond `reach`, so the room shows around the unit and
+ * dissolves into the page beige instead of running to infinity.
+ * `alphaMap` reads the green channel, so a grey ramp is enough.
  */
-export function findCpWalls (
-  boxes: Array<Pick<ShapeBox, 'index' | 'x' | 'z' | 'w' | 'd' | 'sides'>>,
-  scale: number
-): CpWall[] {
-  const walls: CpWall[] = []
-  for (const b of boxes) {
-    if (!b.sides) continue
-    // `sides[*].cp` is already resolved from any `#DS_*` descriptor ref by
-    // walkZone, so comparing the concrete name is enough.
-    const faces = [
-      ['left', 'x', -1, b.x, b.z, b.d],
-      ['right', 'x', 1, b.x + b.w, b.z, b.d],
-      ['front', 'z', -1, b.z, b.x, b.w],
-      ['back', 'z', 1, b.z + b.d, b.x, b.w]
-    ] as const
-    for (const [face, axis, sign, at, spanStart, spanSize] of faces) {
-      if (b.sides[face]?.cp !== WALL_CP) continue
-      walls.push({
-        key: `${b.index}:${face}`,
-        axis,
-        sign,
-        at: at * scale,
-        center: (spanStart + spanSize / 2) * scale,
-        size: spanSize * scale
-      })
-    }
-  }
-  return walls
-}
-
-// A linear gradient band on a wall: gray at `at` (0..1 along the axis, where the
-// unit contacts the wall) fading to transparent over `reach` (0..1) on each
-// side. `axis` 'u' runs along the first plane arg, 'v' along the second (V up).
-type WallBand = { axis: 'u' | 'v'; at: number; reach: number }
-
-const GRAY = 'rgba(196, 199, 204, 1)'
-/** Ceiling band: darker than the walls', so the room reads as lit from below. */
-const GRAY_TOP = 'rgba(150, 154, 161, 1)'
-const GRAY_TRANSPARENT = 'rgba(255, 255, 255, 1)'
-
-/**
- * Builds a straight (linear) gradient texture: a gray band at `band.at` fading
- * to fully transparent over `band.reach` to either side, like a soft shadow
- * line where the unit meets the wall. Mapped onto a transparent plane (which
- * still receives the unit's cast shadow).
- *
- * `gray` overrides the band colour, so a surface can sit darker than the rest
- * (the ceiling does).
- */
-function makeLinearGradient (
-  band: WallBand,
-  gray: string = GRAY
-): CanvasTexture | null {
+function makeFadeAlpha (band: FadeBand): CanvasTexture | null {
   if (typeof document === 'undefined') return null
   const N = 256
   const horizontal = band.axis === 'u'
@@ -102,242 +42,468 @@ function makeLinearGradient (
   const grad = horizontal
     ? ctx.createLinearGradient(0, 0, N, 0)
     : ctx.createLinearGradient(0, 0, 0, N)
-  const lo = Math.max(0, pos - band.reach)
-  const hi = Math.min(1, pos + band.reach)
-  grad.addColorStop(0, GRAY_TRANSPARENT)
-  if (lo > 0) grad.addColorStop(lo, GRAY_TRANSPARENT)
-  grad.addColorStop(pos, gray)
-  if (hi < 1) grad.addColorStop(hi, GRAY_TRANSPARENT)
-  grad.addColorStop(1, GRAY_TRANSPARENT)
+  // Smooth ramp (ease-out) from opaque at the unit to transparent at `reach`,
+  // sampled in a few stops so the dissolve has no visible edge.
+  const solid = band.reach * 0.3
+  const stops = 8
+  const ramp = (from: number, to: number) => {
+    for (let i = 0; i <= stops; i++) {
+      const t = i / stops
+      const p = from + (to - from) * t
+      if (p < 0 || p > 1) continue
+      // Ease-in: fast start, long tail — no perceptible edge where it ends.
+      const a = (1 - t) * (1 - t)
+      const v = Math.round(a * 255)
+      grad.addColorStop(p, `rgb(${v},${v},${v})`)
+    }
+  }
+  grad.addColorStop(0, pos - band.reach <= 0 ? '#ffffff' : '#000000')
+  ramp(Math.max(0, pos - solid), Math.max(0, pos - band.reach))
+  grad.addColorStop(pos, '#ffffff')
+  ramp(Math.min(1, pos + solid), Math.min(1, pos + band.reach))
+  grad.addColorStop(1, pos + band.reach >= 1 ? '#ffffff' : '#000000')
   ctx.fillStyle = grad
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
   const tex = new CanvasTexture(canvas)
-  tex.colorSpace = SRGBColorSpace
+  tex.colorSpace = NoColorSpace
   return tex
 }
 
+/** Client-mode palette: warm off-whites from the charte / site theme. */
+const CLIENT = {
+  wall: '#F1EFE8',
+  floor: '#E6E1D6',
+  ceiling: '#FFFFFF'
+}
+
 /**
- * Decorative white-plane room around the shape. The shape occupies the box
- * x∈[0,w], y∈[0,h], z∈[0,d] (scene units) in the parent group. Floor and
- * ceiling are always drawn (the back wall is currently disabled); the side
- * walls come from the shape itself — one per box face carrying the
- * `CP_SPO_WALL` cp, standing at that face.
+ * Schema-mode palette (idée de Clément, 10/09): one grey density per surface,
+ * lightest on top and darkest on the floor, so the AI pipeline reads ceiling,
+ * walls and floor without any decor.
+ */
+const SCHEMA = {
+  ceiling: '#F2F2F2',
+  backWall: '#DCDCDC',
+  sideWall: '#C8C8C8',
+  floor: '#B4B4B4'
+}
+
+/** B4 : les coordonnées (le long d'un axe) où le profil du plafond change de pente — les pieds et les genoux des rampants — dans [de, a]. */
+function ruptures (rampants: Rampant[], axe: 'x' | 'z', de: number, a: number): number[] {
+  const xs = new Set<number>([de, a])
+  for (const r of rampants) {
+    if (r.axe !== axe) continue
+    for (const c of [r.depuis_m, r.depuis_m + r.sens * r.projection_m]) if (c > de + 1e-6 && c < a - 1e-6) xs.add(c)
+  }
+  return [...xs].sort((p, q) => p - q)
+}
+
+/**
+ * B4 : le plafond sous rampant — une nappe par cellule entre les ruptures en x et en z (le plafond y est plan : la pente ne change qu'aux
+ * ruptures), les hauteurs par `hauteurPlafond`. UV comme le plan plat : u le long de x, v du mur du fond vers l'avant (le fondu `topAlpha`).
+ */
+function geometriePlafond (rampants: Rampant[], left: number, right: number, roomD: number, wallH: number): THREE.BufferGeometry {
+  const xs = ruptures(rampants, 'x', left, right)
+  const zs = ruptures(rampants, 'z', 0, roomD)
+  const pos: number[] = []
+  const uv: number[] = []
+  const y = (x: number, z: number) => hauteurPlafond(rampants, x, z, wallH)
+  const push = (x: number, z: number) => {
+    pos.push(x, y(x, z), z)
+    uv.push((x - left) / (right - left || 1), z / (roomD || 1))
+  }
+  for (let i = 0; i + 1 < xs.length; i++) {
+    for (let j = 0; j + 1 < zs.length; j++) {
+      const x0 = xs[i]
+      const x1 = xs[i + 1]
+      const z0 = zs[j]
+      const z1 = zs[j + 1]
+      push(x0, z0); push(x1, z1); push(x1, z0)
+      push(x0, z0); push(x0, z1); push(x1, z1)
+    }
+  }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
+  g.computeVertexNormals()
+  return g
+}
+
+/** le plafond à l'aplomb d'un point d'un mur (u le long du mur) */
+const plafondDuMur = (mur: MurPlan, rampants: Rampant[], wallH: number, u: number): number =>
+  mur.axe === 'z' ? hauteurPlafond(rampants, u, mur.at, wallH) : hauteurPlafond(rampants, mur.at, u, wallH)
+
+/** B4 : le haut de ce mur est-il plat au plafond plat ? Si oui, il se dessine comme avant (le plan d'aujourd'hui). */
+function murPlat (mur: MurPlan, rampants: Rampant[], wallH: number): boolean {
+  if (!rampants.length) return true
+  const axe = mur.axe === 'z' ? 'x' : 'z'
+  return ruptures(rampants, axe, mur.de, mur.a).every(u => Math.abs(plafondDuMur(mur, rampants, wallH, u) - wallH) < 1e-6)
+}
+
+/**
+ * B4 : un mur dont le haut suit le plafond en pente — un polygone (u le long du mur, y) triangulé (`ShapeUtils`), troué de sa baie ;
+ * UV : u ∈ [0, 1] de `de` à `a`, v = y / wallH — le fondu de la pièce s'exprime dans ce repère-là (voir `alphaPolygone`).
+ */
+function geometrieMur (mur: MurPlan, rampants: Rampant[], wallH: number, trou: { u0: number; u1: number; y0: number; y1: number } | null): THREE.BufferGeometry {
+  const axe = mur.axe === 'z' ? 'x' : 'z'
+  const us = ruptures(rampants, axe, mur.de, mur.a)
+  const contour: THREE.Vector2[] = [new THREE.Vector2(mur.de, 0), new THREE.Vector2(mur.a, 0)]
+  for (let i = us.length - 1; i >= 0; i--) contour.push(new THREE.Vector2(us[i], plafondDuMur(mur, rampants, wallH, us[i])))
+  const holes: THREE.Vector2[][] = []
+  if (trou) holes.push([new THREE.Vector2(trou.u0, trou.y0), new THREE.Vector2(trou.u1, trou.y0), new THREE.Vector2(trou.u1, trou.y1), new THREE.Vector2(trou.u0, trou.y1)])
+  const triangles = THREE.ShapeUtils.triangulateShape(contour, holes)
+  const points = [...contour, ...holes.flat()]
+  const pos: number[] = []
+  const uv: number[] = []
+  const en3d = (p: THREE.Vector2): [number, number, number] => (mur.axe === 'z' ? [p.x, p.y, mur.at - 0.002 * mur.normale] : [mur.at - 0.0005 * mur.normale, p.y, p.x])
+  for (const t of triangles) {
+    for (const k of t) {
+      const p = points[k]
+      pos.push(...en3d(p))
+      uv.push((p.x - mur.de) / (mur.a - mur.de || 1), p.y / (wallH || 1))
+    }
+  }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
+  g.computeVertexNormals()
+  return g
+}
+
+/**
+ * Room around the shape. The shape occupies the box x∈[0,w], y∈[0,h], z∈[0,d]
+ * (scene units, metres) in the parent group. Floor and ceiling are always
+ * drawn; the side walls come from the shape itself — one per box face carrying
+ * the `CP_SPO_WALL` cp, standing at that face.
  *
- * `w`/`h`/`d` are the shape's scene-unit dimensions; `boxes` is the walked shape
- * tree (mm), converted to scene units via `scale`. See {@link findCpWalls}.
+ * Banc de rendu 2026-09-10 — what changed:
+ * - the room has real proportions (margins, ceiling height, depth) instead of
+ *   `60 × the unit` and a ceiling sitting on the unit;
+ * - surfaces are `meshStandardMaterial` so they take light and shadow (a
+ *   `meshBasicMaterial` is flat by construction — that was the "painted
+ *   gradient" look);
+ * - the room fades out beyond ~1.5 × the unit width (alpha mask);
+ * - schema mode paints one grey density per surface, no fade.
+ *
+ * B4 (22/09) — le rampant : quand le modèle porte des rampants (HEX / HEX 2), le plafond est une nappe en pente et les murs dont le haut
+ * suit la pente sont des polygones ; tout le reste (sol, murs plats, baies, habillage) se dessine comme avant. Sans rampant, rien ne change.
  */
 export const RoomWalls = memo(function RoomWalls ({
   w,
   h,
   d,
-  dev = false,
   boxes,
-  scale
+  scale,
+  contrasted = false,
+  mursOmbre = false,
+  rampants
 }: {
   w: number
   h: number
   d: number
-  dev: boolean
   boxes: ShapeBox[]
   /** mm → scene units, matching the scaled group the boxes render in. */
   scale: number
+  contrasted?: boolean
+  /** Couche 3 : murs et plafond arrêtent le soleil, seule la fenêtre le laisse entrer (prises du pipeline). */
+  mursOmbre?: boolean
+  /** B4 : les rampants lus par la scène sur les valeurs du formulaire (hors capture, ce composant ne les a pas sous la main). */
+  rampants?: Rampant[]
 }) {
-  const cpWalls = useMemo(() => findCpWalls(boxes, scale), [boxes, scale])
+  const banc = useBanc()
+  const flags = bancFlags(banc)
+  const schema = contrasted || flags.schema
 
-  // Room extends a bit beyond the shape so it doesn't feel cramped.
-  const wallH = h
-  const margin = Math.max(w, d) * (dev ? 6 : 60)
-  const roomD = d + margin
-
-  // Horizontal extent of the floor / ceiling / back wall: it must reach exactly
-  // to each x-normal wall and overhang by `margin` only where the room is open,
-  // otherwise the ceiling juts past one wall and falls short of the other.
-  //
-  // Clamp by the wall's actual position, not its `sign`: a `left` face belonging
-  // to a box at the far end of the shape still has sign -1 but stands on the
-  // right. A wall at or left of the shape's midpoint bounds the left edge, one
-  // right of it bounds the right edge; the outermost wins on each side.
-  const xWalls = cpWalls.filter(k => k.axis === 'x')
-  const mid = w / 2
-  const leftWallAt = xWalls
-    .filter(k => k.at <= mid)
-    .reduce<number | null>(
-      (m, k) => (m === null ? k.at : Math.min(m, k.at)),
-      null
-    )
-  const rightWallAt = xWalls
-    .filter(k => k.at > mid)
-    .reduce<number | null>(
-      (m, k) => (m === null ? k.at : Math.max(m, k.at)),
-      null
-    )
-  // Walled sides land exactly on their wall's plane. A wall is nudged inward by
-  // `WALL_GAP` (see its render below: `at - sign * WALL_GAP`), so the left edge
-  // moves +GAP and the right edge −GAP — otherwise the ceiling overshoots each
-  // wall by that gap. Open sides just overhang by `margin`.
-  const left = leftWallAt !== null ? leftWallAt : -margin
-  const right = rightWallAt !== null ? rightWallAt : w + margin
-  const roomW = right - left
-  const cx = (left + right) / 2
-
-  // A straight gray band per wall where the unit meets it, fading to nothing.
-  // Back wall: a vertical band centered on the unit's mid-height (V axis).
-  // const backTex = useMemo(() => {
-  //   const at = wallH > 0 ? h / 2 / wallH : 0.5
-  //   const reach = wallH > 0 ? Math.max(h / wallH, 0.15) * 0.6 : 0.5
-  //   return makeLinearGradient({ axis: 'v', at, reach })
-  // }, [h, wallH])
-
-  // The two side walls are rotated oppositely about Y (+π/2 vs −π/2), so their
-  // local U axis (world z) points opposite ways on screen. Mirror the band's
-  // position so the gray stays at the front (by the unit) on both.
-  const sideReach = roomD > 0 ? Math.max(d / roomD, 0.15) * 1.2 : 0.5
-  const sideAt = roomD > 0 ? d / 2 / roomD : 0.1
-  const rightSideTex = useMemo(
-    () => makeLinearGradient({ axis: 'u', at: sideAt, reach: sideReach }),
-    [sideAt, sideReach]
+  // The room is DERIVED from the unit — the parametric scene model (rules
+  // A1-A4 of the cahier): walls where the shape declares `CP_SPO_WALL`, a free
+  // margin of max(600 mm, 25 % of the width) elsewhere, the ceiling flush with
+  // the unit top (Dorian, 10/09) plus the bench's gap, a depth that lets the
+  // camera step back to eye level. One computation, shared with the camera
+  // stations and the published fiche.
+  const modele = useMemo(
+    () => modeleScene(boxes, { w, h, d }, valeursCourantes(), scale, banc.ceilingGap, undefined, rampants),
+    [boxes, w, h, d, scale, banc.ceilingGap, rampants]
   )
-  const leftSideTex = useMemo(
-    () => makeLinearGradient({ axis: 'u', at: 1 - sideAt, reach: sideReach }),
-    [sideAt, sideReach]
-  )
+  // Couche 1 (20/09) : les murs se dessinent depuis le PLAN (emprise du meuble), plus depuis les seuls CP.
+  const { plan } = modele
+  const dReel = modele.emprise.p_m
+  const wallH = modele.piece.hauteur_m
+  const roomD = modele.piece.profondeur_m
+  const left = modele.piece.x_gauche_m
+  const right = modele.piece.x_droite_m
+  const roomW = modele.piece.largeur_m
+  const cx = modele.piece.x_centre_m
+  const lesRampants = modele.rampants
+  const avecRampant = lesRampants.length > 0
 
-  // Front/back walls span the room's full width, so their band follows the same
-  // rule as the side walls but along the room's X extent: gray where the unit
-  // stands, fading outward into the open part of the room. Both orientations are
-  // rotated oppositely about Y as well, so mirror the position the same way.
-  const frontReach = roomW > 0 ? Math.max(w / roomW, 0.15) * 1.2 : 0.5
+  // Fade extents: opaque over the unit, dissolving over ~1.5 × its width /
+  // depth into the open room.
+  const sideAt = roomD > 0 ? dReel / 2 / roomD : 0.1
+  const sideReach = roomD > 0 ? Math.min(1, (banc.roomFade * Math.max(w, dReel)) / roomD) : 0.5
   const frontAt = roomW > 0 ? (w / 2 - left) / roomW : 0.5
-  const zTexA = useMemo(
-    () => makeLinearGradient({ axis: 'u', at: frontAt, reach: frontReach }),
-    [frontAt, frontReach]
-  )
-  const zTexB = useMemo(
-    () => makeLinearGradient({ axis: 'u', at: 1 - frontAt, reach: frontReach }),
-    [frontAt, frontReach]
-  )
+  const frontReach = roomW > 0 ? Math.min(1, (banc.roomFade * w) / roomW) : 0.5
 
-  // Ceiling: same banded gradient as the side walls, along its V axis (world z),
-  // so the gray band has the same width and sits at the front (by the unit) —
-  // but a darker gray (`GRAY_TOP`) than the walls carry.
-  const topTex = useMemo(
-    () =>
-      makeLinearGradient({ axis: 'v', at: sideAt, reach: sideReach }, GRAY_TOP),
+  const floorAlpha = useMemo(
+    () => makeFadeAlpha({ axis: 'v', at: 1 - sideAt, reach: sideReach }),
     [sideAt, sideReach]
   )
+  const topAlpha = useMemo(
+    () => makeFadeAlpha({ axis: 'v', at: sideAt, reach: sideReach }),
+    [sideAt, sideReach]
+  )
+  const rightSideAlpha = useMemo(
+    () => makeFadeAlpha({ axis: 'u', at: sideAt, reach: sideReach }),
+    [sideAt, sideReach]
+  )
+  const leftSideAlpha = useMemo(
+    () => makeFadeAlpha({ axis: 'u', at: 1 - sideAt, reach: sideReach }),
+    [sideAt, sideReach]
+  )
+  const zAlphaA = useMemo(
+    () => makeFadeAlpha({ axis: 'u', at: frontAt, reach: frontReach }),
+    [frontAt, frontReach]
+  )
+  const zAlphaB = useMemo(
+    () => makeFadeAlpha({ axis: 'u', at: 1 - frontAt, reach: frontReach }),
+    [frontAt, frontReach]
+  )
 
-  // Floor: the ceiling's band mirrored. The floor is rotated −π/2 about X to
-  // the ceiling's +π/2, which flips its local V axis (world z), so the band
-  // position flips with it to keep the gray under the unit and the fade
-  // running out into the open room.
-  // const floorTex = useMemo(
-  //   () => makeLinearGradient({ axis: 'v', at: 1 - sideAt, reach: sideReach }),
-  //   [sideAt, sideReach]
-  // )
+  // B4 : le plafond en pente (une géométrie), et le fondu des murs polygonaux dans LEUR repère (u de `de` à `a`).
+  const plafondRampant = useMemo(
+    () => (avecRampant ? geometriePlafond(lesRampants, left, right, roomD, wallH) : null),
+    [avecRampant, lesRampants, left, right, roomD, wallH]
+  )
+  useEffect(() => () => plafondRampant?.dispose(), [plafondRampant])
+  const alphaPolygone = useMemo(() => {
+    const out = new Map<string, CanvasTexture | null>()
+    if (!avecRampant) return out
+    for (const mur of plan.murs) {
+      if (murPlat(mur, lesRampants, wallH) || mur.nature === 'face') continue
+      const longueur = mur.a - mur.de || 1
+      const at = mur.axe === 'z' ? (w / 2 - mur.de) / longueur : (dReel / 2 - mur.de) / longueur
+      const reach = mur.axe === 'z' ? frontReach : sideReach
+      out.set(mur.id, makeFadeAlpha({ axis: 'u', at, reach }))
+    }
+    return out
+  }, [avecRampant, plan.murs, lesRampants, wallH, w, dReel, frontReach, sideReach])
 
   const Plane = ({
     position,
     rotation,
     args,
-    // Side walls use FrontSide so they're visible from inside the room but
-    // transparent when viewed from outside; the front face points inward.
     side = DoubleSide,
-    // Vertical walls pass a radial gradient texture; floor/ceiling stay plain.
-    map = null
+    alpha = null,
+    color,
+    roughness = 0.9
   }: {
     position: [number, number, number]
     rotation: [number, number, number]
     args: [number, number]
     side?: typeof DoubleSide | typeof FrontSide
-    map?: CanvasTexture | null
+    alpha?: CanvasTexture | null
+    color: string
+    roughness?: number
   }) => (
-    <mesh position={position} rotation={rotation} receiveShadow>
+    <mesh position={position} rotation={rotation} receiveShadow castShadow={mursOmbre}>
       <planeGeometry args={args} />
-      {/* A mapped wall is transparent: only the gray pool shows, fading to
-          nothing. Floor/ceiling (no map) stay opaque white. */}
-      <meshBasicMaterial
-        color='#ffffff'
-        map={map}
-        transparent={map != null}
-        side={side}
-      />
+      {schema ? (
+        <meshBasicMaterial color={color} side={side} />
+      ) : (
+        <meshStandardMaterial
+          color={color}
+          roughness={roughness}
+          metalness={0}
+          envMapIntensity={0.6}
+          alphaMap={alpha ?? undefined}
+          transparent={alpha != null}
+          side={side}
+          // Ombres VSM : three ne retourne pas la face pour ce type de carte — sans cela un mur vu de dos par le soleil ne projette rien.
+          shadowSide={mursOmbre ? DoubleSide : undefined}
+        />
+      )}
     </mesh>
   )
 
+  /** B4 : une surface de la pièce dont la géométrie est calculée (plafond en pente, mur polygonal) ; mêmes matériaux que `Plane`. */
+  const Surface = ({ geometry, alpha = null, color, roughness = 0.9 }: { geometry: THREE.BufferGeometry; alpha?: CanvasTexture | null; color: string; roughness?: number }) => (
+    <mesh geometry={geometry} receiveShadow castShadow={mursOmbre}>
+      {schema ? (
+        <meshBasicMaterial color={color} side={DoubleSide} />
+      ) : (
+        <meshStandardMaterial
+          color={color}
+          roughness={roughness}
+          metalness={0}
+          envMapIntensity={0.6}
+          alphaMap={alpha ?? undefined}
+          transparent={alpha != null}
+          side={DoubleSide}
+          shadowSide={mursOmbre ? DoubleSide : undefined}
+        />
+      )}
+    </mesh>
+  )
+
+  if (!schema && flags.wireframe) return null
+  // « Fond seul » : pas de murs ni de plafond, mais le sol reste — c'est lui qui reçoit
+  // l'ombre ; sans lui le meuble flotte (mesuré sur la proposition P4-B).
+  const onlyFloor = !schema && !banc.roomEnabled
+
+  const wallCol = schema ? SCHEMA.sideWall : banc.wallColor
+  const back = schema ? SCHEMA.backWall : banc.wallColor
+  const floor = schema ? SCHEMA.floor : banc.floorColor
+  const ceiling = schema ? SCHEMA.ceiling : CLIENT.ceiling
+
+  /** la baie d'un mur : le tableau (une boîte ouverte des deux faces, vue de l'intérieur) et le vitrage — communs au mur plat et au mur polygonal */
+  const baie = (mur: MurPlan, fen: FenetrePlan, rot: [number, number, number]) => {
+    const bas = fen.allege_m
+    const haut = fen.allege_m + fen.hauteur_m
+    const dehors = mur.at - mur.normale * fen.tableau_m
+    const posT = (at: number, le: number, y: number): [number, number, number] => (mur.axe === 'z' ? [le, y, at] : [at, y, le])
+    // Une fenêtre est une source de lumière ; un passage ouvre sur une pièce voisine, plus sombre.
+    const vitre = fen.type === 'passage' ? (schema ? '#6E6E6E' : '#4A443B') : schema ? '#9EC3E6' : '#FFFFFF'
+    return (
+      <>
+        {/* Reveal (tableau) : a box open on both faces, seen from inside. */}
+        <mesh position={posT((mur.at + dehors) / 2, fen.centre_m, (bas + haut) / 2)} receiveShadow>
+          <boxGeometry args={mur.axe === 'z' ? [fen.largeur_m, fen.hauteur_m, fen.tableau_m] : [fen.tableau_m, fen.hauteur_m, fen.largeur_m]} />
+          {schema ? <meshBasicMaterial color={SCHEMA.ceiling} side={BackSide} /> : <meshStandardMaterial color={banc.wallColor} roughness={0.9} side={BackSide} />}
+        </mesh>
+        {/* The pane : pure light in client mode, a flat blue in schema mode. */}
+        <mesh position={posT(dehors + 0.001 * mur.normale, fen.centre_m, (bas + haut) / 2)} rotation={rot}>
+          <planeGeometry args={[fen.largeur_m, fen.hauteur_m]} />
+          <meshBasicMaterial color={vitre} toneMapped={false} />
+        </mesh>
+      </>
+    )
+  }
+
   return (
     <group>
-      {/* Floor — the banded gradient of the ceiling, mirrored (see `floorTex`):
-          gray where the unit stands, fading to nothing across the open room.
-          `cx`/`roomW` already carry the WALL_GAP shift on each walled side, so
-          it meets the walls without a seam or an overhang.
-
-          `FrontSide` like the walls and ceiling: its front face points up (+Y)
-          into the room, so it's culled when the camera orbits underneath,
-          where an opaque floor would otherwise hide the unit. */}
+      {/* Floor — opaque under the unit, fading into the open room. */}
       <Plane
-        position={[cx, 0.01, roomD / 2]}
+        position={[cx, 0, roomD / 2]}
         rotation={[-Math.PI / 2, 0, 0]}
         args={[roomW, roomD]}
         side={FrontSide}
-        // map={floorTex}
+        alpha={floorAlpha}
+        color={floor}
+        roughness={0.85}
       />
 
-      {/* Ceiling — back→front linear gradient (gray at back fading to white).
-          `cx`/`roomW` already carry the WALL_GAP shift on each walled side, so
-          the ceiling meets the walls without a seam or an overhang.
-
-          `FrontSide` like the side walls: its front face points down (−Y) into
-          the room, so it reads as a ceiling from inside but is culled when the
-          camera orbits above it, where it would otherwise hide the unit. */}
-      <Plane
-        position={[cx, wallH, roomD / 2]}
-        rotation={[Math.PI / 2, 0, 0]}
-        args={[roomW, roomD]}
-        side={FrontSide}
-        map={topTex}
-      />
-
-      {/* Back wall (behind the shape, at z = 0) */}
-      {/* <Plane
-        position={[cx, wallH / 2, 0]}
-        rotation={[0, 0, 0]}
-        args={[roomW, wallH]}
-        // map={backTex}
-      /> */}
-
-      {/* Side walls, one per box face carrying CP_SPO_WALL. Each is rotated so
-          its front face points back into the room (+X for a low/left face, −X
-          for a high/right face), so it's visible from inside only.
-
-          An x-normal wall spans the room's full depth like the old left/right
-          walls did; a z-normal one spans the room's full width. */}
-      {cpWalls.map(wall =>
-        wall.axis === 'x' ? (
-          <Plane
-            key={wall.key}
-            position={[wall.at, wallH / 2, roomD / 2]}
-            rotation={[0, -(wall.sign * Math.PI) / 2, 0]}
-            args={[roomD, wallH]}
-            side={FrontSide}
-            // The two orientations mirror their local U axis (world z), so flip
-            // the band's position to keep the gray at the front on both.
-            map={wall.sign === -1 ? leftSideTex : rightSideTex}
-          />
-        ) : (
-          <Plane
-            key={wall.key}
-            position={[cx, wallH / 2, wall.at]}
-            rotation={[0, wall.sign === -1 ? Math.PI : 0, 0]}
-            args={[roomW, wallH]}
-            side={FrontSide}
-            // Same mirroring as the x-normal pair: the π rotation flips the
-            // local U axis (world x), so the band position flips with it to keep
-            // the gray on the unit and the fade running outward.
-            map={wall.sign === -1 ? zTexB : zTexA}
-          />
-        )
+      {onlyFloor ? null : (<>
+      {/* Ceiling — rarely in frame at eye level; kept for the schema mode
+          and for the reflections of the environment. B4 : en pente sous un rampant. */}
+      {plafondRampant ? (
+        <Surface geometry={plafondRampant} alpha={topAlpha} color={ceiling} roughness={1} />
+      ) : (
+        <Plane
+          position={[cx, wallH, roomD / 2]}
+          rotation={[Math.PI / 2, 0, 0]}
+          args={[roomW, roomD]}
+          side={FrontSide}
+          alpha={topAlpha}
+          color={ceiling}
+          roughness={1}
+        />
       )}
+
+      {/* Walls from the plan. A wall along x (axe 'z') faces ±z ; a wall along z
+          (axe 'x') faces ±x. A wall carrying a window is drawn as four opaque
+          pieces around the opening, plus the reveal and a bright pane.
+          B4 : un mur dont le haut suit un rampant est un polygone troué de sa baie. */}
+      {plan.murs.map(mur => {
+        const longueur = mur.a - mur.de
+        const milieu = (mur.de + mur.a) / 2
+        const couleur = mur.axe === 'z' ? back : wallCol
+        const rot: [number, number, number] = mur.axe === 'z' ? [0, mur.normale === 1 ? 0 : Math.PI, 0] : [0, (mur.normale * Math.PI) / 2, 0]
+        const pos = (le: number, y: number): [number, number, number] => (mur.axe === 'z' ? [le, y, mur.at - 0.002 * mur.normale] : [mur.at - 0.0005 * mur.normale, y, le])
+        const alpha = mur.axe === 'z' ? zAlphaA : mur.normale === 1 ? leftSideAlpha : rightSideAlpha
+        const fen = mur.fenetre
+        if (!murPlat(mur, lesRampants, wallH)) {
+          return <MurPolygone key={mur.id} mur={mur} rampants={lesRampants} wallH={wallH} alpha={alphaPolygone.get(mur.id) ?? null} couleur={couleur} Surface={Surface}>{fen ? baie(mur, fen, rot) : null}</MurPolygone>
+        }
+        if (!fen) {
+          return <Plane key={mur.id} position={pos(milieu, wallH / 2)} rotation={rot} args={[longueur, wallH]} side={FrontSide} alpha={mur.nature === 'face' ? null : alpha} color={couleur} />
+        }
+        const f0 = fen.centre_m - fen.largeur_m / 2
+        const f1 = fen.centre_m + fen.largeur_m / 2
+        const bas = fen.allege_m
+        const haut = fen.allege_m + fen.hauteur_m
+        return (
+          <group key={mur.id}>
+            {f0 - mur.de > 0.001 && <Plane position={pos((mur.de + f0) / 2, wallH / 2)} rotation={rot} args={[f0 - mur.de, wallH]} side={FrontSide} color={couleur} />}
+            {mur.a - f1 > 0.001 && <Plane position={pos((f1 + mur.a) / 2, wallH / 2)} rotation={rot} args={[mur.a - f1, wallH]} side={FrontSide} color={couleur} />}
+            {bas > 0.001 && <Plane position={pos(fen.centre_m, bas / 2)} rotation={rot} args={[fen.largeur_m, bas]} side={FrontSide} color={couleur} />}
+            {wallH - haut > 0.001 && <Plane position={pos(fen.centre_m, (haut + wallH) / 2)} rotation={rot} args={[fen.largeur_m, wallH - haut]} side={FrontSide} color={couleur} />}
+            {baie(mur, fen, rot)}
+          </group>
+        )
+      })}
+
+      {/* Habillage minimal (cadre, console, téléviseur) : des volumes simples à la place des vides que Flora comblerait. */}
+      {plan.habillage.map(q => {
+        const couleur = q.type === 'tele' ? '#17181A' : q.type === 'cadre' ? (schema ? '#7A5C3A' : '#8A6A45') : schema ? '#9C7B55' : '#B08D62'
+        return (
+          <group key={q.id}>
+            <mesh position={[(q.x0 + q.x1) / 2, (q.y0 + q.y1) / 2, (q.z0 + q.z1) / 2]} castShadow receiveShadow>
+              <boxGeometry args={[q.x1 - q.x0, q.y1 - q.y0, q.z1 - q.z0]} />
+              {schema ? <meshBasicMaterial color={couleur} /> : <meshStandardMaterial color={couleur} roughness={q.type === 'tele' ? 0.35 : 0.7} metalness={0} />}
+            </mesh>
+            {q.type === 'cadre' && (
+              <mesh position={[(q.x0 + q.x1) / 2, (q.y0 + q.y1) / 2, q.z1 + 0.002]}>
+                <planeGeometry args={[(q.x1 - q.x0) * 0.78, (q.y1 - q.y0) * 0.82]} />
+                {schema ? <meshBasicMaterial color='#EDE6D8' /> : <meshStandardMaterial color='#EDE6D8' roughness={0.9} />}
+              </mesh>
+            )}
+          </group>
+        )
+      })}
+
+      {/* Wall returns (jambages) at the tip of a built-in wing : solid blocks. B4 : pas plus hauts que le plafond à leur aplomb. */}
+      {plan.retours.map(q => {
+        const hR = avecRampant ? Math.min(wallH, ...[[q.x0, q.z0], [q.x1, q.z0], [q.x0, q.z1], [q.x1, q.z1]].map(([x, z]) => hauteurPlafond(lesRampants, x, z, wallH))) : wallH
+        return (
+          <mesh key={q.id} position={[(q.x0 + q.x1) / 2, hR / 2, (q.z0 + q.z1) / 2]} castShadow receiveShadow>
+            <boxGeometry args={[q.x1 - q.x0, hR, q.z1 - q.z0]} />
+            {schema ? <meshBasicMaterial color={SCHEMA.sideWall} /> : <meshStandardMaterial color={banc.wallColor} roughness={0.9} metalness={0} />}
+          </mesh>
+        )
+      })}
+      </>)}
     </group>
   )
 })
+
+/** B4 : un mur polygonal (le haut suit le rampant), sa baie en trou ; la géométrie vit avec le mur et meurt avec lui. */
+function MurPolygone ({
+  mur,
+  rampants,
+  wallH,
+  alpha,
+  couleur,
+  Surface,
+  children
+}: {
+  mur: MurPlan
+  rampants: Rampant[]
+  wallH: number
+  alpha: CanvasTexture | null
+  couleur: string
+  Surface: (p: { geometry: THREE.BufferGeometry; alpha?: CanvasTexture | null; color: string; roughness?: number }) => React.JSX.Element
+  children?: React.ReactNode
+}) {
+  const geometrie = useMemo(() => {
+    const fen = mur.fenetre
+    const trou = fen ? { u0: fen.centre_m - fen.largeur_m / 2, u1: fen.centre_m + fen.largeur_m / 2, y0: fen.allege_m, y1: fen.allege_m + fen.hauteur_m } : null
+    return geometrieMur(mur, rampants, wallH, trou)
+  }, [mur, rampants, wallH])
+  useEffect(() => () => geometrie.dispose(), [geometrie])
+  return (
+    <group>
+      <Surface geometry={geometrie} alpha={alpha} color={couleur} />
+      {children}
+    </group>
+  )
+}

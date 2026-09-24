@@ -22,8 +22,8 @@
  */
 import * as THREE from 'three'
 import type { Piece, PositionCalculee } from './types'
-import { estErreur } from './types.ts'
-import { estPorte, matricePiece } from './geometrie.ts'
+import { estErreur } from './types'
+import { estPorte, matricePiece } from './geometrie'
 
 /** la définition d'une pièce multiple d'imos (`MP_1_FR_SHELL_FR08_LAM`, `MP_1_FR_SHELL_5PD10_LAM`) — le parent d'une façade à cadre */
 export const estDefinitionMultiple = (definition: string | undefined | null): boolean => /^MP_/i.test(definition ?? '')

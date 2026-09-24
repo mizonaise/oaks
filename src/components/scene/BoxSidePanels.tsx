@@ -38,7 +38,8 @@ const FacePanel = memo(function FacePanel ({
   sx,
   sy,
   sz,
-  wireframe
+  wireframe,
+  contrasted = false
 }: {
   face: FaceSpec
   vars: FlatVars
@@ -47,6 +48,7 @@ const FacePanel = memo(function FacePanel ({
   sy: number
   sz: number
   wireframe?: boolean
+  contrasted?: boolean
 }) {
   const cp = useResolveCp(face.cpRef ?? '', vars)
 
@@ -87,6 +89,7 @@ const FacePanel = memo(function FacePanel ({
       sz={sz}
       dims={dims}
       wireframe={wireframe}
+      contrasted={contrasted}
     />
   )
 })
@@ -98,7 +101,8 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
   sides,
   vars,
   dimCpConfig,
-  wireframe = false
+  wireframe = false,
+  contrasted = false
 }: {
   sx: number
   sy: number
@@ -109,6 +113,8 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
   dimCpConfig?: DimCpConfig | null
   /** Dev-only: draw the panels as wireframes instead of solid surfaces. */
   wireframe?: boolean
+  /** Schema mode (edge lines on the panels). */
+  contrasted?: boolean
 }) {
   const faces = useMemo<FaceSpec[]>(() => {
     const spec = (
@@ -152,6 +158,7 @@ export const BoxSidePanels = memo(function BoxSidePanels ({
             sy={sy}
             sz={sz}
             wireframe={wireframe}
+            contrasted={contrasted}
           />
         ) : null
       )}

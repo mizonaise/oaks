@@ -1,15 +1,21 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useCallback, useMemo, useRef } from 'react'
+import type * as THREE from 'three'
 import { type Box as ShapeBox } from './shapeTree'
 import {
   ArticleGroupDesigner,
   type ArticleData,
+  type ArticleStats,
   type GetDataFn
 } from '@processandtools/rp-article-designer'
 import { WireframeSubtree } from './WireframeSubtree'
+import { ArticleMaterials } from './ArticleMaterials'
+import { MasqueOtman } from './MasqueOtman'
+import { DecoupeOtman, type DecoupeDemandee } from './DecoupeOtman'
 import { tecniboApi } from '@/lib/store/api/tecniboApi'
 import { useAppStore } from '@/lib/store/hooks'
+import { elementsSpeciaux, facadesDuDesigner, type CotesFacade, type ElementOtman } from '@/lib/foxcad/chemin-otman'
 
 const MM = 1
 const SCALE = 0.001
@@ -30,10 +36,12 @@ export const ArticleInBox = memo(function ArticleInBox ({
   articleData,
   hasDoor = true,
   doorOpen,
+  doorsRemoved = false,
   showDims = false,
   contrasted = false,
   hidden = false,
-  wireframe = false
+  wireframe = false,
+  horsPanneaux
 }: {
   box: ShapeBox
   articleName: string
@@ -43,6 +51,8 @@ export const ArticleInBox = memo(function ArticleInBox ({
   /** Whether the designer builds the article with a door at all. */
   hasDoor?: boolean
   doorOpen: boolean
+  /** Banc de rendu: render the article without its doors (interior visible). */
+  doorsRemoved?: boolean
   /** Toggles the article designer's dimension labels. */
   showDims?: boolean
   /** Toggles the article designer's contrast rendering. */
@@ -53,8 +63,24 @@ export const ArticleInBox = memo(function ArticleInBox ({
    *  wireframe option of its own, so the flag is applied to the materials it
    *  builds — see `WireframeSubtree`. */
   wireframe?: boolean
+  /**
+   * Le chemin d'Otman sur une forme fox-cad (23/09) : le designer est monté, mais ses PANNEAUX sont masqués à chaque image (`MasqueOtman`) —
+   * ils viennent de fox-cad — et seuls ses rendus spéciaux restent (tringle, façade spéciale quand fox-cad n'a pas la porte, poignée GLB).
+   * `index` = la boîte de la zone (le bilan va au magasin sous ce nom), `porteParFoxCad` = fox-cad a produit la porte de cette zone.
+   * `decoupe` (23/09, les portes en pente) : la façade spéciale du designer est à découper par le contour de la porte pleine de fox-cad
+   * (`DecoupeOtman`) — présent quand le moteur a refusé la façade (le KMS multi-pièces), absent sinon.
+   */
+  horsPanneaux?: { index: string; porteParFoxCad: boolean; decoupe?: DecoupeDemandee }
 }) {
   const store = useAppStore()
+  const groupRef = useRef<THREE.Group | null>(null)
+  // les éléments spéciaux que le designer annonce (ses statistiques de panneaux, débouncées) — lus par le masque à chaque image
+  const speciaux = useRef<ElementOtman[]>([])
+  const facades = useRef<CotesFacade[]>([])
+  const onStats = useCallback((s: ArticleStats) => {
+    speciaux.current = elementsSpeciaux(s.panels)
+    facades.current = facadesDuDesigner(s.panels)
+  }, [])
 
   // Data loader for the article designer, backed by RTK Query instead of a
   // hand-rolled fetch + cache: dispatching `initiate` reuses the store's cache
@@ -89,7 +115,12 @@ export const ArticleInBox = memo(function ArticleInBox ({
   // console.log('contrasted data', { contrasted })
 
   return (
-    <group rotation={[0, yaw, 0]}>
+    <group rotation={[0, yaw, 0]} ref={groupRef}>
+      {/* Material overlay: corrects the article renderer's materials in place
+          (roughness, sRGB textures, anisotropy) — see ArticleMaterials.tsx. */}
+      <ArticleMaterials target={groupRef} contrasted={contrasted} />
+      {horsPanneaux && <MasqueOtman target={groupRef} index={horsPanneaux.index} porteParFoxCad={horsPanneaux.porteParFoxCad} speciaux={speciaux} facades={facades} />}
+      {horsPanneaux?.decoupe && <DecoupeOtman target={groupRef} index={horsPanneaux.index} demande={horsPanneaux.decoupe} facades={facades} />}
       <group
         scale={[MM / SCALE, MM / SCALE, MM / SCALE]}
         position={[0, (-box.h / 2) * MM, 0]}
@@ -106,15 +137,16 @@ export const ArticleInBox = memo(function ArticleInBox ({
                   // A wireframe casting a solid shadow reads wrong, and the
                   // designer's own shadows are baked from its solid meshes.
                   isShadowed: !wireframe,
-                  hasDoor,
+                  hasDoor: hasDoor && !doorsRemoved,
                   isContrasted: contrasted,
-                  isDimensioned: showDims,
+                  isDimensioned: showDims && !horsPanneaux,
                   isDoorOpen: doorOpen,
                   dimensions: { width, height: box.h, depth },
                   variables: box.vars as Record<string, string>
                 }
               ]}
               getData={fetchData}
+              onStatsReady={horsPanneaux ? onStats : undefined}
             />
           </WireframeSubtree>
         )}
