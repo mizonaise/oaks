@@ -1,0 +1,89 @@
+{
+  "_lisezmoi": "LES CARTES ACTUELLES DU SITE oaksome.com (la page /fr/configurer) — relues par d10 le 23/09 à 22:57 (board v2, ligne du lead 22:4x) : la liste `GET https://www.tecnibo.com/api/oaksome/v1/products?limit=100&lang=fr` (10 cartes : les six vraies ci-dessous et quatre fiches de test de juillet 2025 à 1,21 €, omises) et le détail de chacune `GET …/v1/products/<id>?lang=fr` (son `webpage_url`) ; la forme vient de l'adresse. Identiques au relevé d'oaksome-stack (`5a45f43`, `produits/hex/releves/2026-09-24_preconfigurations-du-site.md` § 2 : mêmes prix, mêmes dates d'écriture) — `defautHt` (le prix HT de la forme par défaut sur le moteur local 4848) et `lecture` sont les siens. `prix_carte` = le `price_ttc` que la carte affiche (« À partir de … € », sans dire HT ni TTC). `hotes` : l'hôte du configurateur qu'une carte neuve ouvrirait — HEX / HEX 2 sur notre pile (la carte HEX pointe déjà `slop.oaksome.com`, qui sert HEX et HEX 2 : 200 le 23/09 22:58), F / L chez Otman (`oaks-indol.vercel.app`, l'hôte des cartes d'Otman, adresse remise en forme `/shape/<forme>` sans paramètre) [À CONFIRMER : le lead / Dorian].",
+  "lu": "2026-09-23 22:57",
+  "source": {
+    "liste": "https://www.tecnibo.com/api/oaksome/v1/products?limit=100&lang=fr",
+    "detail": "https://www.tecnibo.com/api/oaksome/v1/products/<id>?lang=fr",
+    "mesures": "oaksome-stack 5a45f43, produits/hex/releves/2026-09-24_preconfigurations-du-site.md § 2"
+  },
+  "hotes": {
+    "OS_SHAPE_HEX": "slop.oaksome.com",
+    "OS_SHAPE_HEX2": "slop.oaksome.com",
+    "OS_SHAPE_F": "oaks-indol.vercel.app",
+    "OS_SHAPE_L": "oaks-indol.vercel.app"
+  },
+  "cartes": [
+    {
+      "template_id": 1275457,
+      "nom": "Placard sous pente",
+      "forme": "OS_SHAPE_HEX",
+      "categorie": "Placards",
+      "prix_carte": 2623.91,
+      "dimensions_cm": [300, 250, 50],
+      "webpage_url": "https://slop.oaksome.com/shape/OS_SHAPE_HEX",
+      "ecrit": "2026-09-23T18:00:42Z",
+      "defautHt": 3274.67,
+      "lecture": "la carte recopie le list_price du F (2 623,91) avec la taxe 1982 « incluse » : elle affiche moins que le F, alors que le HEX par défaut vaut 3 274,67 € HT sur le moteur (3 962,35 € TTC)"
+    },
+    {
+      "template_id": 1275000,
+      "nom": "Shape F",
+      "forme": "OS_SHAPE_F",
+      "categorie": "Placards",
+      "prix_carte": 3174.93,
+      "dimensions_cm": [300, 250, 50],
+      "webpage_url": "https://oaks-indol.vercel.app/shape/OS_SHAPE_F?embed=1?id=1275000",
+      "ecrit": "2026-09-23T17:59:59Z",
+      "defautHt": 3174.95,
+      "lecture": "le HT du F par défaut affiché comme un TTC (list_price = HT ÷ 1,21 avec la taxe 1427 exclue)"
+    },
+    {
+      "template_id": 1275001,
+      "nom": "Shape L",
+      "forme": "OS_SHAPE_L",
+      "categorie": "Placards",
+      "prix_carte": 4615.46,
+      "dimensions_cm": [300, 250, 50],
+      "webpage_url": "https://oaks-indol.vercel.app/OS_SHAPE_L?embed=1?id=1275001",
+      "ecrit": "2026-09-23T18:00:03Z",
+      "defautHt": 6312.25,
+      "lecture": "ne correspond plus au L par défaut (6 312,25 € HT) ; la carte ouvre une 404 (il manque /shape/ dans son adresse)"
+    },
+    {
+      "template_id": 1275002,
+      "nom": "Shape U",
+      "forme": "OS_SHAPE_U",
+      "categorie": "Placards",
+      "prix_carte": 9031.13,
+      "dimensions_cm": [300, 250, 50],
+      "webpage_url": "https://oaks-indol.vercel.app/shape/OS_SHAPE_U?embed=1?id=1275002",
+      "ecrit": "2026-09-23T18:00:07Z",
+      "defautHt": 9031.1,
+      "lecture": "le HT du U par défaut affiché comme un TTC"
+    },
+    {
+      "template_id": 1275003,
+      "nom": "CMB",
+      "forme": "OS_SHAPE_CMB_1111",
+      "categorie": "Ensembles muraux",
+      "prix_carte": 6572.2,
+      "dimensions_cm": [800, 250, 50],
+      "webpage_url": "https://oaks-indol.vercel.app/shape//OS_SHAPE_CMB_1111?embed=1?id=1275003",
+      "ecrit": "2026-09-23T18:00:11Z",
+      "defautHt": 6572.2,
+      "lecture": "le HT du CMB par défaut affiché comme un TTC"
+    },
+    {
+      "template_id": 1275004,
+      "nom": "CMB + étagères",
+      "forme": "OS_SHAPE_CMB_11S1",
+      "categorie": "Ensembles muraux",
+      "prix_carte": 6572.2,
+      "dimensions_cm": [800, 250, 50],
+      "webpage_url": "https://oaks-indol.vercel.app/shape/OS_SHAPE_CMB_11S1?embed=1?id=1275004",
+      "ecrit": "2026-09-23T18:00:22Z",
+      "defautHt": null,
+      "lecture": "le prix du CMB recopié ; non mesuré par oaksome-stack"
+    }
+  ]
+}

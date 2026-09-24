@@ -1,0 +1,923 @@
+{
+  "source": {
+    "pdf": "oaksome-stack/produits/gamme/OAKSOME_facades_cotees_phase2_260116.pdf",
+    "sha256": "f84f2f441738ec6e7fe3b5feb161337caf901554ff45b83a131575ce22505675",
+    "pages": 15,
+    "pages_de_legende": [
+      1
+    ],
+    "titre": "OAKSOME façades cotées — Etude des façades et poignées, phase 2 (16/01/2026)",
+    "legende": {
+      "SU": "Stratifié Uni",
+      "SB": "Stratifié décor Bois",
+      "B": "Placage Bois",
+      "L": "Laqué",
+      "L RM": "Laqué + Revêtement Mural",
+      "P p&o": "Poignée push & open",
+      "P app": "Poignée en applique",
+      "P int": "Poignée intégrée",
+      "collections": {
+        "1": "Contemporain épuré minimaliste, simple",
+        "2": "Contemporain chaud",
+        "3": "Contemporain coloré",
+        "4": "Romantique"
+      }
+    },
+    "methode": "mupdf (C:/Users/dorian/tmp/pdf-render) : les disques pleins visibles de la table, rangés par la hauteur de l’étiquette de ligne et l’abscisse du chiffre de collection",
+    "lu_le": "2026-09-23T18:42:00.880Z",
+    "outil": "docs/releves/2026-09-23_board-pto/outils/lire-gamme-pto.mjs"
+  },
+  "facades": [
+    {
+      "fa": "FA_1",
+      "page": 2,
+      "table": {
+        "SU": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "SB": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "B": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L RM": [],
+        "P p&o": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "P app": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "P int": []
+      },
+      "disques_visibles": 24,
+      "disques_hors_page": 12,
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_2a",
+      "page": 3,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L RM": [],
+        "P p&o": [],
+        "P app": [],
+        "P int": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "disques_visibles": 12,
+      "disques_hors_page": 12,
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4,
+        3
+      ]
+    },
+    {
+      "fa": "FA_2b",
+      "page": 4,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L RM": [],
+        "P p&o": [],
+        "P app": [],
+        "P int": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "disques_visibles": 12,
+      "disques_hors_page": 12,
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_2c",
+      "page": 5,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "L RM": [],
+        "P p&o": [],
+        "P app": [],
+        "P int": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "disques_visibles": 12,
+      "disques_hors_page": 6,
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4,
+        3
+      ]
+    },
+    {
+      "fa": "FA_2d",
+      "page": 6,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          3
+        ],
+        "L": [
+          1,
+          3
+        ],
+        "L RM": [],
+        "P p&o": [],
+        "P app": [],
+        "P int": [
+          1,
+          3
+        ]
+      },
+      "disques_visibles": 6,
+      "disques_hors_page": 9,
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_2e",
+      "page": 7,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          2,
+          3
+        ],
+        "L": [
+          1,
+          2,
+          3
+        ],
+        "L RM": [],
+        "P p&o": [],
+        "P app": [],
+        "P int": [
+          1,
+          2,
+          3
+        ]
+      },
+      "disques_visibles": 9,
+      "disques_hors_page": 22,
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_3",
+      "page": 8,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          3,
+          4
+        ],
+        "L": [
+          1,
+          3,
+          4
+        ],
+        "L RM": [],
+        "P p&o": [
+          1,
+          3,
+          4
+        ],
+        "P app": [
+          1,
+          3,
+          4
+        ],
+        "P int": []
+      },
+      "disques_visibles": 22,
+      "disques_hors_page": 21,
+      "disques_non_ranges": [
+        {
+          "x": 475.2,
+          "y": 294.3
+        },
+        {
+          "x": 639,
+          "y": 398.3
+        },
+        {
+          "x": 774.5,
+          "y": 436
+        },
+        {
+          "x": 976.1,
+          "y": 398.3
+        },
+        {
+          "x": 976.1,
+          "y": 436
+        },
+        {
+          "x": 976.1,
+          "y": 473.8
+        },
+        {
+          "x": 976.1,
+          "y": 212.4
+        },
+        {
+          "x": 976.1,
+          "y": 250.2
+        },
+        {
+          "x": 976.1,
+          "y": 288
+        },
+        {
+          "x": 774.5,
+          "y": 250.2
+        }
+      ],
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_4a",
+      "page": 9,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          2,
+          3
+        ],
+        "L": [
+          1,
+          2,
+          3
+        ],
+        "L RM": [
+          1,
+          2,
+          3
+        ],
+        "P p&o": [
+          1,
+          2,
+          3
+        ],
+        "P app": [
+          1,
+          2,
+          3
+        ],
+        "P int": []
+      },
+      "disques_visibles": 21,
+      "disques_hors_page": 21,
+      "disques_non_ranges": [
+        {
+          "x": 475.2,
+          "y": 303.8
+        },
+        {
+          "x": 639,
+          "y": 398.3
+        },
+        {
+          "x": 774.5,
+          "y": 436
+        },
+        {
+          "x": 976.1,
+          "y": 398.3
+        },
+        {
+          "x": 976.1,
+          "y": 436
+        },
+        {
+          "x": 976.1,
+          "y": 473.8
+        }
+      ],
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_4b",
+      "page": 10,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          1,
+          2,
+          3
+        ],
+        "L": [
+          1,
+          2,
+          3
+        ],
+        "L RM": [
+          1,
+          2,
+          3
+        ],
+        "P p&o": [
+          1,
+          2,
+          3
+        ],
+        "P app": [
+          1,
+          2,
+          3
+        ],
+        "P int": []
+      },
+      "disques_visibles": 21,
+      "disques_hors_page": 20,
+      "disques_non_ranges": [
+        {
+          "x": 639,
+          "y": 398.3
+        },
+        {
+          "x": 774.5,
+          "y": 436
+        },
+        {
+          "x": 976.1,
+          "y": 398.3
+        },
+        {
+          "x": 976.1,
+          "y": 436
+        },
+        {
+          "x": 976.1,
+          "y": 473.8
+        },
+        {
+          "x": 475.2,
+          "y": 303.8
+        }
+      ],
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_5a",
+      "page": 11,
+      "table": {
+        "SU": [
+          3,
+          4
+        ],
+        "SB": [
+          3,
+          4
+        ],
+        "B": [
+          3,
+          4
+        ],
+        "L": [
+          3,
+          4
+        ],
+        "L RM": [
+          3,
+          4
+        ],
+        "P p&o": [
+          3,
+          4
+        ],
+        "P app": [
+          3,
+          4
+        ],
+        "P int": []
+      },
+      "disques_visibles": 20,
+      "disques_hors_page": 20,
+      "disques_non_ranges": [
+        {
+          "x": 601.2,
+          "y": 394.5
+        },
+        {
+          "x": 774.5,
+          "y": 432.3
+        },
+        {
+          "x": 976.1,
+          "y": 394.5
+        },
+        {
+          "x": 976.1,
+          "y": 432.3
+        },
+        {
+          "x": 976.1,
+          "y": 470.1
+        },
+        {
+          "x": 478.9,
+          "y": 303.8
+        }
+      ],
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_5b",
+      "page": 12,
+      "table": {
+        "SU": [
+          3,
+          4
+        ],
+        "SB": [
+          3,
+          4
+        ],
+        "B": [
+          3,
+          4
+        ],
+        "L": [
+          3,
+          4
+        ],
+        "L RM": [
+          3,
+          4
+        ],
+        "P p&o": [
+          3,
+          4
+        ],
+        "P app": [
+          3,
+          4
+        ],
+        "P int": []
+      },
+      "disques_visibles": 20,
+      "disques_hors_page": 21,
+      "disques_non_ranges": [
+        {
+          "x": 478.9,
+          "y": 303.8
+        },
+        {
+          "x": 601.2,
+          "y": 394.5
+        },
+        {
+          "x": 774.5,
+          "y": 432.3
+        },
+        {
+          "x": 976.1,
+          "y": 394.5
+        },
+        {
+          "x": 976.1,
+          "y": 432.3
+        },
+        {
+          "x": 976.1,
+          "y": 470.1
+        }
+      ],
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_6",
+      "page": 13,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          2,
+          3,
+          4
+        ],
+        "L": [
+          2,
+          3,
+          4
+        ],
+        "L RM": [
+          2,
+          3,
+          4
+        ],
+        "P p&o": [
+          2,
+          3,
+          4
+        ],
+        "P app": [
+          2,
+          3,
+          4
+        ],
+        "P int": []
+      },
+      "disques_visibles": 21,
+      "disques_hors_page": 21,
+      "disques_non_ranges": [
+        {
+          "x": 471.4,
+          "y": 303.8
+        },
+        {
+          "x": 601.2,
+          "y": 402
+        },
+        {
+          "x": 774.5,
+          "y": 439.8
+        },
+        {
+          "x": 976.1,
+          "y": 407.7
+        },
+        {
+          "x": 976.1,
+          "y": 445.5
+        },
+        {
+          "x": 976.1,
+          "y": 483.3
+        }
+      ],
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_7",
+      "page": 14,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          2,
+          3,
+          4
+        ],
+        "L": [
+          2,
+          3,
+          4
+        ],
+        "L RM": [
+          2,
+          3,
+          4
+        ],
+        "P p&o": [
+          2,
+          3,
+          4
+        ],
+        "P app": [
+          2,
+          3,
+          4
+        ],
+        "P int": []
+      },
+      "disques_visibles": 21,
+      "disques_hors_page": 6,
+      "disques_non_ranges": [
+        {
+          "x": 631.4,
+          "y": 405.8
+        },
+        {
+          "x": 976.1,
+          "y": 407.7
+        },
+        {
+          "x": 976.1,
+          "y": 445.5
+        },
+        {
+          "x": 976.1,
+          "y": 483.3
+        },
+        {
+          "x": 467.6,
+          "y": 303.8
+        },
+        {
+          "x": 774.5,
+          "y": 441.7
+        }
+      ],
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "fa": "FA_8",
+      "page": 15,
+      "table": {
+        "SU": [],
+        "SB": [],
+        "B": [
+          2,
+          3
+        ],
+        "L": [
+          2,
+          3
+        ],
+        "L RM": [],
+        "P p&o": [
+          2,
+          3
+        ],
+        "P app": [],
+        "P int": []
+      },
+      "disques_visibles": 6,
+      "disques_hors_page": 0,
+      "lignes_lues": [
+        "SB",
+        "SU",
+        "B",
+        "L",
+        "L RM",
+        "P p&o",
+        "P app",
+        "P int"
+      ],
+      "colonnes_lues": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ]
+}

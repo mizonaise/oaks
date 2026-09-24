@@ -1,0 +1,1155 @@
+{
+  "version": 1,
+  "format": "1:1",
+  "pixels": 2048,
+  "note": "Plan de prises de vue « photographe de mobilier » (Dorian, 2026-09-15). Une prise = une caméra calculée depuis le meuble et la pièce, un état des portes, une lumière, et ce que l'image prouve. Les focales sont en équivalent 24×36 ; le fov vertical en découle pour le carré (fov = 2·atan(12/f)). `hauteur` : nombre en mètres, ou `mi-hauteur` (h/2), `oeil` (le réglage client), `cible` (la hauteur du sujet). `azimut_deg` : négatif = caméra à gauche du meuble. `inclinaison_deg` : positif = plongée. `decentrement` : caméra de niveau, cadre décalé (objectif à bascule) — verticales d'aplomb. `politique` quand la caméra sort de la pièce : `omettre` (la prise n'est pas faite), `partiel` (on se rapproche, on ouvre la focale, la façade proche peut être coupée), `degrade` (l'azimut est borné par les murs). `conditions` : la prise n'existe que si la configuration les remplit.",
+  "prises": [
+    {
+      "id": "H01",
+      "serie": "heros",
+      "titre": "Élévation de face",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 40,
+      "hauteur": "mi-hauteur",
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "detaillees"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "nombre et largeur des façades",
+        "compte et position des poignées",
+        "bandeau et plinthe",
+        "encastrement"
+      ]
+    },
+    {
+      "id": "H02",
+      "serie": "heros",
+      "titre": "Vue humaine de face, verticales d'aplomb",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 38,
+      "hauteur": "oeil",
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "la vue du client debout",
+        "verticales parallèles",
+        "meuble entier centré"
+      ]
+    },
+    {
+      "id": "H03",
+      "serie": "heros",
+      "titre": "Trois-quarts gauche",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 40,
+      "hauteur": 1.5,
+      "azimut_deg": -35,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "globales"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "omettre",
+      "prouve": [
+        "profondeur",
+        "chant des portes",
+        "retrait de plinthe",
+        "flanc gauche si libre"
+      ]
+    },
+    {
+      "id": "H04",
+      "serie": "heros",
+      "titre": "Trois-quarts droite",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 40,
+      "hauteur": 1.5,
+      "azimut_deg": 35,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "omettre",
+      "prouve": [
+        "profondeur",
+        "flanc droit si libre"
+      ]
+    },
+    {
+      "id": "H05",
+      "serie": "heros",
+      "titre": "Trois-quarts partiel au grand-angle (meuble encastré)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 24,
+      "hauteur": 1.5,
+      "azimut_deg": -35,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "encastre"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "profondeur quand le trois-quarts nominal est impossible",
+        "référence seulement, jamais publiée telle quelle"
+      ]
+    },
+    {
+      "id": "H06",
+      "serie": "heros",
+      "titre": "Profil (flanc libre)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 50,
+      "hauteur": "mi-hauteur",
+      "azimut_deg": 80,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "rasante-gauche",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "globales"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "flanc-libre"
+      ],
+      "politique": "omettre",
+      "prouve": [
+        "profondeur cotée",
+        "saillie de la poignée"
+      ]
+    },
+    {
+      "id": "D01",
+      "serie": "details",
+      "titre": "Poignée, de face",
+      "cible": "poignee",
+      "cadrage": "detail",
+      "focale_mm": 90,
+      "distance_m": 0.45,
+      "hauteur": "cible",
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "poignee"
+      ],
+      "politique": "nominale",
+      "prouve": [
+        "la poignée exacte",
+        "sa couleur et sa matière",
+        "sa position sur la porte"
+      ]
+    },
+    {
+      "id": "D02",
+      "serie": "details",
+      "titre": "Poignée, en biais sous lumière rasante",
+      "cible": "poignee",
+      "cadrage": "detail",
+      "focale_mm": 85,
+      "distance_m": 0.45,
+      "hauteur": "cible",
+      "azimut_deg": 45,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "rasante-gauche",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "poignee"
+      ],
+      "politique": "nominale",
+      "prouve": [
+        "le relief de la poignée (bouton, barre, prise fraisée)",
+        "sa saillie réelle",
+        "l'épaisseur de la porte"
+      ]
+    },
+    {
+      "id": "D03",
+      "serie": "details",
+      "titre": "Joint entre deux portes, de face",
+      "cible": "joint",
+      "cadrage": "detail",
+      "focale_mm": 60,
+      "distance_m": 0.6,
+      "hauteur": "cible",
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "deux-facades"
+      ],
+      "politique": "nominale",
+      "prouve": [
+        "le jeu entre façades",
+        "l'alignement",
+        "le sens du fil"
+      ]
+    },
+    {
+      "id": "D04",
+      "serie": "details",
+      "titre": "Joint en biais : le chant",
+      "cible": "joint",
+      "cadrage": "detail",
+      "focale_mm": 60,
+      "distance_m": 0.55,
+      "hauteur": "cible",
+      "azimut_deg": 50,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "rasante-gauche",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "deux-facades"
+      ],
+      "politique": "nominale",
+      "prouve": [
+        "l'épaisseur de porte",
+        "le chant",
+        "l'arête"
+      ]
+    },
+    {
+      "id": "D05",
+      "serie": "details",
+      "titre": "Texture de façade",
+      "cible": "texture",
+      "cadrage": "detail",
+      "focale_mm": 100,
+      "distance_m": 0.35,
+      "hauteur": "cible",
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "rasante-gauche",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "la matière de la finition",
+        "le sens du fil",
+        "la brillance"
+      ]
+    },
+    {
+      "id": "D06",
+      "serie": "details",
+      "titre": "Plinthe et sol",
+      "cible": "plinthe",
+      "cadrage": "detail",
+      "focale_mm": 35,
+      "distance_m": 0.6,
+      "hauteur": "cible",
+      "azimut_deg": 20,
+      "inclinaison_deg": 20,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "le meuble posé au sol, pas flottant",
+        "le retrait de plinthe",
+        "l'ombre de contact"
+      ]
+    },
+    {
+      "id": "D07",
+      "serie": "details",
+      "titre": "Bandeau haut et plafond",
+      "cible": "bandeau",
+      "cadrage": "detail",
+      "focale_mm": 35,
+      "distance_m": 0.8,
+      "hauteur": "cible",
+      "azimut_deg": 15,
+      "inclinaison_deg": -25,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "le raccord au plafond",
+        "le fileur haut",
+        "zéro jeu"
+      ]
+    },
+    {
+      "id": "D08",
+      "serie": "details",
+      "titre": "Fileur latéral et mur",
+      "cible": "fileur",
+      "cadrage": "detail",
+      "focale_mm": 50,
+      "distance_m": 0.6,
+      "hauteur": "cible",
+      "azimut_deg": 35,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "rasante-droite",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "encastre-un-cote"
+      ],
+      "politique": "nominale",
+      "prouve": [
+        "l'affleurement au mur",
+        "la largeur du fileur",
+        "niche ou mur à mur"
+      ]
+    },
+    {
+      "id": "D09",
+      "serie": "details",
+      "titre": "Une porte ouverte à 90°",
+      "cible": "porte_ouverte",
+      "cadrage": "zone",
+      "focale_mm": 35,
+      "hauteur": 1.4,
+      "azimut_deg": -30,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "douce",
+      "portes": "une-ouverte",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "porte"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "le sens d'ouverture",
+        "la face intérieure de la porte",
+        "l'épaisseur"
+      ]
+    },
+    {
+      "id": "D10",
+      "serie": "details",
+      "titre": "Une porte entrouverte (30°)",
+      "cible": "porte_ouverte",
+      "cadrage": "zone",
+      "focale_mm": 50,
+      "hauteur": 1.4,
+      "azimut_deg": 20,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "rasante-gauche",
+      "portes": "une-entrouverte",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "porte-entrouverte"
+      ],
+      "politique": "omettre",
+      "prouve": [
+        "la « vie » de la charte sans exposer l'intérieur"
+      ]
+    },
+    {
+      "id": "I01",
+      "serie": "interieurs",
+      "titre": "Élévation intérieure, portes retirées",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 40,
+      "hauteur": "mi-hauteur",
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "retirees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "detaillees"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "la structure intérieure par colonne",
+        "les hauteurs libres",
+        "la finition intérieure"
+      ]
+    },
+    {
+      "id": "I02",
+      "serie": "interieurs",
+      "titre": "Trois-quarts intérieur, portes ouvertes",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 38,
+      "hauteur": 1.5,
+      "azimut_deg": -30,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "douce",
+      "portes": "ouvertes",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "partiel",
+      "prouve": [
+        "l'intérieur tel qu'un client le voit",
+        "la face intérieure des portes"
+      ]
+    },
+    {
+      "id": "I03",
+      "serie": "interieurs",
+      "titre": "Penderie",
+      "cible": "zone:HC",
+      "cadrage": "zone",
+      "focale_mm": 50,
+      "hauteur": 1.4,
+      "azimut_deg": 15,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "douce",
+      "portes": "retirees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "detaillees"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "fonction:HC"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "une penderie, pas des tablettes",
+        "la hauteur de tringle"
+      ]
+    },
+    {
+      "id": "I04",
+      "serie": "interieurs",
+      "titre": "Tablettes",
+      "cible": "zone:AS",
+      "cadrage": "zone",
+      "focale_mm": 50,
+      "hauteur": "cible",
+      "azimut_deg": 20,
+      "inclinaison_deg": 8,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "retirees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "detaillees"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "fonction:AS"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "des tablettes à la bonne hauteur",
+        "leur épaisseur et leur profondeur"
+      ]
+    },
+    {
+      "id": "I05",
+      "serie": "interieurs",
+      "titre": "Tiroirs",
+      "cible": "zone:DR",
+      "cadrage": "zone",
+      "focale_mm": 50,
+      "hauteur": "cible",
+      "azimut_deg": 25,
+      "inclinaison_deg": 12,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "ouvertes",
+      "cotes": {
+        "client": "aucune",
+        "schema": "detaillees"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "fonction:DR"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "des tiroirs, leur nombre, leur hauteur de façade"
+      ]
+    },
+    {
+      "id": "I06",
+      "serie": "interieurs",
+      "titre": "Niche ouverte",
+      "cible": "zone:OP",
+      "cadrage": "zone",
+      "focale_mm": 50,
+      "hauteur": "cible",
+      "azimut_deg": 15,
+      "inclinaison_deg": 0,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "fonction:OP"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "une niche vide et lisible",
+        "ses dimensions"
+      ]
+    },
+    {
+      "id": "I07",
+      "serie": "interieurs",
+      "titre": "Plateau / bureau",
+      "cible": "zone:PDT",
+      "cadrage": "zone",
+      "focale_mm": 35,
+      "hauteur": "cible",
+      "azimut_deg": 30,
+      "inclinaison_deg": 10,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "detaillees"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "fonction:PDT"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "un plan de travail utilisable",
+        "le passage jambes"
+      ]
+    },
+    {
+      "id": "I08",
+      "serie": "interieurs",
+      "titre": "Banc",
+      "cible": "zone:BC",
+      "cadrage": "zone",
+      "focale_mm": 35,
+      "hauteur": "cible",
+      "azimut_deg": 30,
+      "inclinaison_deg": 8,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "fonction:BC"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "un banc à hauteur d'assise"
+      ]
+    },
+    {
+      "id": "A01",
+      "serie": "ambiances",
+      "titre": "Vue large de la pièce",
+      "cible": "piece",
+      "cadrage": "piece",
+      "focale_mm": 26,
+      "hauteur": 1.5,
+      "azimut_deg": -25,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "globales"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "partiel",
+      "prouve": [
+        "l'implantation dans la pièce",
+        "où sont les murs et la lumière",
+        "le meuble à 40-60 % du cadre"
+      ]
+    },
+    {
+      "id": "A02",
+      "serie": "ambiances",
+      "titre": "Depuis la porte de la pièce",
+      "cible": "piece",
+      "cadrage": "seuil",
+      "focale_mm": 28,
+      "hauteur": 1.55,
+      "azimut_deg": 40,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "partiel",
+      "prouve": [
+        "le recul limité d'une vraie pièce"
+      ]
+    },
+    {
+      "id": "A03",
+      "serie": "ambiances",
+      "titre": "Plan de la pièce (dessus, orthographique)",
+      "cible": "plan",
+      "cadrage": "plan",
+      "focale_mm": 600,
+      "hauteur": "cible",
+      "azimut_deg": 0,
+      "inclinaison_deg": 90,
+      "decentrement": false,
+      "lumiere": "douce",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "globales"
+      },
+      "modes": [
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "l'implantation en U / L",
+        "les retours",
+        "la profondeur — un dessin, pas une photo"
+      ]
+    },
+    {
+      "id": "A04",
+      "serie": "ambiances",
+      "titre": "Détail « vie » : une porte ouverte, de près",
+      "cible": "porte_ouverte",
+      "cadrage": "zone",
+      "focale_mm": 50,
+      "hauteur": 1.3,
+      "azimut_deg": 20,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "une-ouverte",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [
+        "porte"
+      ],
+      "politique": "partiel",
+      "prouve": [
+        "l'accroche du stylisme (à Raphaël)"
+      ]
+    },
+    {
+      "id": "S16",
+      "serie": "heros",
+      "titre": "Station site 16:9 — œil du photographe",
+      "cible": "meuble",
+      "cadrage": "station",
+      "focale_mm": 35,
+      "format": "16:9",
+      "hauteur": 1.15,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "image de base pour Flora, format du site",
+        "meuble à 50-60 % de la largeur (arbitrage du 20/09)",
+        "caméra de niveau à 1,15 m, déplacée et non pivotée, cadre décentré",
+        "liseré de plafond dans le cadre"
+      ],
+      "hauteur_angle": 1.3,
+      "focale_u_mm": 28,
+      "part_largeur": 0.55
+    },
+    {
+      "id": "S11",
+      "serie": "heros",
+      "titre": "Station carte produit 1:1 — plan serré dans la pièce",
+      "cible": "meuble",
+      "cadrage": "station",
+      "focale_mm": 40,
+      "format": "1:1",
+      "hauteur": 1.15,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "image de base pour Flora, format de la carte produit",
+        "meuble à 75-85 % de la largeur du carré (arbitrage du 20/09)",
+        "aucun fond neutre : le meuble dans sa pièce"
+      ],
+      "hauteur_angle": 1.3,
+      "focale_u_mm": 28,
+      "part_largeur": 0.8
+    },
+    {
+      "id": "BH100",
+      "serie": "heros",
+      "titre": "Balayage hauteur 1,00 m (35 mm, 16:9)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 35,
+      "format": "16:9",
+      "hauteur": 1,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "choix de la hauteur d'œil, à l'œil, par Dorian"
+      ]
+    },
+    {
+      "id": "BH120",
+      "serie": "heros",
+      "titre": "Balayage hauteur 1,20 m (35 mm, 16:9)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 35,
+      "format": "16:9",
+      "hauteur": 1.2,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "choix de la hauteur d'œil, à l'œil, par Dorian"
+      ]
+    },
+    {
+      "id": "BH140",
+      "serie": "heros",
+      "titre": "Balayage hauteur 1,40 m (35 mm, 16:9)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 35,
+      "format": "16:9",
+      "hauteur": 1.4,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "choix de la hauteur d'œil, à l'œil, par Dorian"
+      ]
+    },
+    {
+      "id": "BH155",
+      "serie": "heros",
+      "titre": "Balayage hauteur 1,55 m (35 mm, 16:9)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 35,
+      "format": "16:9",
+      "hauteur": 1.55,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "choix de la hauteur d'œil, à l'œil, par Dorian"
+      ]
+    },
+    {
+      "id": "BF28",
+      "serie": "heros",
+      "titre": "Balayage focale 28 mm (1,40 m, 16:9)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 28,
+      "format": "16:9",
+      "hauteur": 1.4,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "choix de la focale, à l'œil, par Dorian"
+      ]
+    },
+    {
+      "id": "BF35",
+      "serie": "heros",
+      "titre": "Balayage focale 35 mm (1,40 m, 16:9)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 35,
+      "format": "16:9",
+      "hauteur": 1.4,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "choix de la focale, à l'œil, par Dorian"
+      ]
+    },
+    {
+      "id": "BF40",
+      "serie": "heros",
+      "titre": "Balayage focale 40 mm (1,40 m, 16:9)",
+      "cible": "meuble",
+      "cadrage": "meuble",
+      "focale_mm": 40,
+      "format": "16:9",
+      "hauteur": 1.4,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "fermees",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client"
+      ],
+      "conditions": [],
+      "politique": "nominale",
+      "prouve": [
+        "choix de la focale, à l'œil, par Dorian"
+      ]
+    },
+    {
+      "id": "S16O",
+      "serie": "heros",
+      "titre": "Station site 16:9 — un module ouvert",
+      "cible": "meuble",
+      "cadrage": "station",
+      "focale_mm": 35,
+      "format": "16:9",
+      "hauteur": 1.15,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "une-ouverte",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "porte"
+      ],
+      "politique": "omettre",
+      "prouve": [
+        "image de base pour Flora, format du site",
+        "meuble à 50-60 % de la largeur (arbitrage du 20/09)",
+        "caméra de niveau à 1,15 m, déplacée et non pivotée, cadre décentré",
+        "liseré de plafond dans le cadre"
+      ],
+      "hauteur_angle": 1.3,
+      "focale_u_mm": 28,
+      "part_largeur": 0.55
+    },
+    {
+      "id": "S11O",
+      "serie": "heros",
+      "titre": "Station carte produit 1:1 — un module ouvert",
+      "cible": "meuble",
+      "cadrage": "station",
+      "focale_mm": 40,
+      "format": "1:1",
+      "hauteur": 1.15,
+      "azimut_deg": 0,
+      "inclinaison_deg": 0,
+      "decentrement": true,
+      "lumiere": "cle",
+      "portes": "une-ouverte",
+      "cotes": {
+        "client": "aucune",
+        "schema": "aucune"
+      },
+      "modes": [
+        "client",
+        "schema"
+      ],
+      "conditions": [
+        "porte"
+      ],
+      "politique": "omettre",
+      "prouve": [
+        "image de base pour Flora, format de la carte produit",
+        "meuble à 75-85 % de la largeur du carré (arbitrage du 20/09)",
+        "aucun fond neutre : le meuble dans sa pièce"
+      ],
+      "hauteur_angle": 1.3,
+      "focale_u_mm": 28,
+      "part_largeur": 0.8
+    }
+  ]
+}

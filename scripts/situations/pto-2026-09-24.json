@@ -1,0 +1,607 @@
+{
+  "_lisezmoi": "LE BOARD PTO du 24/09 (mot de Dorian 23/09 20:0x : « la règle PTO doit se tester avec un BOARD de plein de situations, des projections réalistes — par exemple pour faire les préconfigurations du site » ; ligne du lead à d10 23/09 20:0x). Une situation = une forme (`OS_SHAPE_*`, la route du configurateur) et les valeurs du formulaire qu'on SÈME par l'adresse (`?banc=1&CHAMP=valeur`) : seulement les entrées (dimensions, pente, collection, façade, poignée) — le formulaire résout lui-même les dépendances (finitions, dispositions des colonnes, variables des zones), mesuré le 23/09 20:4x sur F en Collection 4 FR_01_LAQ (CAT_01_LAQ, BO_TC_31 choisis par le formulaire). Les bornes sont celles du formulaire (produit servi par /api/shape/product/<forme>) : HEX `ZH_RUN` ∈ [(H − ZH_LOW_H)/sin 60°, (H − ZH_LOW_H)/sin 20°] — le « 1 000 » de la ligne du lead est HORS bornes pour les trois hauteurs à H = 2 500 (1 155 au moins à 1 500) : la matrice des pentes prend 41,8° (l'angle du défaut, 1 500 / 1 500) et 60° (la borne de Dorian), et UN cas sème 1 000 tel quel pour voir ce que la page en fait. Poignées : bouton = Circle (C1, 50 × 50) ou Lune (C2, 30 × 30) ; barre = Elan Handle 200 (C1) ou Core 145 (C2) ; chant = Edge Straight (C1, la seule poignée de chant du styler) ; « Push and Open » = TIPON (offert par le formulaire en Collections 1 et 4 seulement). Le format se veut une PRÉCONFIGURATION : ce qui manque pour en faire un preset du site est demandé à oaksome-stack (ligne du lead 20:0x ②). d10, 23/09 21:0x. Ajout 21:4x : les quatre situations de d11 qui séparent A / B / C (HEX-15 à HEX-18, `attendu` = sa ligne, comparée par le board).",
+  "version": 1,
+  "date": "2026-09-24",
+  "poignees": {
+    "bouton_c1": "FU_HN_103820050052",
+    "bouton_c2": "JO_HN_J1603BK",
+    "barre_c1": "FU_HN_104420160052",
+    "barre_c2": "JO_HN_J0203AB",
+    "chant_c1": "FU_HN_419720200761",
+    "pto": "TIPON"
+  },
+  "situations": [
+    {
+      "id": "HEX-01",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 500 / 1 500 (41,8°), 3 m, 5 colonnes — Coll. 1 FR_01, bouton (le défaut, le mur de référence)",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1500",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "la _Q4L du mur de référence (HEX_H_L 1 522) : B garde la poignée, A la refuse"
+    },
+    {
+      "id": "HEX-02",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 500 / 1 155 (60°, la borne), 3 m — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1155",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "même hauteur au mur, pente raide : une seule colonne coupée"
+    },
+    {
+      "id": "HEX-03",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 200 / 1 950 (41,8°), 3 m — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1200",
+        "ZH_RUN_L": "1950",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "mur à 1 200 : la colonne du mur sous les trois seuils"
+    },
+    {
+      "id": "HEX-04",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 200 / 1 502 (60°, la borne), 3 m — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1200",
+        "ZH_RUN_L": "1502",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "mur à 1 200, pente à la borne"
+    },
+    {
+      "id": "HEX-05",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 800 / 2 550 (41,8°), 3 m — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "800",
+        "ZH_RUN_L": "2550",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "mur à 800 (la borne basse de Dorian), pente douce : trois ou quatre colonnes coupées"
+    },
+    {
+      "id": "HEX-06",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 800 / 1 963 (60°, la borne), 3 m — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "800",
+        "ZH_RUN_L": "1963",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "le cas limite de d11 (800 à 60°) : la poignée ne tient nulle part sur la colonne du mur"
+    },
+    {
+      "id": "HEX-07",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 500 / 1 000 — HORS bornes du formulaire (min 1 155), semé tel quel",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1000",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "la valeur de la ligne du lead : ce que la page fait d'une pente plus raide que 60° (bornée ? rendue ?)"
+    },
+    {
+      "id": "HEX-08",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX deux pentes 1 500 / 1 500, 3 m — Coll. 2 FR_08_LAM, barre Core",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "BOTH",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1500",
+        "ZH_LOW_H_R": "1500",
+        "ZH_RUN_R": "1500",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_08_LAM",
+        "OV_PULL": "JO_HN_J0203AB"
+      },
+      "intention": "la façade à cadre sur quatre colonnes coupées (porte pleine redemandée par la page) ; PTO au choix prévu par le PDF (FA 4a, C2) mais non offert par le formulaire"
+    },
+    {
+      "id": "HEX-09",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente droite 1 200 / 1 502 (60°), 2,4 m, 4 colonnes — Coll. 2 FR_08_LAM, barre Core",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "RIGHT",
+        "ZH_LOW_H_R": "1200",
+        "ZH_RUN_R": "1502",
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_08_LAM",
+        "OV_PULL": "JO_HN_J0203AB"
+      },
+      "intention": "le miroir : charnières au côté long à gauche, bord libre à droite"
+    },
+    {
+      "id": "HEX-10",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 500 / 1 500, 1,8 m, 3 colonnes — Coll. 1 FR_01, barre Elan 200",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1500",
+        "ZF_WIDTH": "1800",
+        "ZF_CNT": "3",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_104420160052"
+      },
+      "intention": "une barre de 200 (PULL_Y 150) : C passe à 1 250 au bord libre"
+    },
+    {
+      "id": "HEX-11",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 200 / 1 950, 3 m — Coll. 1 FR_01, poignée de chant Edge Straight",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1200",
+        "ZH_RUN_L": "1950",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_419720200761"
+      },
+      "intention": "la poignée de chant (PULL_X 9) : la ligne de la poignée au ras du bord court"
+    },
+    {
+      "id": "HEX-12",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 500 / 1 500, 3 m — Coll. 4 FR_01_LAQ (laquée), Push and Open",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1500",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_04",
+        "OV_FRONT_TYPE": "FR_01_LAQ",
+        "OV_PULL": "TIPON"
+      },
+      "intention": "PTO au choix partout (la seule poignée du formulaire en Collection 4)"
+    },
+    {
+      "id": "HEX-13",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX deux pentes 1 200 / 1 950, 4 m, 7 colonnes — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "BOTH",
+        "ZH_LOW_H_L": "1200",
+        "ZH_RUN_L": "1950",
+        "ZH_LOW_H_R": "1200",
+        "ZH_RUN_R": "1950",
+        "ZF_WIDTH": "4000",
+        "ZF_CNT": "7",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "une chambre sous combles : deux murs à 1 200, les colonnes coupées des deux côtés"
+    },
+    {
+      "id": "HEX-14",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX haut 2 800, pente gauche 1 500 / 1 950 (41,8°), 3 m — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZF_HEIGHT": "2800",
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1950",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "des portes hautes (2,64 m) sous une pente"
+    },
+    {
+      "id": "HEX-15",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 200 / 2 600 (30°), 3 m — la situation de d11 « A seul »",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZF_WIDTH": "3000",
+        "ZF_HEIGHT": "2500",
+        "ZH_LOW_H_L": "1200",
+        "ZH_RUN_L": "2600",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "la situation qui sépare A de B et C (d11 § 6) : le board doit rendre la même ligne",
+      "attendu": {
+        "source": "d11, oaksome-stack 60a53ac, produits/hex/recettes/PTO-SEUIL-CHIFFRES.md § 6 (l’arbre 9001 par la copie du générateur, la porte imos du lot MT)",
+        "set": 3,
+        "hexSit": "QUAD_L",
+        "hexHCourt": 1555.07,
+        "poignee": 1017.5,
+        "etiquettes": {
+          "A": "PTO",
+          "B": "poignée",
+          "C": "poignée"
+        }
+      }
+    },
+    {
+      "id": "HEX-16",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 800 / 4 970 (20° ; le formulaire élargit à 5 320) — la situation de d11 « A et B, pas C »",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZF_WIDTH": "3000",
+        "ZF_HEIGHT": "2500",
+        "ZH_LOW_H_L": "800",
+        "ZH_RUN_L": "4970",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "la situation qui sépare C de A et B (d11 § 6)",
+      "attendu": {
+        "source": "d11, oaksome-stack 60a53ac, produits/hex/recettes/PTO-SEUIL-CHIFFRES.md § 6 (l’arbre 9001 par la copie du générateur, la porte imos du lot MT)",
+        "set": 5,
+        "hexSit": "QUAD_L",
+        "hexHCourt": 1448.54,
+        "poignee": 894.8,
+        "etiquettes": {
+          "A": "PTO",
+          "B": "PTO",
+          "C": "poignée"
+        }
+      }
+    },
+    {
+      "id": "HEX-17",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 200 / 1 000 (replié à 60°), 1,8 m — la situation de d11 « les trois »",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZF_WIDTH": "1800",
+        "ZF_HEIGHT": "2500",
+        "ZH_LOW_H_L": "1200",
+        "ZH_RUN_L": "1000",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "PTO sous A, B et C (d11 § 6)",
+      "attendu": {
+        "source": "d11, oaksome-stack 60a53ac, produits/hex/recettes/PTO-SEUIL-CHIFFRES.md § 6 (l’arbre 9001 par la copie du générateur, la porte imos du lot MT)",
+        "set": 2,
+        "hexSit": "QUAD_L",
+        "hexHCourt": 1243.2,
+        "poignee": 792.4,
+        "etiquettes": {
+          "A": "PTO",
+          "B": "PTO",
+          "C": "PTO"
+        }
+      }
+    },
+    {
+      "id": "HEX-18",
+      "forme": "OS_SHAPE_HEX",
+      "titre": "HEX pente gauche 1 500 / 1 000 (60°), 1,8 m — la situation de d11 « poignée partout »",
+      "valeurs": {
+        "ZH_SLOPE_TYPE": "LEFT",
+        "ZF_WIDTH": "1800",
+        "ZF_HEIGHT": "2500",
+        "ZH_LOW_H_L": "1500",
+        "ZH_RUN_L": "1000",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "la colonne coupée à cinq sommets garde sa poignée à 1 050 (d11 § 6)",
+      "attendu": {
+        "source": "d11, oaksome-stack 60a53ac, produits/hex/recettes/PTO-SEUIL-CHIFFRES.md § 6 (l’arbre 9001 par la copie du générateur, la porte imos du lot MT)",
+        "set": 2,
+        "hexSit": "HEXA_L",
+        "hexHCourt": 1543.26,
+        "poignee": 1050,
+        "etiquettes": {
+          "A": "poignée",
+          "B": "poignée",
+          "C": "poignée"
+        }
+      }
+    },
+    {
+      "id": "HEX2-01",
+      "forme": "OS_SHAPE_HEX2",
+      "titre": "HEX 2 pente arrière 2 000 / plat 200, 3 m, 5 colonnes — Coll. 1 FR_01, bouton (le défaut)",
+      "valeurs": {
+        "ZH2_LOW_H": "2000",
+        "ZH2_TOP_D": "200",
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "la pente est derrière : les portes sont droites"
+    },
+    {
+      "id": "HEX2-02",
+      "forme": "OS_SHAPE_HEX2",
+      "titre": "HEX 2 pente arrière raide 1 650 / plat 0, 2,4 m, 4 colonnes — Coll. 2 FR_08_LAM, barre Core",
+      "valeurs": {
+        "ZH2_LOW_H": "1650",
+        "ZH2_TOP_D": "0",
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_08_LAM",
+        "OV_PULL": "JO_HN_J0203AB"
+      },
+      "intention": "la façade à cadre de fox-cad sur des portes droites"
+    },
+    {
+      "id": "HEX2-03",
+      "forme": "OS_SHAPE_HEX2",
+      "titre": "HEX 2 bas 1 400 (mur du fond à 1 000), 1,8 m, 3 colonnes — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZF_HEIGHT": "1400",
+        "ZH2_LOW_H": "1000",
+        "ZH2_TOP_D": "200",
+        "ZF_WIDTH": "1800",
+        "ZF_CNT": "3",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "un meuble bas sous rampant (jambette) : des portes de 1,24 m, la poignée à 820"
+    },
+    {
+      "id": "HEX2-04",
+      "forme": "OS_SHAPE_HEX2",
+      "titre": "HEX 2 défaut, 1,8 m, 3 colonnes — Coll. 4 FR_01_LAQ (laquée), Push and Open",
+      "valeurs": {
+        "ZH2_LOW_H": "2000",
+        "ZH2_TOP_D": "200",
+        "ZF_WIDTH": "1800",
+        "ZF_CNT": "3",
+        "OV_COLLECTION": "COLLECTION_04",
+        "OV_FRONT_TYPE": "FR_01_LAQ",
+        "OV_PULL": "TIPON"
+      },
+      "intention": "PTO au choix, laquée"
+    },
+    {
+      "id": "F-01",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 2,4 m × 2,5 m, 4 colonnes — Coll. 1 FR_01, bouton (le placard type)",
+      "valeurs": {
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "le témoin : quatre poignées à 1 050"
+    },
+    {
+      "id": "F-02",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 1,8 m, 3 colonnes — Coll. 1 FR_01, barre Elan 200",
+      "valeurs": {
+        "ZF_WIDTH": "1800",
+        "ZF_CNT": "3",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_104420160052"
+      },
+      "intention": "la barre en Collection 1"
+    },
+    {
+      "id": "F-03",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 3 m, 5 colonnes — Coll. 2 FR_08_LAM, barre Core",
+      "valeurs": {
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_08_LAM",
+        "OV_PULL": "JO_HN_J0203AB"
+      },
+      "intention": "la façade à cadre en production"
+    },
+    {
+      "id": "F-04",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 3 m, 5 colonnes — Coll. 4 FR_01_LAQ (laquée), Push and Open",
+      "valeurs": {
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_04",
+        "OV_FRONT_TYPE": "FR_01_LAQ",
+        "OV_PULL": "TIPON"
+      },
+      "intention": "la laquée : PTO au choix, la seule poignée de la Collection 4"
+    },
+    {
+      "id": "F-05",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 2,4 m, 4 colonnes — Coll. 1 FR_01, poignée de chant Edge Straight",
+      "valeurs": {
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_419720200761"
+      },
+      "intention": "la poignée de chant"
+    },
+    {
+      "id": "F-06",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 2,4 m, 4 colonnes — Coll. 1 FR_01, Push and Open",
+      "valeurs": {
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "TIPON"
+      },
+      "intention": "PTO au choix en Collection 1"
+    },
+    {
+      "id": "F-07",
+      "forme": "OS_SHAPE_F",
+      "titre": "F bas 1,4 m × 1,8 m, 3 colonnes — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "ZF_HEIGHT": "1400",
+        "ZF_WIDTH": "1800",
+        "ZF_CNT": "3",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "le meuble bas (hauteur minimale du formulaire) : poignée à 820 par la règle d'imos"
+    },
+    {
+      "id": "F-08",
+      "forme": "OS_SHAPE_F",
+      "titre": "F bas 1,6 m × 2,4 m, 4 colonnes — Coll. 2 FR_08_LAM, barre Core",
+      "valeurs": {
+        "ZF_HEIGHT": "1600",
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_08_LAM",
+        "OV_PULL": "JO_HN_J0203AB"
+      },
+      "intention": "entre deux : la poignée à 1 020 — B la garde, A la refuse"
+    },
+    {
+      "id": "F-09",
+      "forme": "OS_SHAPE_F",
+      "titre": "F haut 3 m × 2,4 m, 4 colonnes — Coll. 2 FR_08_LAM, barre Core",
+      "valeurs": {
+        "ZF_HEIGHT": "3000",
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_08_LAM",
+        "OV_PULL": "JO_HN_J0203AB"
+      },
+      "intention": "des portes de 2,84 m (« trop hautes » ?) : la ligne 1 050 tient"
+    },
+    {
+      "id": "F-10",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 3 m, 5 colonnes — Coll. 2 FR_10_LAM (cadre 50), barre Essence",
+      "valeurs": {
+        "ZF_WIDTH": "3000",
+        "ZF_CNT": "5",
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_10_LAM",
+        "OV_PULL": "JO_HN_J0405BK"
+      },
+      "intention": "FA 5a : le PDF ne prévoit P p&o qu'en Collections 3 et 4 — le styler ne vend FR_10 qu'en Collection 2"
+    },
+    {
+      "id": "F-11",
+      "forme": "OS_SHAPE_F",
+      "titre": "F 2,4 m, 4 colonnes — Coll. 3 FR_02_VRN (poignée intégrée)",
+      "valeurs": {
+        "ZF_WIDTH": "2400",
+        "ZF_CNT": "4",
+        "OV_COLLECTION": "COLLECTION_03",
+        "OV_FRONT_TYPE": "FR_02_VRN"
+      },
+      "intention": "la rainure (FA 2x : P int, aucune P p&o)"
+    },
+    {
+      "id": "L-01",
+      "forme": "OS_SHAPE_L",
+      "titre": "L d'angle par défaut — Coll. 1 FR_01, bouton",
+      "valeurs": {
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_103820050052"
+      },
+      "intention": "deux façades (de face et de côté)"
+    },
+    {
+      "id": "L-02",
+      "forme": "OS_SHAPE_L",
+      "titre": "L d'angle — Coll. 2 FR_08_LAM, bouton Lune",
+      "valeurs": {
+        "OV_COLLECTION": "COLLECTION_02",
+        "OV_FRONT_TYPE": "FR_08_LAM",
+        "OV_PULL": "JO_HN_J1603BK"
+      },
+      "intention": "le bouton de la Collection 2"
+    },
+    {
+      "id": "L-03",
+      "forme": "OS_SHAPE_L",
+      "titre": "L d'angle — Coll. 4 FR_01_LAQ (laquée), Push and Open",
+      "valeurs": {
+        "OV_COLLECTION": "COLLECTION_04",
+        "OV_FRONT_TYPE": "FR_01_LAQ",
+        "OV_PULL": "TIPON"
+      },
+      "intention": "PTO au choix, laquée"
+    },
+    {
+      "id": "L-04",
+      "forme": "OS_SHAPE_L",
+      "titre": "L d'angle haut 3 m — Coll. 1 FR_01, barre Elan 200",
+      "valeurs": {
+        "OV_HEIGHT": "3000",
+        "OV_COLLECTION": "COLLECTION_01",
+        "OV_FRONT_TYPE": "FR_01_LAM",
+        "OV_PULL": "FU_HN_104420160052"
+      },
+      "intention": "les portes hautes d'un L"
+    }
+  ]
+}

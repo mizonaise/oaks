@@ -1,0 +1,17 @@
+{
+  "_lisezmoi": "La façade du styler (FR_nn, source des fronts du formulaire) → la planche FA du PDF de la gamme (OAKSOME_facades_cotees_phase2_260116.pdf), pour lire sa colonne « P p&o ». LA TABLE DE d2 (orchestre, revues/2026-09-24_gamme-oaksome-facades-kms-pto.md § 1, 23/09 21:3x) : les 14 FA du PDF sont, dans l'ordre, FR_01 … FR_14 — le designer d'Otman et les contours d'imos le confirment pour 13 façades sur 14 ; FR_14 est le seul désaccord (le PDF dit FA 8, le special-kms d'Otman Door_FA_7, imos la porte plate avec poignée). La source du special-kms (SpecialFrontConfig.ts, recopié dans src/lib/foxcad/chemin-otman.ts) est dite par ligne quand elle diffère. d10, 23/09 20:5x, aligné sur d2 à 21:4x.",
+  "FR_01": { "fa": "FA_1", "source": "d2 (ordre du PDF) = Otman (CP_FR01 → Door_FA_1) : la porte pleine" },
+  "FR_02": { "fa": "FA_2a", "source": "d2 (ordre du PDF : FA 2a–2e = poignée intégrée, P int) ; Otman donne Door_FA_1 — aucune FA 2x n'a de P p&o" },
+  "FR_03": { "fa": "FA_2b", "source": "d2 (ordre du PDF) ; Otman : Door_FA_1" },
+  "FR_04": { "fa": "FA_2c", "source": "d2 (ordre du PDF) ; Otman : Door_FA_1" },
+  "FR_05": { "fa": "FA_2d", "source": "d2 (ordre du PDF) ; Otman : Door_FA_1" },
+  "FR_06": { "fa": "FA_2e", "source": "d2 (ordre du PDF) ; Otman : Door_FA_1" },
+  "FR_07": { "fa": "FA_3", "source": "d2 (ordre du PDF) = Otman (CP_FR07 → Door_FA_3)" },
+  "FR_08": { "fa": "FA_4a", "source": "d2 (ordre du PDF) = Otman (CP_FR08 → Door_FA_4a)" },
+  "FR_09": { "fa": "FA_4b", "source": "d2 (ordre du PDF) = Otman (CP_FR09 → Door_FA_4b)" },
+  "FR_10": { "fa": "FA_5a", "source": "d2 (ordre du PDF) = Otman (CP_FR10 → Door_FA_5a)" },
+  "FR_11": { "fa": "FA_5b", "source": "d2 (ordre du PDF) = Otman (CP_FR11 → Door_FA_5b)" },
+  "FR_12": { "fa": "FA_6", "source": "d2 (ordre du PDF) = Otman (CP_FR12 → Door_FA_6)" },
+  "FR_13": { "fa": "FA_7", "source": "d2 (ordre du PDF) = Otman (CP_FR13 → Door_FA_7)" },
+  "FR_14": { "fa": "FA_8", "source": "d2 (ordre du PDF : la lèvre FA 8, push & open seul) — trois sources, trois façades : Otman Door_FA_7, imos la porte plate ; non vendue" }
+}
