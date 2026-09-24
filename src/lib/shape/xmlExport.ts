@@ -55,11 +55,19 @@ function round2(n: number): number {
   return Number(n.toFixed(2));
 }
 
-type SetEntry = {
+export type SetEntry = {
   pname: string;
   vars: Record<string, unknown>;
   pins: string;
   port: string;
+  /** la boîte de la zone dans la scène (mm, repère d'Otman) — pour le squelette, les bornes de la forme */
+  box: { x: number; y: number; z: number; w: number; h: number; d: number };
+  /** la face avant (`clickable`) de la zone ; FRONT quand rien ne le dit */
+  facing?: string;
+  /** l'index de la boîte dans l'arbre des zones (`Box.index`) */
+  index: string;
+  /** la zone du formulaire (`ART_ZONE_FR_NN`), absente pour le squelette */
+  zone?: string;
 };
 
 /** Base for synthesized sequential ids (UID = REF_ID = ___REFID per Set). */
@@ -191,6 +199,10 @@ function collectZoneSets(
       vars,
       pins: pInsertion(box, bounds, facing),
       port: pOrientation(facing),
+      box: { x: box.x, y: box.y, z: box.z, w: box.w, h: box.h, d: box.d },
+      facing,
+      index: box.index,
+      zone: zoneName,
     });
   }
   return sets;
@@ -241,30 +253,7 @@ export function buildShapeXml(
   const dispDate = new Date(now).toLocaleDateString("fr-FR");
   // const commandN = "O_TL_24_0623";
 
-  const bounds = {
-    w: readDim(shape.width, scopes.globalVars, 6000),
-    d: readDim(shape.depth, scopes.globalVars, 500),
-    h: readDim(shape.height, scopes.globalVars, 3000),
-  };
-
-  // The main shape Set carries only the global changes (NOT per-zone vars),
-  // plus the shape's own dimensions and centered position.
-  const globalChanges = scopeVars(nested, "global");
-  const mainVars: Record<string, unknown> = {
-    ...sizeVars(bounds),
-    ...globalChanges,
-    ___MODEL_NAME: shapeName,
-  };
-
-  const entries: SetEntry[] = [
-    {
-      pname: shapeName,
-      vars: mainVars,
-      pins: pInsertion({ x: 0, y: 0, z: 0, w: bounds.w, d: bounds.d }, bounds),
-      port: pOrientation(),
-    },
-    ...collectZoneSets(shape, scopes, nested, globalChanges, bounds),
-  ];
+  const entries = collectSets(nested, shapeName, shape, scopes);
   const sets = entries.map((e, i) => setXml(i + 1, e)).join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -282,6 +271,42 @@ ${sets}
   </Order>
 </XML>
 `;
+}
+
+/**
+ * LES SETS DE LA COMMANDE, dans l'ordre du ListBuilder : le squelette (les changements globaux, ses cotes, sa position centrée), puis un Set
+ * par zone d'article. C'est la liste qui fait le XML — et, depuis B3 (22/09), le lot que fox-cad calcule pour HEX / HEX 2 (`lib/foxcad/lot.ts`) :
+ * une seule source pour les deux, jamais deux listes qui divergent.
+ */
+export function collectSets(
+  nested: Record<string, unknown>,
+  shapeName: string,
+  shape: ShapeData,
+  scopes: Scopes,
+): SetEntry[] {
+  const bounds = computeShapeBounds(shape, scopes);
+
+  // The main shape Set carries only the global changes (NOT per-zone vars),
+  // plus the shape's own dimensions and centered position.
+  const globalChanges = scopeVars(nested, "global");
+  const mainVars: Record<string, unknown> = {
+    ...sizeVars(bounds),
+    ...globalChanges,
+    ___MODEL_NAME: shapeName,
+  };
+  const racine = (shape.zone as { index?: string } | undefined)?.index ?? "0";
+
+  return [
+    {
+      pname: shapeName,
+      vars: mainVars,
+      pins: pInsertion({ x: 0, y: 0, z: 0, w: bounds.w, d: bounds.d }, bounds),
+      port: pOrientation(),
+      box: { x: 0, y: 0, z: 0, w: bounds.w, h: bounds.h, d: bounds.d },
+      index: racine,
+    },
+    ...collectZoneSets(shape, scopes, nested, globalChanges, bounds),
+  ];
 }
 
 /**
@@ -360,6 +385,11 @@ export function computeZoneSizes(
 /** Trigger a browser download of `content` as `filename`. */
 export function downloadXml(filename: string, content: string): void {
   downloadBlob(filename, content, "application/xml");
+}
+
+/** Trigger a browser download of a TSV text (the fox-cad pieces of the scene, B3). */
+export function downloadTsv(filename: string, content: string): void {
+  downloadBlob(filename, content, "text/tab-separated-values");
 }
 
 /** Trigger a browser download of `data` serialized as pretty JSON. */
