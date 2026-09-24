@@ -13,6 +13,10 @@ export type ResolvedCp = {
   surfName: string | null;
   thickness: number; // mm
   textureUrl: string | null;
+  /** le nom de la texture (`RENDER` du rp-engine = `RENDER_MAT` d'imos), celui de la surface d'abord — la clé de l'échelle */
+  render: string | null;
+  /** l'échelle vivante du rp-engine (mm par répétition) pour ce rendu, `null` tant qu'il ne l'expose pas */
+  scalefakt: number | null;
 };
 
 // `$VAR` → vars[VAR]; bare strings pass through.
@@ -79,10 +83,14 @@ export function useResolveCp(
   const textureUrl = textureName
     ? `${TEXTURE_BASE}${textureName}.jpg/public`
     : null;
+  // l'échelle suit le rendu retenu (la surface d'abord, comme la texture)
+  const scalefakt = (surf?.render ? surf.scalefakt : mat?.scalefakt) ?? null;
   return {
     matName: mat?.name ?? null,
     surfName: surf?.name ?? null,
     thickness,
     textureUrl,
+    render: textureName,
+    scalefakt,
   };
 }

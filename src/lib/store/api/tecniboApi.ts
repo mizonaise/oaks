@@ -175,6 +175,11 @@ interface RpEngineMatSurf {
   RENDER?: string | null;
   MATCAT?: string;
   SURFCAT?: string;
+  // Nuit du 22 au 23/09 (d5) : le rp-engine ne les renvoie PAS aujourd'hui (sa requête SQL ne
+  // sélectionne pas la table RENDER au-delà de RENDER_MAT) — déclarés ici pour le jour où il
+  // les exposera : SCALEFAKT = mm réels par répétition de la texture, ROTATION = son angle.
+  SCALEFAKT?: number | null;
+  ROTATION?: number | null;
 }
 
 /**
@@ -188,6 +193,8 @@ export interface MatSurfData {
   name: string | null;
   render: string | null;
   thickness: number;
+  /** l'échelle vivante de la texture (mm par répétition), quand le rp-engine l'expose ; `null` sinon (aujourd'hui : toujours) */
+  scalefakt: number | null;
 }
 
 const toMatSurf = (r: RpEngineMatSurf | null): MatSurfData => ({
@@ -196,6 +203,10 @@ const toMatSurf = (r: RpEngineMatSurf | null): MatSurfData => ({
   // Guard against a non-numeric/absent THK so the sum in `resolveCp` can't
   // become NaN and poison the panel geometry.
   thickness: typeof r?.THK === "number" && Number.isFinite(r.THK) ? r.THK : 0,
+  scalefakt:
+    typeof r?.SCALEFAKT === "number" && Number.isFinite(r.SCALEFAKT) && r.SCALEFAKT > 0
+      ? r.SCALEFAKT
+      : null,
 });
 
 /**
