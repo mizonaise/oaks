@@ -1,0 +1,2307 @@
+/* MOHAMED FORM STYLE */
+/* ─────────────────────────────────────────────────────────────────
+   @oak-some/configurator-previewer — "oaksome" theme, standalone
+   ─────────────────────────────────────────────────────────────────
+   The conf app's previewer look (Stoëmp kit), as a PORTABLE stylesheet:
+   plain global CSS, no framework, no CSS-modules build step, and NO
+   `styles` prop — the previewer's own data-attributes are the whole
+   styling surface.
+
+   Requires previewer >= 1.22.1.
+
+   Drop-in:
+       import "./index.css";
+
+       <ConfiguratorPreviewDialog configuratorJson={...} />
+       // pass NO `styles` prop — this file replaces it
+
+   Every colour comes from the Stoemp tokens declared on [data-previewer]
+   below, so the sheet has no dependency on MUI or any other framework —
+   re-map those tokens to re-brand it.
+
+   ── FONTS ───────────────────────────────────────────────────────
+   Resolved RELATIVE to this stylesheet: keep the three .woff2 files in
+   a `fonts/` folder beside it. Bundlers resolve url() at BUILD time, so
+   a path that points nowhere fails the build. Copy them from the conf
+   app's public/fonts.
+
+   Don't want the fonts at all? Delete the @font-face blocks below and
+   re-map --font-titre / --font-mono to your own stack.
+
+   Yet Grotesk ships medium + bold only: 400 and 500 both map to the
+   medium file, which is what the kit does too.
+
+   Variables the PACKAGE publishes (read them, don't redefine):
+     --_pct           slider fill ratio 0..1, on [data-slider-wrapper]
+     --_at            a notch's position 0..1, on [data-slider-notch]
+     --combo-row-gap  per-type option-row gap, on [data-combo-options]
+     --teinte         an option's own colour, on [data-option]
+───────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Yet Grotesk";
+  src: url("./fonts/for-yetgroteskweb-medium.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Yet Grotesk";
+  src: url("./fonts/for-yetgroteskweb-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Yet Grotesk";
+  src: url("./fonts/for-yetgroteskweb-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PP Air Mono";
+  src: url("./fonts/PPAir-RegularMono.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* ── Root ────────────────────────────────────────────────────── */
+[data-previewer] {
+  display: flex;
+  flex-direction: column;
+  /* The previewer is a flex child of the panel column, and a flex item's
+     default `min-width: auto` refuses to shrink below its content — a wide
+     row inside (the tab bar, a long option label) would then push the whole
+     panel out and give the form a horizontal scrollbar. `min-width: 0` lets
+     it take the column's width instead, so inner scrollers (the tab bar has
+     its own) handle their own overflow. */
+  min-width: 0;
+  /* Keeps the configurator off the panel's edges — the kit's own panel pads its
+     scrolling body (`.cfg-scroll`) rather than letting controls run to the
+     border. Horizontal only: vertical rhythm is the blocks' own margins.
+     Wider on the left, matching the kit's own asymmetric panel padding
+     (`.cfg-scroll` is 24 on the left against 32 on the right). */
+  padding-left: 48px;
+  padding-right: 24px;
+  gap: 16px;
+  /* Padding must come out of the panel's width, not add to it. */
+  box-sizing: border-box;
+  max-width: 100%;
+
+  /* ── Stoëmp tokens (kit-configurateur/css/tokens.css) ──────────
+     Scoped to the previewer root so they never leak into the admin
+     chrome around it. Only the tokens the converted components need
+     are declared; the rest arrive as we convert field by field.
+     Names mirror the kit's so the two files can be diffed. */
+  --beige: #eeede7;
+  --noir: #000000;
+  --fond: #f6f5f0;
+  --blanc: #ffffff;
+  --noir-35: rgba(0, 0, 0, 0.35);
+  --beige-fonce-15: rgba(105, 103, 97, 0.15);
+  --noir-15: rgba(0, 0, 0, 0.15);
+  --beige-35: rgba(238, 237, 231, 0.35);
+  --vert-flash: #c1fd48;
+  --beige-fonce: #696761;
+  --font-titre: "Yet Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "PP Air Mono", "Courier New", monospace;
+
+  /* The panel itself is drawn on white (`.cfg-panneau`), with the body text
+     style of the kit (Yet Grotesk 500 14/18) as the inherited default. */
+  background: var(--blanc);
+  color: var(--noir);
+  font: 500 14px/18px var(--font-titre);
+}
+
+/* The tab row: the package wraps the scroll arrows and the tab bar in a
+   plain `display:flex` div with no `min-width: 0` (an inline style we can't
+   edit). A flex item defaults to `min-width: auto`, so that row refuses to
+   shrink below the arrows plus the tabs' full width, and it overflowed the
+   panel — this was the form's horizontal scrollbar. `:has()` targets the row
+   through its arrow child, since the wrapper carries no attribute of its own.
+   The bar inside already scrolls itself (`flex: 1 1 auto; min-width: 0`), so
+   the arrows stay usable at any panel width. */
+[data-previewer] [data-tab-group] > div:has(> [data-tab-arrow]) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Section ─────────────────────────────────────────────────── */
+[data-previewer] [data-type="SECTION"] {
+  border-radius: 5px;
+}
+
+[data-previewer] [data-type="SECTION"] [data-type="SECTION"] {
+  border-radius: 5px;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+/* A nested accordion must not inherit the generic nested-section padding: its
+   hairline has to sit flush, as the top edge of its own item. */
+[data-previewer] [data-type="SECTION"] [data-section-type="ACCORDION"] {
+  padding-top: 0;
+}
+
+/* ── Accordion section — kit component 30 « Drop-down M » ─────────────────────
+   Figma 4346:29934, ported from the kit's own `css/dropdown-m.css`. NOT a card:
+   there is no border, fill or radius — a single black hairline that sits below
+   the item's LAST VISIBLE element, and a `+` drawn from two 1px lines that
+   rotates 45° into a `×` (black in both states; the blue elsewhere in the kit's
+   Figma belongs to the FAQ rail, not to this toggle).
+
+   SMALL is the compact register and narrows the whole item; LARGE spans the
+   full width with the desktop 74px closed height. */
+
+[data-previewer] [data-section-type="ACCORDION"] {
+  border: none;
+  border-radius: 0;
+  background: none;
+  /* SMALL narrows the WHOLE item — hairline, title and body — so the register
+     changes the block's footprint, not just its text measure. 62.5% is the
+     kit's reading measure (576 of its 922-wide list). */
+  max-width: 62.5%;
+}
+[data-previewer] [data-section-type="ACCORDION"][data-size="large"] {
+  max-width: none;
+}
+
+/* On MOBILE an accordion is always FULL WIDTH, whatever its `size` says. The
+   size register is a desktop measure — narrowing a block to 62.5% of a phone
+   panel would leave the controls inside it unusably cramped — so the wrapper
+   the renderer puts around the mobile strip simply spans its container.
+   (The wrapper still carries `data-size`, so a consumer that wants the desktop
+   behaviour on mobile can opt back in.) */
+[data-previewer] [data-mobile-section="ACCORDION"] {
+  max-width: none;
+}
+
+/* The hairlines ARE the separation, so stacked items sit flush. */
+[data-previewer]
+  [data-section-type="ACCORDION"]
+  + [data-section-type="ACCORDION"] {
+  margin-top: 0;
+}
+[data-previewer] [data-section-type="ACCORDION"] + [data-type="SECTION"],
+[data-previewer] [data-type="SECTION"] + [data-section-type="ACCORDION"] {
+  margin-top: 28px;
+}
+
+[data-previewer] [data-section-header] {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 25px;
+  width: 100%;
+  /* Balanced, so the hairline sits the same distance from the title whether the
+     item is open or closed. NOT the kit's fixed 150 — that is a mobile tap
+     target measured on a 390px phone, and it leaves ~100px of dead space under
+     a one-line title in a desktop panel. */
+  padding: 25px 0 25px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font: 700 30px/32px var(--font-titre);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--noir);
+  text-align: left;
+  cursor: pointer;
+}
+/* The hairline sits below the item's last visible element: under the header
+   while closed, under the body once open — so opening an item moves the line
+   down past its content. Declared AFTER the header's own `border: 0` above,
+   which would otherwise wipe it out on source order. */
+[data-previewer] [data-section-type="ACCORDION"] > [data-section-header] {
+  border-bottom: 1px solid var(--noir);
+}
+[data-previewer]
+  [data-section-type="ACCORDION"][data-open="true"]
+  > [data-section-header] {
+  border-bottom: none;
+}
+[data-previewer]
+  [data-section-type="ACCORDION"][data-open="true"]
+  > [data-section-body] {
+  border-bottom: 1px solid var(--noir);
+}
+[data-previewer] [data-section-header]:focus-visible {
+  outline: 1px solid var(--noir);
+  outline-offset: 4px;
+  box-shadow: none;
+}
+[data-previewer] [data-section-header] > * {
+  min-width: 0;
+  /* Figma trims its text to the cap height; without this each item is a little
+     taller. Progressive — never broken where unsupported. */
+  text-box: trim-both cap alphabetic;
+}
+/* Open: the title keeps its top padding and gives up the bottom one, because
+   the body below now carries the space before the hairline. */
+[data-previewer]
+  [data-section-type="ACCORDION"][data-open="true"]
+  [data-section-header] {
+  padding: 25px 0 0;
+}
+/* LARGE: only the gap differs — the closed item hugs its title either way. */
+[data-previewer]
+  [data-section-type="ACCORDION"][data-size="large"]
+  [data-section-header] {
+  gap: 10px;
+}
+
+/* The `+`: two 1px strokes in a 13.2px box, 4.4 below the cap line, drawn as
+   two gradients so one pseudo-element carries both. */
+[data-previewer] [data-section-header]::after {
+  content: "";
+  position: relative;
+  flex: 0 0 auto;
+  order: 2;
+  margin-left: 0;
+  width: 13.2px;
+  height: 13.2px;
+  margin-top: 4.4px;
+  border: 0;
+  background:
+    linear-gradient(var(--noir), var(--noir)) center / 1px 100% no-repeat,
+    linear-gradient(var(--noir), var(--noir)) center / 100% 1px no-repeat;
+  transform: none;
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Kept flush with the item's right edge as it turns (the kit's +1.93). */
+[data-previewer]
+  [data-section-type="ACCORDION"][data-open="true"]
+  [data-section-header]::after {
+  transform: translateX(1.93px) rotate(45deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-previewer] [data-section-header]::after {
+    transition: none;
+  }
+}
+
+/* ── Open / close motion ──────────────────────────────────────────────────────
+   The body eases in on the toggle's curve and duration so the two read as one
+   gesture. Entry only: the renderer mounts the body on open and unmounts it on
+   close, so there is nothing left to animate on the way out.
+   `grid-template-rows: 0fr → 1fr` is what animates the height to `auto`. */
+[data-previewer]
+  [data-section-type="ACCORDION"][data-open="true"]
+  > [data-section-body] {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: ddm-open 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-previewer]
+  [data-section-type="ACCORDION"][data-open="true"]
+  > [data-section-body]
+  > * {
+  min-height: 0;
+}
+@keyframes ddm-open {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+/* Closing: the mirror of the open animation. The renderer keeps the body
+   mounted while `data-closing="true"` and unmounts it once this animation
+   finishes, so the exit lasts exactly as long as this rule says — nothing has
+   to agree on a duration. `both` holds the collapsed state through the final
+   frame so it cannot flash back to full height before unmounting. */
+[data-previewer]
+  [data-section-type="ACCORDION"]
+  > [data-section-body][data-closing="true"] {
+  /* The grid baseline has to be present BEFORE the animation starts. The open
+     rule is keyed on [data-open="true"], which is already false by the time
+     data-closing appears — so without restating it here the element has no
+     `grid-template-rows` to animate away from and the exit is skipped. */
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  animation: ddm-close 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+[data-previewer]
+  [data-section-type="ACCORDION"]
+  > [data-section-body][data-closing="true"]
+  > * {
+  min-height: 0;
+}
+@keyframes ddm-close {
+  from {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-previewer]
+    [data-section-type="ACCORDION"][data-open="true"]
+    > [data-section-body] {
+    animation: none;
+  }
+}
+
+[data-previewer] [data-section-body] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* `.ddm-body`: 48 below the title's cap line, and more room above the hairline
+   than a closed header leaves — an open item usually ends in a control rather
+   than a line of text, which needs the air. Direct child only, so a plain, row
+   or tab section nested inside keeps its own flush layout. */
+[data-previewer] [data-section-type="ACCORDION"] > [data-section-body] {
+  padding: 48px 0 40px;
+  border-top: none;
+}
+/* The body already carries that padding, so the first and last field inside
+   must not stack their own outer margin on top of it. */
+[data-previewer]
+  [data-section-type="ACCORDION"]
+  > [data-section-body]
+  [data-type="FIELD"]:first-child {
+  margin-top: 0;
+}
+[data-previewer]
+  [data-section-type="ACCORDION"]
+  > [data-section-body]
+  [data-type="FIELD"]:last-child {
+  margin-bottom: 0;
+}
+
+/* ── ROW section ─────────────────────────────────────────────────
+   Lays its child fields out horizontally: each takes an equal share of the row
+   (flex: 1) with equal gaps, wrapping to the next line when the row gets too
+   narrow. renderChildren wraps the fields in a plain <div>, so the flex row lives
+   on that wrapper. Labels use the notched-outline "input top-left label" look
+   (below) to match the edit-item / configurator-details inputs. */
+[data-previewer] [data-section-type="ROW"] > [data-section-body] > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: start;
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  > [data-section-body]
+  > div
+  > [data-type="FIELD"] {
+  flex: 1 1 0;
+  min-width: 140px;
+  margin-top: 0; /* cancel the vertical +FIELD stacking margin inside a row */
+}
+
+/* Notched-outline label: the label floats into the input's top border, top-left,
+   with a paper-colored backdrop that "cuts" the border like MUI's outlined field. */
+[data-previewer] [data-section-type="ROW"] [data-type="FIELD"] {
+  position: relative;
+  gap: 0;
+  padding-top: 6px; /* room for the label to sit on the border line */
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-label] {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  z-index: 1;
+  padding: 0 5px;
+  background: var(--blanc);
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--beige-fonce);
+  pointer-events: none;
+  max-width: calc(100% - 24px);
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-label]
+  [data-field-label-text] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+}
+/* Controls stretch to fill the field cell and get a consistent 8px radius so the
+   notch reads correctly against the rounded corner. */
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-control] {
+  width: 100%;
+}
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]
+  [data-field-control]
+  > * {
+  width: 100%;
+  border-radius: 8px;
+}
+/* When the field holds focus, tint the floating label to primary (matches MUI). */
+[data-previewer]
+  [data-section-type="ROW"]
+  [data-type="FIELD"]:focus-within
+  [data-field-label] {
+  color: var(--noir);
+}
+
+/* ── Tab bar (scrollable square tabs with arrows — desktop & mobile) ── */
+/* Kit component 2 · « Switch — onglets » (Figma 4346:20843) — the strip:
+   three pills in fill, gap 8. The pills themselves are kit component 1,
+   « Tag XS Config » (4346:27629), styled on .tab below. */
+[data-previewer] [data-tab-bar] {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  cursor: grab;
+}
+[data-previewer] [data-tab-bar]::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
+}
+[data-previewer] [data-tab-bar]:active {
+  cursor: grabbing;
+}
+
+/* The pill. Note the outline is an INSET box-shadow, never a border: the Figma
+   outlines are inner, so a border would add to the measured 30/42px height. */
+/* ── Tab sizing (replaces the app's `styles` prop) ────────────────
+   The pills divide the strip evenly, as the Stoemp « Switch — onglets » does,
+   but never shrink past 110px: once the even share would fall below that floor
+   they keep the width and the strip overflows instead, which is what turns on
+   scrolling and reveals the arrows. A few tabs share the width; many tabs
+   (10+) stay readable and scroll.
+
+   `!important` is deliberate, not sloppiness: the previewer writes
+   `flex: 0 0 auto` as an INLINE style, which outranks any stylesheet. The conf
+   app overrode it through the `styles` prop (which merges into that same inline
+   style); a standalone sheet has no such channel. 110px is the kit's narrowest
+   pill row (`.k-ajuster-s`) — a short uppercase mono label plus 10px padding. */
+[data-previewer] [data-tab] {
+  flex: 1 1 0 !important;
+  min-width: 110px !important;
+}
+
+[data-previewer] [data-tab] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  /* Equal shares of the strip, as in the kit (`.k-switch .k-pill { flex: 1 1 0 }`):
+     whatever width the strip has is divided evenly between the tabs, minus the
+     gaps. Three tabs in the kit's 550px column come out at 178 each, but the
+     division — not that number — is the rule, so any tab count and any preview
+     width stay even, down to a minimum width past which the strip scrolls.
+     `flex` and `min-width` are NOT set here: the renderer applies default tab
+     sizing as an inline style, which no class can override, so they travel in
+     `previewerStyles.tab.style` instead. */
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 5px;
+  border: none;
+  background: var(--blanc);
+  box-shadow: inset 0 0 0 1px var(--beige);
+  color: var(--noir-35);
+  font: 400 13px/1 var(--font-mono);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 150ms,
+    background 150ms;
+}
+/* With the pills on equal shares, a label longer than its share is ellipsised
+   rather than allowed to widen its own pill and unbalance the row. */
+[data-previewer] [data-tab] [data-tab-label-text] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Info icon on a tab: inherit the tab's current text color so it stays legible
+   on both the idle and active (filled) tab, and against uppercase letter-spacing */
+[data-previewer] [data-tab] [data-field-info-icon] {
+  color: currentColor;
+  border-color: currentColor;
+  letter-spacing: 0;
+  /* the tab uppercases its label — don't turn the italic "i" into "I" */
+  text-transform: none;
+}
+[data-previewer] [data-tab] [data-field-info-icon]:hover {
+  color: var(--blanc);
+  background: var(--noir);
+  border-color: var(--noir);
+}
+/* On the selected (beige-filled) tab, invert against the fill instead of the
+   idle white so the icon keeps its contrast. */
+[data-previewer] [data-tab][data-active="true"] [data-field-info-icon]:hover {
+  color: var(--beige);
+  background: var(--noir);
+  border-color: var(--noir);
+}
+/* Hover is not drawn in the Figma — darken the label only, leaving the fill to
+   the selected state so the two never read as the same thing. */
+[data-previewer] [data-tab]:hover {
+  color: var(--noir);
+}
+
+/* .is-selected: beige fill, black label. No blue anywhere in this component —
+   the kit reserves --bleu for the mobile option carousel. */
+[data-previewer] [data-tab][data-active="true"] {
+  background: var(--beige);
+  color: var(--noir);
+}
+
+/* Scroll arrows on both ends (desktop & mobile; dimmed when that side can't scroll) */
+/* Scroll arrows are not in the Figma — geometry and behaviour kept as they were,
+   recolored onto the kit palette so they sit on the panel ground. They keep
+   their slot even while disabled, so enabling one doesn't shift the strip.
+   Height and radius follow the pill they sit beside. */
+[data-previewer] [data-tab-arrow] {
+  width: 28px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--noir-35);
+  cursor: pointer;
+  transition:
+    color 150ms,
+    background 150ms;
+}
+/* Beside large pills the arrows match their taller box. */
+[data-previewer]
+  [data-tab-group]:has([data-tab][data-size="large"])
+  [data-tab-arrow],
+[data-previewer]
+  [data-tab-group]:has([data-tab][data-size="medium"])
+  [data-tab-arrow] {
+  height: 42px;
+}
+[data-previewer] [data-tab-arrow="left"] {
+  margin-right: 4px;
+}
+[data-previewer] [data-tab-arrow="right"] {
+  margin-left: 4px;
+}
+[data-previewer] [data-tab-arrow]:hover:not(:disabled) {
+  color: var(--noir);
+  background: var(--beige);
+}
+[data-previewer] [data-tab-arrow]:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* The scroll arrows sit OUTSIDE the strip in the renderer's markup, so their
+   width (28) plus margin (4) pushed the first tab 32px right of every field
+   below it. The arrow row is pulled back by that much, which puts the tabs on
+   the same left edge as everything else and lets the arrows hang in the root's
+   own padding instead of displacing the content. */
+[data-previewer] [data-tab-group] > div:has(> [data-tab-arrow]) {
+  margin-left: -32px;
+  margin-right: -32px;
+}
+
+/* The slider track's start is the reading edge everything lines up on: a field
+   label, a slider's rail and a section title all begin there. A tab pill has
+   10px of inner padding, so its BOX on that edge put its text 10px right of
+   every label. The strip is pulled back by that padding, which lands the pill's
+   text on the same edge — the fill and hairline then start 10px earlier, which
+   is the trade for aligning what you actually read. */
+[data-previewer] [data-tab-bar] {
+  margin-left: -10px;
+}
+
+/* ── Field wrapper ───────────────────────────────────────────── */
+[data-previewer] [data-type="FIELD"] {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Slider fields: label stacked above the slider (kit `.k-slider-tete`) */
+[data-previewer] [data-type="FIELD"]:has([data-slider-wrapper]) {
+  display: grid;
+  /* The kit stacks the label above the slider (`.k-slider-tete` sits over
+     `.k-slider-piste`) rather than beside it, so the control gets the field's
+     full width instead of sharing a row with the label. */
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  /* No gap here: the slider wrapper's own padding-top is what holds the value
+     row, and that row is the thing that follows the label. Adding a gap on top
+     of it would push the label away from the row it belongs with. The 10px
+     `.k-slider` spacing is applied inside the wrapper instead. */
+  gap: 0;
+}
+/* `.k-titre-xs`: Yet Grotesk 500 14/18 in black, with 8px before the info icon
+   and a 21px minimum box so a label with no icon still holds the same height. */
+/* The slider's label keeps the shared type above; these are its layout
+   extras: no wrap, and shrinkable so the text can ellipsize. */
+[data-previewer]
+  [data-type="FIELD"]:has([data-slider-wrapper])
+  [data-field-label] {
+  display: flex;
+  white-space: nowrap;
+  min-width: 0;
+}
+/* Only the text ellipsizes when cramped — the info icon must never be clipped */
+[data-previewer]
+  [data-type="FIELD"]:has([data-slider-wrapper])
+  [data-field-label]
+  [data-field-label-text] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+[data-previewer]
+  [data-type="FIELD"]:has([data-slider-wrapper])
+  [data-field-control] {
+  display: block;
+  min-width: 0;
+}
+
+/* Checkbox fields: box and label share one row, box first then label */
+[data-previewer] [data-type="FIELD"]:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+[data-previewer]
+  [data-type="FIELD"]:has(input[type="checkbox"])
+  [data-field-control] {
+  order: -1;
+  flex: 0 0 auto;
+}
+[data-previewer]
+  [data-type="FIELD"]:has(input[type="checkbox"])
+  [data-field-label] {
+  font-size: 0.875rem;
+  color: var(--noir);
+  cursor: pointer;
+}
+
+/* ── One gap between blocks ───────────────────────────────────────────────────
+   Every field and every ACCORDION section is a block, and the space between any
+   two of them is the same 28px — field↔field, field↔accordion, accordion↔field
+   alike. Before this they were three different values (56, 25 and 25), so a
+   slider followed by another slider sat further apart than the same slider
+   followed by a section.
+
+   Carried as a margin above AND below each block so the first and last in a run
+   get the same air as the ones between; adjacent margins collapse to a single
+   28 rather than doubling.
+
+   NONE and TAB sections are deliberately NOT included: a NONE section is a bare
+   wrapper with no visual presence of its own, and a TAB section carries its own
+   strip spacing. Both stay exactly as they were. */
+[data-previewer] [data-type="FIELD"] {
+  margin-top: 28px;
+  margin-bottom: 28px;
+}
+/* A flex container does not collapse its children's margins and adds its own
+   gap on top, so the body must contribute none of its own between fields — the
+   margins are the spacing.
+
+   `renderChildren` wraps a run of children in a plain <div>, so the fields are
+   grandchildren of the section body, not direct children: matching on `>` here
+   silently missed every real configurator (it only worked in a hand-built
+   fixture). Matched at any depth instead. */
+[data-previewer] [data-section-body]:has([data-type="FIELD"]),
+[data-previewer] [data-tab-panel]:has([data-type="FIELD"]) {
+  gap: 0;
+}
+
+/* A field meeting an ACCORDION section, in either order — the same 28. Scoped
+   to ACCORDION so NONE and TAB sections are untouched. */
+[data-previewer] [data-type="FIELD"] + [data-section-type="ACCORDION"],
+[data-previewer] [data-section-type="ACCORDION"] + [data-type="FIELD"] {
+  margin-top: 28px;
+}
+
+/* `.k-titre-xs`, the kit's group title — the label for EVERY field, not
+   just sliders. It used to be 12px de-emphasised here while the slider
+   rule set 14px black, so a switch's title read a size smaller and
+   lighter than the slider's above it. */
+[data-previewer] [data-field-label] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 21px;
+  font: 500 14px/18px var(--font-titre);
+  color: var(--noir);
+}
+/* labelTop fields: label sits on its own line above the control */
+[data-previewer] [data-field-label][data-label-top="true"] {
+  display: flex;
+}
+
+/* ── Field info tooltip ───────────────────────────────────────── */
+[data-previewer] [data-field-info] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+[data-previewer] [data-field-info-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  /* italic glyph leans right — nudge it back so it reads centered in the ring */
+  text-indent: -0.5px;
+  color: var(--beige-fonce);
+  background: transparent;
+  border: 1.5px solid var(--beige-fonce);
+  border-radius: 50%;
+  cursor: help;
+  user-select: none;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+[data-previewer] [data-field-info-icon]:hover {
+  color: var(--blanc);
+  background: var(--noir);
+  border-color: var(--noir);
+}
+/* Tooltip is rendered position: fixed by the package (top/left set inline);
+   these are cosmetics only. */
+[data-field-info-tooltip] {
+  z-index: 2147483647;
+  /* Never exceed the viewport on narrow (mobile) screens */
+  max-width: min(260px, calc(100vw - 16px));
+  width: max-content;
+  padding: 6px 9px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--blanc);
+  background: var(--noir);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  white-space: normal;
+  pointer-events: none;
+}
+
+[data-previewer] [data-no-options] {
+  font-size: 0.75rem;
+  color: #e8512a;
+}
+
+[data-previewer] [data-field-control] {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Range slider ────────────────────────────────────────────── */
+
+/* Wrapper: reserves exactly the floating value row's height (30) plus the kit's
+   10px between the head and the track — so the label sits 10px above the row
+   and the row 10px above the track, as `.k-slider`/`.k-slider-tete` do. */
+[data-previewer] [data-slider-wrapper] {
+  position: relative;
+  /* Holds the floating value row plus the kit's spacing: 10px below the label,
+     the 30px row, then 10px before the track. No margin on top of this — the
+     padding already IS the space, and a margin would add to it twice. */
+  padding-top: 50px;
+  /* Track is constrained to --_track-w of the wrapper; the leftover space on the
+     right gives the thumb (and the stepper that follows it) room at max value so
+     it no longer overflows and forces a horizontal scrollbar. */
+  --_track-w: 90%;
+}
+
+/* Track itself: limited to --_track-w so it stops short of the right edge */
+[data-previewer] [data-slider-wrapper] input[type="range"] {
+  width: var(--_track-w) !important;
+}
+
+/* SMALL: the value row sits above the track and FOLLOWS the thumb, so the
+   −/+ discs and the tag stay with the value the user is dragging. (The kit's
+   desktop head is left-aligned, but the tracking version reads better here and
+   is what this previewer has always done.) */
+[data-previewer] [data-slider-stepper] {
+  position: absolute;
+  /* 10px below the label, so the 30px row ends at 40 and leaves the kit's 10px
+     before the track's line at 50. */
+  top: 10px;
+  left: clamp(
+    0%,
+    calc(var(--_pct, 0) * (var(--_track-w) - 14px) + 7px),
+    var(--_track-w)
+  );
+  transform: translateX(-50%);
+  /* `.k-ajuster-s`: a fixed 110px box centring the tag, with the −/+ discs
+     sitting 4px either side of it. Fixed width so the row does not resize as
+     the discs fade in and out. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 110px;
+  gap: 4px;
+  /* No position transition: the stepper must sit exactly on the thumb while dragging,
+     not ease toward it (an 80ms ease reads as the box lagging behind the thumb). */
+}
+
+/* −/+ buttons — kit component 7 · `.k-rond--24`: a 24px beige disc with no
+   outline. They sit at opacity 0 and appear on hover (`.k-ajuster-s`), which
+   the kit flags [À CONFIRMER] but draws that way in the frame. */
+[data-previewer] [data-slider-step] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* `.k-rond--24`: a 24px disc whose glyph is 14px. */
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  flex: 0 0 auto;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--beige-fonce);
+  background: var(--beige);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    color 150ms,
+    opacity 150ms;
+}
+[data-previewer] [data-slider-step]:hover:not(:disabled) {
+  color: var(--noir);
+}
+[data-previewer] [data-slider-step]:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
+/* Reveal the steppers when hovering anywhere over the slider field */
+[data-previewer]
+  [data-type="FIELD"]:has([data-slider-wrapper]):hover
+  [data-slider-step] {
+  opacity: 1;
+}
+[data-previewer]
+  [data-type="FIELD"]:has([data-slider-wrapper]):hover
+  [data-slider-step]:disabled {
+  opacity: 0.4;
+}
+
+/* The value tag — the kit's selected `.k-pill--val`: the standard pill, filled
+   beige, at the value size (mono 12). Draggable like the thumb. */
+[data-previewer] [data-slider-value-box] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 5px;
+  background: var(--beige);
+  color: var(--noir);
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: grab;
+  user-select: none;
+}
+[data-previewer] [data-slider-value-box]:active {
+  cursor: grabbing;
+}
+
+/* Clicking the tag (a press that does not drag) turns it into a number field.
+   The input inherits the tag's type and colour so the box does not change
+   appearance — only the caret tells you it is editable. */
+[data-previewer] [data-slider-value-box][data-editing="true"] {
+  cursor: text;
+}
+[data-previewer] [data-slider-value-input] {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+  /* The number spinners would not fit the tag and are redundant beside the
+     −/+ discs. */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+[data-previewer] [data-slider-value-input]::-webkit-outer-spin-button,
+[data-previewer] [data-slider-value-input]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+[data-previewer] input[type="range"] {
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  /* Kit component 9 · Slider: a 2px rail in beige, filled black up to the thumb
+     (`.k-slider-rail` + `.k-slider-prog`). Rendered as a gradient on the native
+     input, since a range input has no separate progress element. */
+  background: linear-gradient(
+    to right,
+    var(--noir) calc(var(--_pct, 0) * (100% - 14px) + 7px),
+    var(--beige) calc(var(--_pct, 0) * (100% - 14px) + 7px)
+  );
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+  margin: 2px 0;
+}
+[data-previewer] input[type="range"]:hover,
+[data-previewer] input[type="range"]:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+/* `.k-slider-curseur`: a 14px black disc with a 3px flash-green inset ring. */
+[data-previewer] input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--noir);
+  border: none;
+  box-shadow: inset 0 0 0 3px var(--vert-flash);
+  cursor: grab;
+}
+[data-previewer] input[type="range"]:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+[data-previewer] input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--noir);
+  border: none;
+  box-shadow: inset 0 0 0 3px var(--vert-flash);
+  cursor: grab;
+}
+[data-previewer] input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--beige);
+  border-radius: 0;
+}
+
+/* ── Notched slider (inputType STEPSLIDER) ────────────────────────────────────
+   Kit component 10 · « Notched slider » (Figma 4346:20862 / Notches 4346:27475).
+   One dot per stop along the track: upcoming beige 8px, past black 8px, and the
+   current one 14px in black with a 3px flash-green ring — the same treatment the
+   plain slider's thumb gets, which is why the native thumb is hidden here.
+
+   The dots sit ON the track, positioned by each stop's share of the range
+   (`--_at`), inset by half a thumb at either end so the first and last line up
+   with where the thumb itself would sit. */
+[data-previewer] [data-slider-notches] {
+  position: absolute;
+  left: 0;
+  /* The track's line: the wrapper's padding plus the input's own margin and
+     half-height, the same anchor the large value tag uses. */
+  top: calc(50px + 3px);
+  width: var(--_track-w);
+  height: 0;
+  pointer-events: none;
+}
+
+[data-previewer] [data-slider-notch] {
+  position: absolute;
+  top: 0;
+  /* Spread across the FULL track: the first dot on its left end, the last on
+     its right. The plain slider insets by half a thumb (7px) at each end so the
+     thumb's circle stays on the rail, but a notched slider hides that thumb —
+     the dots are the marks, and they line up with where the track starts and
+     stops. */
+  /* Inset by half a dot at each end so the MARKS sit inside the track's span:
+     each dot is centred on its position, so without this the first one's left
+     half (and the last one's right half) hangs outside the track — the step
+     slider started 4px left of every other field. `--_dot` is the dot's
+     measured diameter, so the inset follows it at any density. */
+  left: calc(var(--_dot, 8px) / 2 + var(--_at, 0) * (100% - var(--_dot, 8px)));
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The dots are the control at this size, so they take the clicks the track
+     would otherwise get — the container above is pointer-events: none. */
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* `.k-cran::before` — the dot itself, so the 14px button stays a comfortable
+   click target while the mark is 8px. */
+[data-previewer] [data-slider-notch]::before {
+  content: "";
+  /* 8px is the kit's mark, but never wider than the space each stop has: with
+     many stops a fixed 8px overlaps its neighbours and the track reads as one
+     solid bar instead of a scale. `--_dot` is measured by the renderer off the
+     live track width (capped at 8, floored at 3) — a percentage of the track
+     cannot be resolved here, since inside the dot a percentage means a share of
+     its own 14px button. */
+  width: var(--_dot, 8px);
+  height: var(--_dot, 8px);
+  border-radius: 50%;
+  background: var(--beige);
+  transition:
+    width 150ms ease,
+    height 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+[data-previewer] [data-slider-notch][data-state="past"]::before {
+  background: var(--noir);
+}
+/* `.k-cran.is-courant` — grows to 14 and takes the thumb's ring. */
+[data-previewer] [data-slider-notch][data-state="current"]::before {
+  width: 14px;
+  height: 14px;
+  background: var(--noir);
+  box-shadow: inset 0 0 0 3px var(--vert-flash);
+}
+
+/* The fill has to end exactly on the current dot. The plain slider's gradient
+   is inset by half a thumb at each end (to follow the thumb's centre); the dots
+   span the full track, so the notched fill drops that inset and uses the plain
+   percentage. */
+[data-previewer]
+  [data-slider-wrapper]:has([data-slider-notches])
+  input[type="range"] {
+  /* Ends exactly on the current dot: the dots are inset by half a dot at each
+     end, so the fill travels that same reduced span rather than the full
+     track. */
+  background: linear-gradient(
+    to right,
+    var(--noir)
+      calc(var(--_dot, 8px) / 2 + var(--_pct, 0) * (100% - var(--_dot, 8px))),
+    var(--beige)
+      calc(var(--_dot, 8px) / 2 + var(--_pct, 0) * (100% - var(--_dot, 8px)))
+  );
+}
+
+/* The value tag has to sit dead-centre over the current dot.
+   Same reason the fill above drops its inset: the plain slider positions the
+   tag on the THUMB's centre, which travels only between 7px and (track − 7px)
+   so the 14px circle never overhangs the rail. A notched slider hides that
+   thumb and spreads its dots across the FULL track, so the thumb-based
+   expression leaves the tag off the dot.
+
+   The percentage must resolve against the TRACK, not the wrapper. A dot's
+   `--_at * 100%` is 100% of `[data-slider-notches]`, which is itself
+   `width: var(--_track-w)` (90%) — while the stepper is positioned against the
+   wrapper, where 100% is the full width. Using a bare 100% here therefore
+   over-travels by the 10% difference, drifting further at every step. Scaling
+   by `--_track-w` puts both on the same ruler. `--_pct` and `--_at` are the
+   same ratio for a value on a notch ((value − min) / (max − min)), so the two
+   then line up exactly. */
+[data-previewer]
+  [data-slider-wrapper]:has([data-slider-notches])
+  [data-slider-stepper] {
+  /* The dots are inset by half a dot at each end, so the tag travels the same
+     reduced span to stay centred on the current one. `--_track-w` is the track
+     as a percentage of the wrapper, and the stepper is positioned against the
+     wrapper — so the dot inset is expressed as a fraction of that track. */
+  left: calc(
+    var(--_dot, 8px) / 2 + var(--_pct, 0) * (var(--_track-w) - var(--_dot, 8px))
+  );
+}
+
+/* `.k-slider--crante .k-slider-curseur { display: none }` — the current notch
+   is the handle, so the native thumb would double it. */
+[data-previewer]
+  [data-slider-wrapper]:has([data-slider-notches])
+  input[type="range"]::-webkit-slider-thumb {
+  opacity: 0;
+}
+[data-previewer]
+  [data-slider-wrapper]:has([data-slider-notches])
+  input[type="range"]::-moz-range-thumb {
+  opacity: 0;
+}
+
+/* LARGE: the notched slider takes the same composition change as the plain one
+   — the value tag rides the track and the head is gone — so the dots move to
+   that size's track line. */
+[data-previewer] [data-slider-wrapper][data-size="large"] [data-slider-notches],
+[data-previewer]
+  [data-slider-wrapper][data-size="medium"]
+  [data-slider-notches] {
+  top: calc(28px + 3px);
+}
+/* At LARGE the value tag sits on the track and IS the handle, so the ringed
+   current dot would be hidden behind it anyway — it reverts to a plain past dot
+   and lets the tag mark the position, as the kit's mobile notched slider does. */
+[data-previewer]
+  [data-slider-wrapper][data-size="large"]
+  [data-slider-notch][data-state="current"]::before,
+[data-previewer]
+  [data-slider-wrapper][data-size="medium"]
+  [data-slider-notch][data-state="current"]::before {
+  width: 8px;
+  height: 8px;
+  background: var(--noir);
+  box-shadow: none;
+}
+
+/* ── Text input ──────────────────────────────────────────────── */
+[data-previewer] input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: var(--noir);
+  background: var(--blanc);
+  border: 1px solid var(--noir-15);
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 150ms;
+}
+[data-previewer] input:hover {
+  border-color: var(--noir);
+}
+[data-previewer] input:focus {
+  border-color: var(--noir);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--noir) 20%, transparent);
+}
+
+/* ── Select ──────────────────────────────────────────────────── */
+[data-previewer] select {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  font-size: 0.875rem;
+  color: var(--noir);
+  background: var(--blanc);
+  border: 1px solid var(--noir-15);
+  border-radius: 5px;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 150ms;
+}
+[data-previewer] select:hover {
+  border-color: var(--noir);
+}
+[data-previewer] select:focus {
+  border-color: var(--noir);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--noir) 20%, transparent);
+}
+
+/* ── Checkbox ────────────────────────────────────────────────── */
+[data-previewer] input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: 0 0 auto;
+  border: 2px solid var(--noir-15);
+  border-radius: 6px;
+  background: var(--blanc);
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+  transition:
+    background 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+[data-previewer] input[type="checkbox"]:hover {
+  border-color: var(--beige-fonce);
+}
+[data-previewer] input[type="checkbox"]:checked {
+  border-color: var(--noir);
+  background-color: var(--noir);
+  /* White checkmark, centered */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M13 4.5L6.5 11L3 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+[data-previewer] input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--noir) 25%, transparent);
+}
+[data-previewer] input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── Combobox option buttons ──────────────────────────────────────────────────
+   Kit component 1 · « Tag XS Config — la pilule d'option » (Figma 4346:27629).
+   The same pill the tab strip is built from: h30, padding 10, radius 5, mono 13
+   uppercase; white with an INSET beige hairline (never a border — the Figma
+   outlines are inner, so a border would add to the measured height), label at
+   35% black. Selected fills beige with a black label.
+
+   This is the shared base for every inline combo type, since they are all rows
+   of this pill. Per-type overrides are scoped by `[data-combo-type]` below, so
+   a type only declares what makes it different. */
+[data-previewer] [data-option] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 5px;
+  background: var(--blanc);
+  box-shadow: inset 0 0 0 1px var(--beige);
+  color: var(--noir-35);
+  font: 400 13px/1 var(--font-mono);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 150ms,
+    color 150ms;
+}
+/* Hover is not drawn in the Figma — darken the label only, leaving the fill to
+   the selected state so the two never read as the same thing. */
+[data-previewer] [data-option]:hover {
+  color: var(--noir);
+}
+
+/* .is-selected */
+[data-previewer] [data-option][data-selected="true"] {
+  background: var(--beige);
+  color: var(--noir);
+}
+
+[data-previewer] [data-combo-image] {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
+/* The option row. Structural flex/wrap comes from the renderer; the gap is a
+   default there that this class replaces, per type below. */
+[data-previewer] [data-combo-options] {
+  align-items: center;
+}
+
+/* ── comboType: SELECT ────────────────────────────────────────────────────────
+   The plain pilule d'option row — the pill above with nothing added. Options
+   hug their labels and wrap onto further lines as the field's width runs out,
+   which is how the kit's option rows behave (`.k-vigs`, `.k-samples`).
+
+   This is also the fallback type: an unrecognized or empty `comboType` renders
+   here, so a field always shows a usable list.
+
+   Gap 8 matches the kit's spacing between pills in a group. The renderer sets
+   `gap: var(--combo-row-gap)` inline, so the gap is changed by overriding that
+   variable rather than `gap` itself. */
+/* COMBO is an alias of SELECT — the same look under the old name, kept while
+   that type is retired. */
+[data-previewer] [data-combo-options][data-combo-type="select"],
+[data-previewer] [data-combo-options][data-combo-type="combo"] {
+  --combo-row-gap: 8px;
+}
+
+/* ── comboType: SWITCH ────────────────────────────────────────────────────────
+   Kit component 3 · « Number Switch — Colonne 1 │ 2 » (Figma 4346:20844).
+   A segmented control: every option is visible in one row, gap 0, the options
+   sharing the width equally. The selected option reads as the kit's selected
+   pill (beige fill, square radius 5); the unselected ones take the round
+   treatment of the kit's `.k-numswitch-total` (radius 50px, white, inset beige
+   hairline, label at 35%) — so the row shows one "open" segment and the rest
+   as capsules, and the shape animates as the selection moves.
+
+   The kit's own component is a cycler showing only the current value; this
+   renders every option inline instead, which is what the previewer's SWITCH
+   does. The colours and the two shapes are the kit's. */
+[data-previewer] [data-combo-options][data-combo-type="switch"] {
+  /* The kit's `.k-numswitch` is gap 0 because it holds exactly one pill and one
+     circle, flush. With N options there are N−1 circles, which need a little
+     air to read as separate controls rather than one lumpy bar. */
+  --combo-row-gap: 4px;
+  /* No wrapping: the row stays one control however many options it holds. The
+     circles are small, so a long list still fits where a row of pills wouldn't. */
+  flex-wrap: nowrap;
+  /* The kit's control is a fixed 213px (183 pill + 30 circle), NOT the full
+     field width — so the row hugs its content and stops there. `max-width` lets
+     a long list of circles still fit the field instead of overflowing it. */
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* UNSELECTED = the kit's `.k-numswitch-total`: a perfect circle at the pill's
+   own height, fixed width so it never stretches, label hidden (the circle shows
+   the value, not the name — as the kit's round total does). */
+[data-previewer] [data-combo-options][data-combo-type="switch"] [data-option] {
+  /* Fixed square box → a true circle once the radius is 50%. `flex: 0 0 auto`
+     keeps it from being stretched by the row. */
+  flex: 0 0 auto;
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  /* A circle has no room for a word, so the label is clipped to what fits —
+     which for the kit's round total is a number. The full text stays in the
+     accessible name, and reappears when this option becomes the selected one. */
+  text-overflow: clip;
+  /* The width and the radius are what change between the two states, so both
+     animate: the selected option grows out of its circle into the filled pill,
+     and the one it replaces shrinks back to a circle. */
+  transition:
+    width 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 200ms ease,
+    color 150ms ease;
+}
+
+/* SELECTED = the kit's selected pill: takes the width the circles leave, fills
+   beige, and squares off to radius 5. */
+[data-previewer]
+  [data-combo-options][data-combo-type="switch"]
+  [data-option][data-selected="true"] {
+  /* 183px is the kit's pill inside its 213px control (213 − the 30px circle).
+     Fixed rather than `flex: 1 1 0`, which would stretch the selected option
+     across the whole field. `max-width: 100%` keeps it inside a narrow field. */
+  flex: 0 0 auto;
+  width: 183px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0 10px;
+  justify-content: flex-start;
+  border-radius: 5px;
+  text-overflow: ellipsis;
+}
+
+/* ── comboType: ICONSELECT ────────────────────────────────────────────────────
+   Kit component 4 · « Vignette S — icône d'agencement » (Figma 4346:20849,
+   mobile 4346:23773). A square icon tile, not a text pill: 44.25px, radius 8,
+   holding a 24px icon and nothing else.
+
+   The selected state is the opposite of the pills' — instead of filling beige
+   it LIGHTENS to `--fond` and takes a darker hairline (`--beige-fonce-15`), so
+   the chosen tile reads as recessed rather than highlighted. That is the kit's
+   rule (`.k-vig-s.is-selected`), not an interpretation.
+
+   The icon URL is per option, resolved from the source data (`data.image` or
+   `Attributes.image`); the field's `image` flag is forced on for this type
+   since a vignette with no icon would be an empty box. */
+[data-previewer] [data-combo-options][data-combo-type="iconselect"] {
+  /* `.k-vigs`: a single row that hugs its tiles and scrolls if the field is too
+     narrow for them, rather than wrapping onto a second line. */
+  --combo-row-gap: 8px;
+  flex-wrap: nowrap;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* `overflow-x: auto` also clips vertically, which would cut off the hover
+     label sitting above a tile. Padding the top reserves the space it needs
+     inside the scroll box, and the negative margin keeps the tiles themselves
+     where they were. */
+  padding-top: 26px;
+  margin-top: -26px;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"]::-webkit-scrollbar {
+  display: none;
+}
+
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"]
+  [data-option] {
+  /* 44.25 is the Figma measure, kept verbatim. Square and fixed, so the tile
+     never stretches with the row. */
+  flex: 0 0 auto;
+  width: 44.25px;
+  height: 44.25px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--blanc);
+  box-shadow: inset 0 0 0 1px var(--beige);
+  color: var(--noir);
+  /* Anchor for the hover label below. */
+  position: relative;
+  transition:
+    background 200ms ease,
+    box-shadow 200ms ease;
+}
+
+/* The tile's content is the icon alone, so the label is taken out of the box at
+   BOTH sizes — hidden here rather than via `font-size: 0` on the button, which
+   the shared large rule (font-size 15) would override. */
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"]
+  [data-option]
+  [data-option-label] {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--noir);
+  color: var(--blanc);
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.025em;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 150ms ease,
+    visibility 150ms ease;
+}
+
+/* …and revealed on hover, so the icon can still be identified. */
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"]
+  [data-option]:hover
+  [data-option-label],
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"]
+  [data-option]:focus-visible
+  [data-option-label] {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* `.k-vig-s.is-selected` — lightens and takes the darker hairline. */
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"]
+  [data-option][data-selected="true"] {
+  /* Stays WHITE when selected — the kit lightens to `--fond` here, but on a
+     white panel that reads as a faint grey wash rather than a selection.
+     With the fill gone the hairline is the ONLY marker, so it takes the full
+     `--beige-fonce` at 2px rather than the kit's 15%-opacity 1px: at that
+     weight on white the selected tile was indistinguishable from its
+     neighbours. */
+  background: var(--blanc);
+  box-shadow: inset 0 0 0 2px var(--beige-fonce);
+}
+
+/* The icon inside the tile: 24px, per the kit. */
+/* 24px at BOTH sizes, per the kit. The `.root` prefix is needed to outrank the
+   shared large image rule (32px), which would otherwise win on specificity and
+   grow the glyph in the large tile. */
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"]
+  [data-combo-image] {
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
+}
+
+/* ── comboType: IMAGESELECT ───────────────────────────────────────────────────
+   Kit component 5 · « Vignette M — matière » (Figma 4346:20854, mobile
+   4346:23914). A portrait image tile: 62 × 83, radius 5, the option's image
+   filling it edge to edge (`object-fit: cover`) with no label and no padding.
+
+   The selected state darkens rather than fills: a black 15% veil over the
+   image plus a darker hairline, both drawn on an overlay so they sit ABOVE the
+   picture — a background tint would be hidden behind it. That is the kit's
+   `.k-vig-m.is-selected::after`.
+
+   The image URL is per option, from the source data (`data.image` /
+   `Attributes.image`); the field's `image` flag is forced on for this type. */
+[data-previewer] [data-combo-options][data-combo-type="imageselect"] {
+  /* `.k-vigs-m`: one row, gap 8, scrolling rather than wrapping. */
+  --combo-row-gap: 8px;
+  flex-wrap: nowrap;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* `overflow-x: auto` clips vertically too, which would cut off the hover
+     label above a tile — reserve its space inside the scroll box and pull the
+     tiles back to where they were. */
+  padding-top: 26px;
+  margin-top: -26px;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]::-webkit-scrollbar {
+  display: none;
+}
+
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]
+  [data-option] {
+  position: relative;
+  flex: 0 0 auto;
+  width: 62px;
+  height: 83px;
+  padding: 0;
+  border-radius: 5px;
+  overflow: hidden;
+  /* White behind the image — it shows while the image loads and through a
+     transparent one, so it should read as the panel rather than as a fill. */
+  background: var(--blanc);
+  box-shadow: inset 0 0 0 1px var(--beige);
+}
+
+/* The image fills the tile. Absolute rather than a sized <img> so `cover` crops
+   to the tile's portrait ratio instead of letterboxing inside it. */
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]
+  [data-option]
+  [data-combo-image] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+/* The hairline and the selected veil live on an overlay above the image —
+   `.k-vig-m::after`. The label is not drawn (see the hover rule below). */
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]
+  [data-option]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--beige);
+  pointer-events: none;
+  transition:
+    background 200ms ease,
+    box-shadow 200ms ease;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]
+  [data-option][data-selected="true"]::after {
+  background: var(--noir-15);
+  box-shadow: inset 0 0 0 1px var(--beige-fonce-15);
+}
+
+/* Label hidden and revealed on hover, as with the icon tiles — the tile's
+   content is the picture, but the option still needs to be identifiable. */
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]
+  [data-option]
+  [data-option-label] {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--noir);
+  color: var(--blanc);
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.025em;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 150ms ease,
+    visibility 150ms ease;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]
+  [data-option]:hover
+  [data-option-label],
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"]
+  [data-option]:focus-visible
+  [data-option-label] {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── comboType: OPTIONSELECTOR ────────────────────────────────────────────────
+   Kit component 11 · « Option selector » (Figma 4346:20868). Unlike the other
+   types this one is a CONTAINER: a tinted tray (beige at 35%, padding 5, gap 5,
+   radius 5) holding the standard pills, so the group reads as one control — the
+   kit uses it for a value picker like « 36 / 46 / 56 CM ».
+
+   The pills inside are the kit's `.k-pill--val` variant, which differs from the
+   plain pill in one respect: font-size 12 rather than 13, being a value + unit
+   pair rather than a word. Everything else — height 30, padding 10, radius 5,
+   the white/beige idle and selected fills — comes from the shared base. */
+[data-previewer] [data-combo-options][data-combo-type="optionselector"] {
+  --combo-row-gap: 5px;
+  /* Hugs its pills rather than filling the field: the tray is the control, and
+     a tray stretched across the panel would read as a section background. */
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  padding: 5px;
+  border-radius: 5px;
+  background: var(--beige-35);
+}
+
+/* `.k-pill--val`: the value + unit pair sits a size down from the plain pill. */
+[data-previewer]
+  [data-combo-options][data-combo-type="optionselector"]
+  [data-option] {
+  font-size: 12px;
+}
+
+/* ── comboType: COLORSWITCH ───────────────────────────────────────────────────
+   Kit component 13 · « Color Swatch » (Figma 4346:20880 / 4346:20965). Round
+   colour dots: 16px with a 16px gap, growing to 30px / gap 21 at large.
+
+   The colour comes from the option itself, published by the renderer as
+   `--teinte` (the kit's own variable name) — read from the option's `value`
+   when that is a hex, else from `data.color` or `Attributes.color`. An option
+   with no usable colour falls back to beige rather than rendering invisible.
+
+   The selected state is the kit's ring trick: the dot turns WHITE and takes a
+   thick inset shadow in its own colour, which leaves a white gap between the
+   colour and the dot's edge. The ring's thickness scales with the dot
+   (`--ring`), since a 5px inset in a 30px dot would look like a different
+   component. Marked [À CONFIRMER] in the kit — the shape is theirs, but the
+   designers had not signed it off. */
+[data-previewer] [data-combo-options][data-combo-type="colorswitch"] {
+  --combo-row-gap: 16px;
+  /* Wraps, unlike the tile rows: a palette is often 20+ dots, and the kit lays
+     them out in rows of 8 rather than scrolling them sideways. */
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"]
+  [data-option] {
+  --ring: 5px;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  /* The dot IS the colour; beige stands in when the option supplies none. */
+  background: var(--teinte, var(--beige));
+  /* No hairline — the kit's swatch has none, and an outline would read as a
+     selection ring. */
+  box-shadow: none;
+  /* Anchor for the hover label. */
+  position: relative;
+  transition:
+    background 200ms ease,
+    box-shadow 200ms ease;
+}
+
+/* `.k-pastille.is-selected` — white dot, thick inset ring in the option's own
+   colour, leaving a white gap at the rim. */
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"]
+  [data-option][data-selected="true"] {
+  background: var(--blanc);
+  box-shadow: inset 0 0 0 var(--ring) var(--teinte, var(--beige));
+}
+
+/* A dot cannot carry a word, so the colour's name shows on hover — the kit
+   keeps it in `aria-label` only, but a name is worth surfacing when the dots
+   are otherwise indistinguishable to anyone who cannot tell two hues apart. */
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"]
+  [data-option]
+  [data-option-label] {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--noir);
+  color: var(--blanc);
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.025em;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 150ms ease,
+    visibility 150ms ease;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"]
+  [data-option]:hover
+  [data-option-label],
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"]
+  [data-option]:focus-visible
+  [data-option-label] {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── "Show more" toggle (fields with a `visibleOptions` cap) ──────
+   Sits inline as the last child of the option row, so it shares the
+   option buttons' box metrics and baseline. Deliberately quieter than
+   an option — dashed, no fill, secondary text — because it is a control
+   rather than a choice, and must not read as a selectable value. */
+[data-previewer] [data-show-more] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--beige-fonce);
+  background: transparent;
+  border: 1px dashed var(--noir-15);
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 150ms,
+    border-color 150ms,
+    color 150ms;
+  margin: 2px;
+  /* No `margin-left: auto` here on purpose. The option row is `flex-wrap: wrap`,
+     so when the toggle no longer fits beside the last option it wraps onto the
+     next line by itself — which is the wanted behavior. An `auto` left margin
+     would keep applying on that wrapped line too, pinning the toggle to the far
+     right and leaving a wide gap after the last option. Letting it flow keeps it
+     next to the options on whichever line it lands. */
+}
+[data-previewer] [data-show-more]:hover {
+  color: var(--noir);
+  background: var(--beige);
+  border-color: var(--noir);
+}
+[data-previewer] [data-show-more]:focus-visible {
+  outline: 2px solid var(--noir);
+  outline-offset: 1px;
+}
+/* Expanded: solid border, since "Show less" collapses rather than reveals. */
+[data-previewer] [data-show-more][data-expanded="true"] {
+  border-style: solid;
+}
+
+/* ── Column selector (ZF_MODULE field): selected = expanded "COLUMN n" bar, ──
+   ── unselected = small round number chip — all on one aligned baseline ─── */
+[data-previewer] [data-name="ZF_MODULE"] [data-field-control] > div {
+  align-items: center;
+  gap: 6px;
+}
+
+[data-previewer] [data-name="ZF_MODULE"] [data-option] {
+  /* Shared box: same height for bar and chips so they sit on one line */
+  height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    width 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+/* Selected → expanded blue bar reading "COLUMN n" */
+[data-previewer] [data-name="ZF_MODULE"] [data-option][data-selected="true"] {
+  padding: 0 16px;
+  color: var(--blanc);
+  background: var(--noir);
+  border-color: var(--noir);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+[data-previewer]
+  [data-name="ZF_MODULE"]
+  [data-option][data-selected="true"]:hover {
+  background: var(--noir);
+  border-color: var(--noir);
+}
+/* No "COLUMN " prefix here any more.
+   It was written when the option's label was just the number, so CSS supplied
+   the word. The source now sends the full text in `label` ("Column 1") and the
+   digit alone in `data.short`, which the previewer shows on the unselected
+   circles — so a CSS prefix would render "COLUMN Column 1". Dropping it also
+   removes an English string hardcoded into a stylesheet and keyed to a field
+   NAME, which said "COLUMN" on any ZF_MODULE field whatever it contained.
+   The label still fades/slides in as the bar expands. */
+[data-previewer]
+  [data-name="ZF_MODULE"]
+  [data-option][data-selected="true"]
+  [data-option-label] {
+  display: inline-block;
+  animation: columnLabelIn 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Unselected → small round number chip */
+[data-previewer]
+  [data-name="ZF_MODULE"]
+  [data-option]:not([data-option][data-selected="true"]) {
+  width: 30px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  color: var(--beige-fonce);
+  background: none;
+  border: 1px solid var(--noir-15);
+}
+[data-previewer]
+  [data-name="ZF_MODULE"]
+  [data-option]:not([data-option][data-selected="true"]):hover {
+  background: var(--beige);
+  border-color: var(--beige-fonce);
+  color: var(--noir);
+  transform: scale(1.08);
+}
+
+/* Match the column chips' fixed box so a capped ZF_MODULE keeps one baseline */
+[data-previewer] [data-name="ZF_MODULE"] [data-show-more] {
+  height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+@keyframes columnLabelIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* CIRCLE combo: tall rounded image cards */
+[data-previewer] [data-combo-type="circle"] {
+  padding: 0;
+  width: 64px;
+  aspect-ratio: 3 / 4;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  background: var(--beige);
+}
+[data-previewer] [data-combo-type="circle"]:hover {
+  border-color: var(--noir-15);
+  background: var(--beige);
+}
+[data-previewer] [data-combo-type="circle"][data-selected="true"] {
+  border-color: var(--noir);
+  background: var(--blanc);
+}
+[data-previewer] [data-combo-type="circle"] [data-combo-image] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+/* CIRCLE options are tall image cards, so a default-height toggle beside them
+   would float against their top edge. Match the card box and center the label. */
+[data-previewer] [data-combo-type="circle"] ~ [data-show-more],
+[data-previewer]
+  [data-field-control]:has([data-combo-type="circle"])
+  [data-show-more] {
+  width: 64px;
+  aspect-ratio: 3 / 4;
+  padding: 6px;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+}
+
+/* ── Responsive (mobile tabify) ──────────────────────────────── */
+/* Active when the previewer renders with layout="mobile" (or responsive).
+   The tab strip, pills, scroll and arrows are shared with desktop (above);
+   mobile adds the nested-panel spacing and full-width field controls. */
+
+[data-previewer][data-layout="mobile"] {
+  gap: 12px;
+}
+
+/* Tab panel: give content breathing room on the sides */
+/* No horizontal inset: the previewer root already pads, and adding 16 here
+   put every field inside a tab panel 16px right of the fields outside one. */
+[data-previewer] [data-tab-panel] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* The tab panel no longer insets its content, so a nested TAB section
+   needs no bleed to stay aligned with it. */
+[data-previewer] [data-tab-panel] > [data-section-type="TAB"] {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+[data-previewer][data-layout="mobile"] [data-tab-panel] {
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Leading above the previewer's FIRST row, on both layouts. Without it the
+   content sat flush against the top of its container — in the preview popup
+   that meant the first tab strip touching the header's hairline.
+
+   Put on the root's first child rather than as root padding, so it cannot
+   double up with the padding a host already applies, and it is right wherever
+   the previewer is embedded rather than only in this popup. */
+[data-previewer] > *:first-child {
+  margin-top: 20px;
+}
+
+[data-previewer][data-layout="mobile"] [data-tab-panel] > [data-tab-group] {
+  /* No bleed: the panel it sits in has no inset to cancel. */
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Nested tab group (a child section's tab strip) spacing on mobile */
+[data-previewer][data-layout="mobile"] [data-tab-panel] [data-tab-group] {
+  padding-top: 10px;
+  margin-bottom: 10px;
+}
+
+/* Field tab → control fills width (the tab is the label) */
+[data-previewer][data-layout="mobile"] [data-type="FIELD"] {
+  gap: 0;
+}
+[data-previewer][data-layout="mobile"] [data-field-control] {
+  width: 100%;
+}
+
+/* Slider in mobile: stack label on top, slider takes full width */
+[data-previewer][data-layout="mobile"]
+  [data-type="FIELD"]:has([data-slider-wrapper]) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+[data-previewer][data-layout="mobile"]
+  [data-type="FIELD"]:has([data-slider-wrapper])
+  [data-field-control] {
+  width: 100%;
+}
+/* Slider label stacks on its own row on mobile — keep the icon inline with the
+   text (the desktop grid alignment no longer applies) */
+[data-previewer][data-layout="mobile"]
+  [data-type="FIELD"]:has([data-slider-wrapper])
+  [data-field-label] {
+  justify-content: flex-start;
+}
+
+/* Info icon on a mobile tab: the tab strip scrolls horizontally, so keep the
+   icon from shrinking and let the tooltip (position: fixed) sit above it */
+[data-previewer][data-layout="mobile"] [data-tab] [data-field-info-icon] {
+  flex: none;
+}
+
+/* ── Size register (`size` attribute) ────────────────────────────────────────
+   Sections, tabs and fields carry `data-size="small" | "medium" | "large"`,
+   from the `size` attribute; blank resolves to "small", the default. Since the
+   default is what the base rules above already paint, only the "medium" and
+   "large" deltas need declaring here.
+
+   MEDIUM sits between the two. The kit documents a distinct middle size for
+   exactly one component — the Color Swatch's `.k-pastilles--m` (24 / gap 24 /
+   ring 7) — so that is the only place medium has measures of its own. For every
+   other component medium currently shares LARGE's rules (the selectors below
+   list both), which keeps it a usable register rather than a silent no-op, and
+   leaves one place to add real values as the designs arrive.
+
+   Who owns the size depends on the component. A COMPOSITE component is sized
+   once, by the item that owns it — a TAB/TABS section sets the register for its
+   whole tab strip, because the strip is one component and its pills must match.
+   Standalone items read their own attribute. There is no general inheritance:
+   a section's size does not fall through to unrelated children.
+
+   The two registers map onto the kit's own two sets of measures: SMALL is the
+   kit's desktop component, LARGE is its `.k-m` (mobile) variant, which is the
+   same component drawn bigger. Converted component by component. */
+
+/* ── Tabs · kit component 2 « Switch — onglets » ─────────────────────────────
+   LARGE = the kit's `.k-m .k-pill`: the same pill drawn bigger — height 42,
+   mono 15. Only the size differs; the tabs still divide the strip evenly (the
+   kit's mobile 194px fixed width exists to make the row overflow in a 390px
+   viewport, which is a layout decision, not part of the size register).
+
+   Set `size: large` on the SECTION whose sectionType is TAB/TABS — the strip is
+   one component, so the section sizes all of its tabs at once. */
+[data-previewer] [data-tab][data-size="large"],
+[data-previewer] [data-tab][data-size="medium"] {
+  height: 42px;
+  font-size: 15px;
+  /* The 110px floor in previewerStyles is sized for the 13px small label; a
+     15px label needs a little more before it starts to ellipsise. */
+  min-width: 128px;
+}
+
+/* ── Slider · kit component 9 ─────────────────────────────────────────────────
+   LARGE is not the small slider scaled up — it is the kit's mobile slider
+   (`.k-m .k-slider`), a different composition: the −/+ steppers are dropped and
+   the value tag moves ONTO the track, riding the thumb's position, at 42px tall
+   in mono 15 (4346:24309). The track and its fill are unchanged.
+
+   MEDIUM has no measures of its own in the kit; it keeps the small layout with
+   the large tag size, which is the one sensible reading between the two. */
+[data-previewer] [data-slider-wrapper][data-size="large"] [data-slider-step] {
+  /* The kit's mobile slider has no steppers — the tag itself is the handle. */
+  display: none;
+}
+
+/* LARGE floats the tag ON the track, riding the thumb (`.k-m .k-slider-valeur`,
+   4346:24309) instead of sitting in a head above it — the head is hidden at this
+   size. So the row goes back to absolute positioning, and the wrapper reserves
+   the height the tag needs above the track. */
+[data-previewer] [data-slider-wrapper][data-size="large"],
+[data-previewer] [data-slider-wrapper][data-size="medium"] {
+  /* The tag straddles the track rather than sitting above it, so the wrapper
+     only reserves the half that overhangs (42/2 + a little air). */
+  padding-top: 28px;
+  gap: 0;
+}
+/* The tag REPLACES the thumb — `.k-m .k-slider-curseur { display: none }` — so
+   it is centred on the track's line rather than floating above it, and the
+   native thumb is hidden. */
+[data-previewer] [data-slider-wrapper][data-size="large"] [data-slider-stepper],
+[data-previewer]
+  [data-slider-wrapper][data-size="medium"]
+  [data-slider-stepper] {
+  position: absolute;
+  /* Centred on the track's LINE. `top: 50%` would resolve against the wrapper's
+     whole height (padding included) and float the tag above the track.
+     Anchoring to the padding edge instead — the track begins right after it —
+     plus half the track's own box (2px rail + 2px margin, so 3px to its middle)
+     puts the tag's centre exactly on the line. Written as a calc against the
+     padding so it stays correct if that padding is ever retuned. */
+  top: calc(28px + 3px);
+  transform: translate(-50%, -50%);
+  left: clamp(
+    0%,
+    calc(var(--_pct, 0) * (var(--_track-w) - 14px) + 7px),
+    var(--_track-w)
+  );
+  /* Only the tag rides the position; the fixed 110px box would offset it. */
+  width: auto;
+  z-index: 1;
+}
+/* The tag is the handle now, so the dot underneath it must go. */
+[data-previewer]
+  [data-slider-wrapper][data-size="large"]
+  input[type="range"]::-webkit-slider-thumb,
+[data-previewer]
+  [data-slider-wrapper][data-size="medium"]
+  input[type="range"]::-webkit-slider-thumb {
+  opacity: 0;
+}
+[data-previewer]
+  [data-slider-wrapper][data-size="large"]
+  input[type="range"]::-moz-range-thumb,
+[data-previewer]
+  [data-slider-wrapper][data-size="medium"]
+  input[type="range"]::-moz-range-thumb {
+  opacity: 0;
+}
+
+[data-previewer]
+  [data-slider-wrapper][data-size="large"]
+  [data-slider-value-box],
+[data-previewer]
+  [data-slider-wrapper][data-size="medium"]
+  [data-slider-value-box] {
+  /* `.k-m .k-slider-valeur`: the tag grows to 42 and mono 15. It keeps the
+     beige fill, and the kit adds a hairline of the same colour. */
+  height: 42px;
+  font-size: 15px;
+  box-shadow: inset 0 0 0 1px var(--beige);
+}
+
+/* ── Combo options · kit component 1 « Tag XS Config » ───────────────────────
+   LARGE = the kit's `.k-m .k-pill`: height 42, mono 15 — the same delta the
+   tabs take, since both are this pill. Declared on the shared base so every
+   inline combo type (COMBO, SWITCH, BUTTON, BUTTONAVATAR, CIRCLE) inherits it;
+   a type that needs a different large treatment overrides it in its own block.
+
+   `data-size` sits on the option ROW, not on each option, so the pills are
+   reached through it — the field owns the size, and a row of options is one
+   component whose pills must match (the same rule the tab strip follows).
+
+   Set `size: large` on the FIELD. */
+[data-previewer] [data-combo-options][data-size="large"] [data-option],
+[data-previewer] [data-combo-options][data-size="medium"] [data-option] {
+  height: 42px;
+  font-size: 15px;
+}
+/* The option's image grows with the pill, the way the kit scales its icons in
+   the mobile variants (`.k-outil-disc .ico` 18 → 24). */
+[data-previewer] [data-combo-options][data-size="large"] [data-combo-image],
+[data-previewer] [data-combo-options][data-size="medium"] [data-combo-image] {
+  width: 32px;
+  height: 32px;
+}
+
+/* SWITCH's circles have a fixed width, so the shared height delta above is not
+   enough — the box must stay SQUARE to stay a circle. The kit's round total is
+   30 small and 48 large (`.k-m .k-numswitch-total`); the 48 comes with its own
+   48 height there, whereas our pill is 42, so the circle takes the pill's
+   height and matches its width to it. */
+[data-previewer]
+  [data-combo-options][data-combo-type="switch"][data-size="large"]
+  [data-option],
+[data-previewer]
+  [data-combo-options][data-combo-type="switch"][data-size="medium"]
+  [data-option] {
+  width: 42px;
+}
+/* ICONSELECT · LARGE = the kit's `.k-m .k-vig-s`: the tile jumps 44.25 → 90,
+   a much bigger step than the pills' 30 → 42, because a vignette at that size
+   is meant to be tapped. The row's gap goes 8 → 10 (`.k-m .k-vigs`).
+   The shared pill height/font deltas do not apply — this tile is sized by its
+   square box, not by a line of text — so they are overridden back here. */
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"][data-size="large"],
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"][data-size="medium"] {
+  --combo-row-gap: 10px;
+  width: auto;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"][data-size="large"]
+  [data-option],
+[data-previewer]
+  [data-combo-options][data-combo-type="iconselect"][data-size="medium"]
+  [data-option] {
+  /* `.root` prefix so this outranks the shared large rule (which is
+     `.root [data-combo-options][data-size="large"] .comboOption`) on
+     specificity rather than merely on source order. */
+  width: 90px;
+  height: 90px;
+}
+/* The icon does NOT scale with the tile: the kit has `.k-vig-s .ico` at 24px
+   with no `.k-m` override, so the glyph stays 24px in the 90px tile and simply
+   sits in more space. No large rule here — the base 24px below applies to both
+   sizes; the shared large image rule is overridden back there. */
+
+/* IMAGESELECT · LARGE = `.k-m .k-vig-m`: 62 × 83 → 90 × 121, keeping the
+   portrait ratio, with the row's gap 8 → 10 (`.k-m .k-vigs-m`). The image
+   fills the tile at any size, so nothing about it needs restating. */
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"][data-size="large"],
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"][data-size="medium"] {
+  --combo-row-gap: 10px;
+  width: auto;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"][data-size="large"]
+  [data-option],
+[data-previewer]
+  [data-combo-options][data-combo-type="imageselect"][data-size="medium"]
+  [data-option] {
+  /* `.root` prefix so this outranks the shared large rule's height (42px),
+     which is meant for text pills, not a portrait tile. */
+  width: 90px;
+  height: 121px;
+}
+
+/* OPTIONSELECTOR · LARGE = the kit's `.k-m .k-selecteur`: the tray's padding
+   and gap both go 5 → 8. The pills take the shared large height (42) and, being
+   the `--val` variant, go font-size 12 → 15 (`.k-m .k-pill--val`) — which the
+   shared large rule already sets, so only the tray needs restating. */
+[data-previewer]
+  [data-combo-options][data-combo-type="optionselector"][data-size="large"],
+[data-previewer]
+  [data-combo-options][data-combo-type="optionselector"][data-size="medium"] {
+  --combo-row-gap: 8px;
+  padding: 8px;
+}
+
+/* COLORSWITCH is the one component the kit gives three sizes, so all three
+   registers here are its own measures rather than shared:
+     small  → `.k-pastille`        16 · gap 16 · ring 5   (the base rule)
+     medium → `.k-pastilles--m`    24 · gap 24 · ring 7
+     large  → `.k-m .k-pastille`   30 · gap 21 · ring 9
+   The ring thickens with the dot so it stays in proportion — a 5px inset in a
+   30px dot would read as a different component. */
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"][data-size="medium"] {
+  --combo-row-gap: 24px;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"][data-size="medium"]
+  [data-option] {
+  /* `.root` prefix to outrank the shared rule's height (42px), which is meant
+     for text pills — a dot must stay square to stay round. */
+  --ring: 7px;
+  width: 24px;
+  height: 24px;
+}
+
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"][data-size="large"] {
+  --combo-row-gap: 21px;
+}
+[data-previewer]
+  [data-combo-options][data-combo-type="colorswitch"][data-size="large"]
+  [data-option] {
+  --ring: 9px;
+  width: 30px;
+  height: 30px;
+}
+
+[data-previewer]
+  [data-combo-options][data-combo-type="switch"][data-size="large"]
+  [data-option][data-selected="true"],
+[data-previewer]
+  [data-combo-options][data-combo-type="switch"][data-size="medium"]
+  [data-option][data-selected="true"] {
+  /* Kept proportional to the taller pill; the kit's mobile numswitch spans the
+     panel, so the large selected segment is correspondingly wider. */
+  width: 240px;
+  /* The kit centres the label at this size (`.k-m .k-numswitch .k-pill`),
+     where the pill is wide enough that a left-aligned label reads as adrift. */
+  justify-content: center;
+}
+
